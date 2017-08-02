@@ -15,8 +15,6 @@ variable "account_id" {
 # ------------------------------------------------------------------------------
 data "aws_iam_account_alias" "current" {}
 
-data "aws_caller_identity" "current" {}
-
 resource "aws_iam_role" "admin" {
   name               = "${join("-", compact(list("${var.prefix}", "admin-role")))}"
   assume_role_policy = "${data.aws_iam_policy_document.assume_admin.json}"
