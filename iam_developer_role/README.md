@@ -1,9 +1,13 @@
 ## iam\_developer\_role
 
-Opinionated way for setting up developer roles for projects, which allows one to grant users registered in another
-account access to assume the role. The basic role includes the managed `ViewOnlyAccess` policy, and further privileges
-should be restricted to the project using the [iam\_policies](../iam_policies/readme.md) module. In addition,
-we attach a policy which restricts users from making changes to the role itself (irrespective of other IAM policies).
+An opinionated way of setting up developer roles for projects:
+
+- Allows users in another (management) account to assume the role.
+- Grants `ViewOnlyAccess` by default.
+- Explicit Deny for all IAM actions on the role itself.
+
+Use [iam\_developer\_policies](../iam_developer_policies/readme.md) to attach
+additional (project specific) privileges to the role after creation.
 
 ```hcl
 provider "aws" {
