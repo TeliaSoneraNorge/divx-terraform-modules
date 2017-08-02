@@ -12,9 +12,8 @@ provider "aws" {
 }
 
 module "developer" {
-  source = "../iam_developer_role"
+  source     = "github.com/itsdalmo/tf-modules//iam_developer_role"
 
-  #source     = "github.com/itsdalmo/tf-modules//iam_developer_role"
   prefix     = "example-project"
   account_id = "123456789101"
 
@@ -26,9 +25,8 @@ module "developer" {
 }
 
 module "s3_access" {
-  source = "../iam_policies/s3"
+  source      = "github.com/itsdalmo/tf-modules//iam_policies/s3"
 
-  #source        = "github.com/itsdalmo/tf-modules//iam_policies/s3"
   prefix      = "example-project"
   region      = "eu-west-1"
   account_id  = "123456789101"
