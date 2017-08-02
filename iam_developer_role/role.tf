@@ -5,7 +5,7 @@ variable "prefix" {
   description = "Prefix used for the role name."
 }
 
-variable "account_id" {
+variable "user_account_id" {
   description = "ID of the account where the listed users exist."
 }
 
@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "assume_developer" {
 
     principals {
       type = "AWS"
-      identifiers = [ "${formatlist("arn:aws:iam::%s:user/%s", var.account_id, var.users)}" ]
+      identifiers = [ "${formatlist("arn:aws:iam::%s:user/%s", var.user_account_id, var.users)}" ]
     }
   }
 }

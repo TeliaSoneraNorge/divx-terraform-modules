@@ -6,7 +6,7 @@ An opinionated way of setting up developer roles for projects:
 - Grants `ViewOnlyAccess` by default.
 - Explicit Deny for all IAM actions on the role itself.
 
-Use [iam\_developer\_policies](../iam_developer_policies/readme.md) to attach
+Use [iam\_developer\_policies](../iam_developer_policies/README.md) to attach
 additional (project specific) privileges to the role after creation.
 
 ```hcl
@@ -15,11 +15,13 @@ provider "aws" {
   region  = "eu-west-1"
 }
 
-module "developer" {
-  source     = "github.com/itsdalmo/tf-modules//iam_developer_role"
+data "aws_caller_identity" "current" {}
 
-  prefix     = "example-project"
-  account_id = "123456789101"
+module "developer" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_role"
+
+  prefix          = "example-project"
+  user_account_id = "123456789101"
 
   users = [
     "user.name",
@@ -29,11 +31,11 @@ module "developer" {
 }
 
 module "s3_access" {
-  source      = "github.com/itsdalmo/tf-modules//iam_policies/s3"
+  source = "github.com/itsdalmo/tf-modules//iam_policies/s3"
 
   prefix      = "example-project"
   region      = "eu-west-1"
-  account_id  = "123456789101"
+  account_id  = "${aws_caller_identity.current.account_id}"
   iam_role_id = "${module.developer.role_name}"
 }
 
