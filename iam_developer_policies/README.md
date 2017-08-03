@@ -8,5 +8,5 @@ to resources:
 - In the specified region.
 - For a specific account ID.
 
-See example in [iam_\developer\_role](../iam_developer_role/README.md).
+See example in [iam\_developer\_role](../iam_developer_role/README.md).
 
