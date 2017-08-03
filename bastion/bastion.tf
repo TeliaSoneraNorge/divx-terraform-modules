@@ -11,34 +11,34 @@ variable "environment" {
 }
 
 variable "authorized_keys" {
-  description = "A list of public keys which can reach bastion via SSH."
+  description = "List of public keys which are added to bastion."
   type        = "list"
 }
 
 variable "authorized_cidr" {
-  description = "List of authorized IPv4 CIDR blocks."
+  description = "List of CIDR blocks which can reach bastion on port 22."
   type        = "list"
 }
 
 variable "vpc_id" {
-  description = "ID of the vpc where bastion will be launched."
+  description = "ID of the VPC for the subnets."
 }
 
 variable "subnet_ids" {
-  description = "List of subnet ID's where bastion can be launched."
+  description = "ID of subnets where bastion can be provisioned."
   type        = "list"
 }
 
 variable "pem_bucket" {
-  description = "Name of bucket where PEM keys are stored."
+  description = "S3 bucket where the PEM key is stored."
 }
 
 variable "pem_path" {
-  description = "Path to the specific PEM key which bastion uses to gain access to instances."
+  description = "Path (bucket-key) where the PEM key is stored."
 }
 
 variable "instance_ami" {
-  description = "AMI ID used for provisioning the bastion instance."
+  description = "ID of an Amazon Linux AMI."
   default     = "ami-d7b9a2b1"
 }
 
