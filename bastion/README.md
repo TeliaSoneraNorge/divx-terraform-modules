@@ -1,7 +1,7 @@
 ## Bastion
 
-Template for provisioning bastion via an autoscaling group, and
-adds authorized keys at launch. Ingress is limited to the specified
+Template for provisioning an auto-scaling bastion instance with static IP.
+Authorized keys are added at launch, and ingress is limited to the specified
 CIDR blocks.
 
 - Login: `ssh forward@<bastion-ip>`
