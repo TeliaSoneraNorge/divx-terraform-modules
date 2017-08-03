@@ -1,0 +1,31 @@
+#cloud-config
+repo_upgrade: security
+users:
+  - name: forward
+    lock_passwd: true
+    ssh-authorized-keys:
+      - ${authorized_keys}
+write_files:
+  - content: |
+      #!/bin/bash
+      ssh $1 -i /home/forward/.ssh/${pem_path}
+    path: /usr/local/bin/tunnel
+    permissions: '0755'
+    owner: forward:forward
+runcmd:
+  - |
+    aws ec2 associate-address \
+      --instance-id $(curl http://169.254.169.254/latest/meta-data/instance-id) \
+      --region ${aws_region} \
+      --allow-reassociation \
+      --public-ip ${elastic_ip}
+  - |
+    aws s3 cp \
+    s3://${pem_bucket}/${pem_path} \
+    /home/forward/.ssh/${pem_path} \
+    --region ${aws_region}
+  - |
+    chown forward:forward /home/forward/.ssh/${pem_path}
+  - |
+    chmod 400 /home/forward/.ssh/${pem_path}
+
