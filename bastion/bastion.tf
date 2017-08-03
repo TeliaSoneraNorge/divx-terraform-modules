@@ -54,6 +54,20 @@ data "aws_region" "current" {
   current = true
 }
 
+data "template_file" "main" {
+  template = "${file("${path.module}/cloud-config.yml")}"
+
+  vars {
+    authorized_keys = "${join("\n  - ", "${var.authorized_keys}")}"
+    aws_region      = "${data.aws_region.current.name}"
+    elastic_ip      = "${aws_eip.main.public_ip}"
+    pem_bucket      = "${var.pem_bucket}"
+    pem_path        = "${var.pem_path}"
+  }
+}
+
+resource "aws_eip" "main" {}
+
 resource "aws_security_group" "main" {
   name        = "${var.prefix}-bastion-sg"
   description = "Security group for bastion."
@@ -129,17 +143,53 @@ resource "aws_autoscaling_group" "main" {
   }
 }
 
-resource "aws_eip" "main" {}
+resource "aws_iam_role" "main" {
+  name               = "${var.prefix}-bastion-role"
+  assume_role_policy = "${data.aws_iam_policy_document.main.json}"
+}
 
-data "template_file" "main" {
-  template = "${file("${path.module}/cloud-config.yml")}"
+data "aws_iam_policy_document" "main" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
 
-  vars {
-    authorized_keys = "${join("\n  - ", "${var.authorized_keys}")}"
-    aws_region      = "${data.aws_region.current.name}"
-    elastic_ip      = "${aws_eip.main.public_ip}"
-    pem_bucket      = "${var.pem_bucket}"
-    pem_path        = "${var.pem_path}"
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_instance_profile" "main" {
+  name = "${var.prefix}-bastion-profile"
+  role = "${aws_iam_role.main.name}"
+}
+
+resource "aws_iam_role_policy" "main" {
+  name   = "${var.prefix}-bastion-permissions"
+  role   = "${aws_iam_role.main.id}"
+  policy = "${data.aws_iam_policy_document.permissions.json}"
+}
+
+data "aws_iam_policy_document" "permissions" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:AssociateAddress",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+    ]
+
+    resources = ["arn:aws:s3:::${var.pem_bucket}/${var.pem_path}"]
   }
 }
 
@@ -147,3 +197,14 @@ data "template_file" "main" {
 # Output
 # ------------------------------------------------------------------------------
 
+output "role_arn" {
+  value = "${aws_iam_role.main.arn}"
+}
+
+output "security_group_id" {
+  value = "${aws_security_group.main.id}"
+}
+
+output "ip" {
+  value = "${aws_eip.main.public_ip}"
+}

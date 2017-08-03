@@ -31,4 +31,8 @@ module "bastion" {
     "subnet-34567890",
   ]
 }
+
+output "bastion_ip" {
+  value = "${module.bastion.ip}"
+}
 ```
