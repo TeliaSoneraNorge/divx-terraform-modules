@@ -31,12 +31,56 @@ module "developer" {
 }
 
 module "s3_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_policies/s3"
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/s3"
 
-  prefix      = "example-project"
-  region      = "eu-west-1"
-  account_id  = "${aws_caller_identity.current.account_id}"
-  iam_role_id = "${module.developer.role_name}"
+  prefix        = "example-project"
+  region        = "eu-west-1"
+  account_id    = "${data.aws_caller_identity.current.account_id}"
+  iam_role_name = "${module.developer.role_name}"
+}
+
+module "cloudformation_access" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/cloudformation"
+
+  prefix        = "example-project"
+  region        = "eu-west-1"
+  account_id    = "${data.aws_caller_identity.current.account_id}"
+  iam_role_name = "${module.developer.role_name}"
+}
+
+module "codedeploy_access" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/codedeploy"
+
+  prefix        = "example-project"
+  region        = "eu-west-1"
+  account_id    = "${data.aws_caller_identity.current.account_id}"
+  iam_role_name = "${module.developer.role_name}"
+}
+
+module "ec2_access" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/ec2"
+
+  prefix        = "example-project"
+  region        = "eu-west-1"
+  account_id    = "${data.aws_caller_identity.current.account_id}"
+  iam_role_name = "${module.developer.role_name}"
+}
+
+module "iam_access" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/iam"
+
+  prefix        = "example-project"
+  account_id    = "${data.aws_caller_identity.current.account_id}"
+  iam_role_name = "${module.developer.role_name}"
+}
+
+module "kinesis_access" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/kinesis"
+
+  prefix        = "example-project"
+  region        = "eu-west-1"
+  account_id    = "${data.aws_caller_identity.current.account_id}"
+  iam_role_name = "${module.developer.role_name}"
 }
 
 output "arn" {
