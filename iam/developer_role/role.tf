@@ -10,7 +10,7 @@ variable "user_account_id" {
 }
 
 variable "users" {
-  type = "list"
+  type        = "list"
   description = "List of users which will be allowed to assume this role."
 }
 
@@ -30,12 +30,12 @@ resource "aws_iam_role" "developer" {
 
 data "aws_iam_policy_document" "assume_developer" {
   statement {
-    effect = "Allow"
+    effect  = "Allow"
     actions = ["sts:AssumeRole"]
 
     principals {
-      type = "AWS"
-      identifiers = [ "${formatlist("arn:aws:iam::%s:user/%s", var.user_account_id, var.users)}" ]
+      type        = "AWS"
+      identifiers = ["${formatlist("arn:aws:iam::%s:user/%s", var.user_account_id, var.users)}"]
     }
 
     condition = {
@@ -61,6 +61,7 @@ data "aws_iam_policy_document" "protect_role" {
   # NOTE: Disallow users from making changes to the developer role and policies.
   statement {
     effect = "Deny"
+
     not_actions = [
       "iam:ListAttachedRolePolicies",
       "iam:ListPolicyVersions",
@@ -68,6 +69,7 @@ data "aws_iam_policy_document" "protect_role" {
       "iam:ListRolePolicies",
       "iam:GetRolePolicy",
     ]
+
     resources = [
       "${aws_iam_role.developer.arn}",
     ]

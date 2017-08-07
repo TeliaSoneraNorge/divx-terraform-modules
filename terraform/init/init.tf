@@ -7,7 +7,7 @@ variable "prefix" {
 
 variable "environment" {
   description = "Environment tag which is applied to resources."
-  default = ""
+  default     = ""
 }
 
 # ------------------------------------------------------------------------------

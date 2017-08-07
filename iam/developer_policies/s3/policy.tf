@@ -29,11 +29,13 @@ resource "aws_iam_role_policy" "main" {
 data "aws_iam_policy_document" "main" {
   statement {
     effect = "Allow"
+
     actions = [
-      "s3:*"
+      "s3:*",
     ]
+
     resources = [
-      "arn:aws:s3:::${var.prefix}-*"
+      "arn:aws:s3:::${var.prefix}-*",
     ]
   }
 }

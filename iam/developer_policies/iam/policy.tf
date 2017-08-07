@@ -25,6 +25,7 @@ resource "aws_iam_role_policy" "main" {
 data "aws_iam_policy_document" "main" {
   statement {
     effect = "Allow"
+
     actions = [
       "iam:AddRoleToInstanceProfile",
       "iam:AttachRolePolicy",
@@ -52,6 +53,7 @@ data "aws_iam_policy_document" "main" {
       "iam:List*",
       "iam:Simulate*",
     ]
+
     resources = [
       "arn:aws:iam::${var.account_id}:role/${var.prefix}-*",
       "arn:aws:iam::${var.account_id}:instance-profile/${var.prefix}-*",
@@ -62,11 +64,13 @@ data "aws_iam_policy_document" "main" {
   # NOTE: Restrict users from assuming roles they can create.
   statement {
     effect = "Deny"
+
     actions = [
-      "sts:AssumeRole"
+      "sts:AssumeRole",
     ]
+
     resources = [
-      "arn:aws:iam::${var.account_id}:role/${var.prefix}-*"
+      "arn:aws:iam::${var.account_id}:role/${var.prefix}-*",
     ]
   }
 }

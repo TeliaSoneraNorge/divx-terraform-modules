@@ -29,9 +29,11 @@ resource "aws_iam_role_policy" "main" {
 data "aws_iam_policy_document" "main" {
   statement {
     effect = "Allow"
+
     actions = [
-      "codedeploy:*"
+      "codedeploy:*",
     ]
+
     resources = [
       "arn:aws:codedeploy:${var.region}:${var.account_id}:deploymentgroup:${var.prefix}-*",
       "arn:aws:codedeploy:${var.region}:${var.account_id}:application:${var.prefix}-*",

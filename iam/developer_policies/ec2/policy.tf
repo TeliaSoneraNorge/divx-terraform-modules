@@ -29,17 +29,20 @@ resource "aws_iam_role_policy" "main" {
 data "aws_iam_policy_document" "main" {
   statement {
     effect = "Allow"
+
     actions = [
-      "ec2:*"
+      "ec2:*",
     ]
+
     resources = [
-      "*"
+      "*",
     ]
+
     # TODO: Restrict access to specific resource names if possible.
     condition = {
-      test = "StringEquals"
+      test     = "StringEquals"
       variable = "ec2:Region"
-      values = ["${var.region}"]
+      values   = ["${var.region}"]
     }
   }
 }

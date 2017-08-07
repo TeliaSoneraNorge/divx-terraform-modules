@@ -15,7 +15,7 @@ variable "lambda_source" {
 
 variable "lambda_runtime" {
   description = "Lambda runtime. Defaults to Node.js."
-  default = "nodejs6.10"
+  default     = "nodejs6.10"
 }
 
 # ------------------------------------------------------------------------------
@@ -46,12 +46,12 @@ resource "aws_iam_role" "main" {
 
 data "aws_iam_policy_document" "assume" {
   statement {
-    effect = "Allow"
+    effect  = "Allow"
     actions = ["sts:AssumeRole"]
 
     principals {
-      type = "Service"
-      identifiers = [ "lambda.amazonaws.com" ]
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
     }
   }
 }

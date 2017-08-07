@@ -29,9 +29,11 @@ resource "aws_iam_role_policy" "main" {
 data "aws_iam_policy_document" "main" {
   statement {
     effect = "Allow"
+
     actions = [
-      "cloudformation:*"
+      "cloudformation:*",
     ]
+
     resources = [
       "arn:aws:cloudformation:${var.region}:${var.account_id}:stack/${var.prefix}-*/*",
     ]

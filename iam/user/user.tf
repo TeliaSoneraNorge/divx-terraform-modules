@@ -15,13 +15,13 @@ variable "keybase_user" {
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_user" "main" {
-  name = "${var.username}"
+  name          = "${var.username}"
   force_destroy = "true"
 }
 
 resource "aws_iam_user_login_profile" "main" {
-  user    = "${aws_iam_user.main.name}"
-  pgp_key = "keybase:${var.keybase_user}"
+  user                    = "${aws_iam_user.main.name}"
+  pgp_key                 = "keybase:${var.keybase_user}"
   password_reset_required = "false"
 }
 
@@ -37,18 +37,20 @@ resource "aws_iam_user_policy_attachment" "view_only_policy" {
 }
 
 resource "aws_iam_user_policy" "password" {
-  name = "manage-own-password"
-  user = "${aws_iam_user.main.name}"
+  name   = "manage-own-password"
+  user   = "${aws_iam_user.main.name}"
   policy = "${data.aws_iam_policy_document.password.json}"
 }
 
 data "aws_iam_policy_document" "password" {
   statement {
     effect = "Allow"
+
     actions = [
       "iam:ChangePassword",
-      "iam:UpdateLoginProfile"
+      "iam:UpdateLoginProfile",
     ]
+
     resources = [
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
     ]
@@ -56,21 +58,23 @@ data "aws_iam_policy_document" "password" {
 }
 
 resource "aws_iam_user_policy" "mfa" {
-  name = "manage-own-mfa"
-  user = "${aws_iam_user.main.name}"
+  name   = "manage-own-mfa"
+  user   = "${aws_iam_user.main.name}"
   policy = "${data.aws_iam_policy_document.mfa.json}"
 }
 
 data "aws_iam_policy_document" "mfa" {
   statement {
     effect = "Allow"
+
     actions = [
       "iam:CreateVirtualMFADevice",
       "iam:EnableMFADevice",
       "iam:ResyncMFADevice",
       "iam:DeactivateMFADevice",
-      "iam:DeleteVirtualMFADevice"
+      "iam:DeleteVirtualMFADevice",
     ]
+
     resources = [
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/$${aws:username}",
     ]

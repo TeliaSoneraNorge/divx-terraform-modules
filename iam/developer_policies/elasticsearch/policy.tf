@@ -27,15 +27,17 @@ resource "aws_iam_role_policy" "main" {
 }
 
 data "aws_iam_policy_document" "main" {
-    statement {
-      effect = "Allow"
-      actions = [
-        "es:*"
-      ]
-      resources = [
-        "arn:aws:es:${var.region}:${var.account_id}:domain/${var.prefix}-*"
-      ]
-    }
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "es:*",
+    ]
+
+    resources = [
+      "arn:aws:es:${var.region}:${var.account_id}:domain/${var.prefix}-*",
+    ]
+  }
 }
 
 # ------------------------------------------------------------------------------

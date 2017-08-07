@@ -29,11 +29,13 @@ resource "aws_iam_role_policy" "main" {
 data "aws_iam_policy_document" "main" {
   statement {
     effect = "Allow"
+
     actions = [
-      "apigateway:*"
+      "apigateway:*",
     ]
+
     resources = [
-      "arn:aws:apigateway:${var.region}::/restapis/${var.api_id}/*"
+      "arn:aws:apigateway:${var.region}::/restapis/${var.api_id}/*",
     ]
   }
 }

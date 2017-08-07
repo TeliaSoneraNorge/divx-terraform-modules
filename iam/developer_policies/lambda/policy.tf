@@ -29,11 +29,13 @@ resource "aws_iam_role_policy" "main" {
 data "aws_iam_policy_document" "main" {
   statement {
     effect = "Allow"
+
     actions = [
-      "lambda:*"
+      "lambda:*",
     ]
+
     resources = [
-      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}-*"
+      "arn:aws:lambda:${var.region}:${var.account_id}:function:${var.prefix}-*",
     ]
   }
 }
