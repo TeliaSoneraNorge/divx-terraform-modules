@@ -83,6 +83,24 @@ module "kinesis_access" {
   iam_role_name = "${module.developer.role_name}"
 }
 
+module "lambda_access" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/lambda"
+  
+  prefix        = "example-project"
+  region        = "eu-west-1"
+  account_id    = "${data.aws_caller_identity.current.account_id}"
+  iam_role_name = "${module.developer.role_name}"
+}
+
+module "apigateway_access" {
+  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/apigateway"
+  
+  prefix        = "example-project"
+  region        = "eu-west-1"
+  api_id        = "<your-api-gateway-rest-api-id>"
+  iam_role_name = "${module.developer.role_name}"
+}
+
 output "arn" {
   value = "${module.developer.role_arn}"
 }
