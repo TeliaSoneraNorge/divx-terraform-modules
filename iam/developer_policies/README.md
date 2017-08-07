@@ -1,4 +1,4 @@
-## iam\_developer\_policies
+## iam/developer\_policies
 
 These policies attempt to give users freedom while being
 less brittle than a wildcard privilege. Access is restricted
@@ -8,5 +8,5 @@ to resources:
 - In the specified region.
 - For a specific account ID.
 
-See example in [iam\_developer\_role](../iam_developer_role/README.md).
+See example in [iam/developer\_role](../iam/developer_role/README.md).
 

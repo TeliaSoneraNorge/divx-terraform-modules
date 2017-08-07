@@ -1,6 +1,7 @@
-## api\_gw\_lambda
+## apigateway/lambda
 
-Abstraction on top of API Gateway which integrates an endpoint/method with a lambda function.
+Abstraction on top of API Gateway which integrates an endpoint/method 
+with a lambda function.
 
 ```hcl
 provider "aws" {
@@ -29,7 +30,7 @@ resource "aws_api_gateway_resource" "world" {
 }
 
 module "hello_world" {
-  source      = "github.com/itsdalmo/tf-modules//api_gw_lambda"
+  source      = "github.com/itsdalmo/tf-modules/apigateway/lambda"
 
   prefix      = "get-hello-world"
   api_id      = "${aws_api_gateway_rest_api.main.id}"

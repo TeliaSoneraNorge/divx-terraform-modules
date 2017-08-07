@@ -1,4 +1,4 @@
-## terraform\_init
+## terraform/init
 
 A template for setting up a state bucket and lock table on AWS. These
 resources should never be deleted, so storing the state for this 
@@ -11,7 +11,7 @@ provider "aws" {
 }
 
 module "terraform_init" {
-  source      = "github.com/itsdalmo/tf-modules//terraform_init"
+  source      = "github.com/itsdalmo/tf-modules//terraform/init"
   prefix      = "example-staging"
   environment = "stage"
 }

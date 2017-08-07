@@ -1,4 +1,4 @@
-## iam\_developer\_role
+## iam/developer\_role
 
 An opinionated way of setting up developer roles for projects:
 
@@ -6,7 +6,7 @@ An opinionated way of setting up developer roles for projects:
 - Grants `ViewOnlyAccess` by default.
 - Explicit Deny for all IAM actions on the role itself.
 
-Use [iam\_developer\_policies](../iam_developer_policies/README.md) to attach
+Use [iam/developer\_policies](../iam/developer_policies/README.md) to attach
 additional (project specific) privileges to the role after creation.
 
 ```hcl
@@ -18,7 +18,7 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 module "developer" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_role"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_role"
 
   prefix          = "example-project"
   user_account_id = "123456789101"
@@ -31,7 +31,7 @@ module "developer" {
 }
 
 module "s3_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/s3"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/s3"
 
   prefix        = "example-project"
   region        = "eu-west-1"
@@ -40,7 +40,7 @@ module "s3_access" {
 }
 
 module "cloudformation_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/cloudformation"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/cloudformation"
 
   prefix        = "example-project"
   region        = "eu-west-1"
@@ -49,7 +49,7 @@ module "cloudformation_access" {
 }
 
 module "codedeploy_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/codedeploy"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/codedeploy"
 
   prefix        = "example-project"
   region        = "eu-west-1"
@@ -58,7 +58,7 @@ module "codedeploy_access" {
 }
 
 module "ec2_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/ec2"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/ec2"
 
   prefix        = "example-project"
   region        = "eu-west-1"
@@ -67,7 +67,7 @@ module "ec2_access" {
 }
 
 module "iam_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/iam"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/iam"
 
   prefix        = "example-project"
   account_id    = "${data.aws_caller_identity.current.account_id}"
@@ -75,7 +75,7 @@ module "iam_access" {
 }
 
 module "kinesis_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/kinesis"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/kinesis"
 
   prefix        = "example-project"
   region        = "eu-west-1"
@@ -84,7 +84,7 @@ module "kinesis_access" {
 }
 
 module "lambda_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/lambda"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/lambda"
   
   prefix        = "example-project"
   region        = "eu-west-1"
@@ -93,7 +93,7 @@ module "lambda_access" {
 }
 
 module "apigateway_access" {
-  source = "github.com/itsdalmo/tf-modules//iam_developer_policies/apigateway"
+  source = "github.com/itsdalmo/tf-modules//iam/developer_policies/apigateway"
   
   prefix        = "example-project"
   region        = "eu-west-1"
