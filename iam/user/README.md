@@ -7,7 +7,7 @@ provider "aws" {
 }
 
 module "user" {
-  source       = "github.com/itsdalmo/tf-modules//iam_user"
+  source       = "github.com/itsdalmo/tf-modules//iam/user"
 
   username     = "firstname.lastname"
   keybase_user = "itsdalmo"
