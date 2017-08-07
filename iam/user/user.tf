@@ -5,7 +5,7 @@ variable "username" {
   description = "Desired name for the IAM user."
 }
 
-variable "keybase_user" {
+variable "keybase" {
   description = "Keybase username. Used to encrypt password and access key."
 }
 
@@ -21,13 +21,13 @@ resource "aws_iam_user" "main" {
 
 resource "aws_iam_user_login_profile" "main" {
   user                    = "${aws_iam_user.main.name}"
-  pgp_key                 = "keybase:${var.keybase_user}"
+  pgp_key                 = "keybase:${var.keybase}"
   password_reset_required = "false"
 }
 
 resource "aws_iam_access_key" "main" {
   user    = "${aws_iam_user.main.name}"
-  pgp_key = "keybase:${var.keybase_user}"
+  pgp_key = "keybase:${var.keybase}"
 }
 
 # NOTE: This gives view access on the account the user is registered.
@@ -89,7 +89,7 @@ output "info" {
 
 Username:          ${var.username}
 Password:          ${aws_iam_user_login_profile.main.encrypted_password}
-Keybase:           ${var.keybase_user}
+Keybase:           ${var.keybase}
 Access Key Id:     ${aws_iam_access_key.main.id}
 Secret Access Key: ${aws_iam_access_key.main.encrypted_secret}
 
@@ -105,7 +105,7 @@ output "password" {
 }
 
 output "keybase" {
-  value = "${var.keybase_user}"
+  value = "${var.keybase}"
 }
 
 output "access_key_id" {
