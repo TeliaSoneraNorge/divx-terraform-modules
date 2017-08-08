@@ -17,6 +17,11 @@ variable "http_method" {
   description = "HTTP method to accept in the Gateway resource."
 }
 
+variable "request_parameters" {
+  description = "Querystring parameters for the method."
+  type = "map"
+}
+
 variable "lambda_arn" {
   description = "ARN of the lambda function to integrate with."
 }
@@ -35,6 +40,7 @@ resource "aws_api_gateway_method" "request_method" {
   resource_id   = "${var.resource_id}"
   http_method   = "${var.http_method}"
   authorization = "NONE"
+  request_parameters = "${var.request_parameters}"
 }
 
 resource "aws_api_gateway_integration" "request_integration" {
