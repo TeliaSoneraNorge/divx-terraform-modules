@@ -13,13 +13,19 @@ variable "resource_id" {
   description = "Gateway resource ID."
 }
 
+variable "key_required" {
+  description = "Flag with true if the method requires an API key."
+  default     = "false"
+}
+
 variable "http_method" {
   description = "HTTP method to accept in the Gateway resource."
 }
 
 variable "request_parameters" {
-  description = "Querystring parameters for the method."
-  type = "map"
+  description = "Map of request parameters for the method."
+  type        = "map"
+  default     = {}
 }
 
 variable "lambda_arn" {
@@ -36,10 +42,11 @@ data "aws_region" "current" {
 data "aws_caller_identity" "current" {}
 
 resource "aws_api_gateway_method" "request_method" {
-  rest_api_id   = "${var.api_id}"
-  resource_id   = "${var.resource_id}"
-  http_method   = "${var.http_method}"
-  authorization = "NONE"
+  rest_api_id        = "${var.api_id}"
+  resource_id        = "${var.resource_id}"
+  http_method        = "${var.http_method}"
+  api_key_required   = "${var.key_required}"
+  authorization      = "NONE"
   request_parameters = "${var.request_parameters}"
 }
 
