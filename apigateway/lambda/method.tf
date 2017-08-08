@@ -28,6 +28,11 @@ variable "request_parameters" {
   default     = {}
 }
 
+variable "request_template" {
+  description = ""
+  default     = "{}"
+}
+
 variable "lambda_arn" {
   description = "ARN of the lambda function to integrate with."
 }
@@ -51,14 +56,17 @@ resource "aws_api_gateway_method" "request_method" {
 }
 
 resource "aws_api_gateway_integration" "request_integration" {
-  rest_api_id = "${var.api_id}"
-  resource_id = "${var.resource_id}"
-  http_method = "${aws_api_gateway_method.request_method.http_method}"
-  type        = "AWS"
-  uri         = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${var.lambda_arn}/invocations"
-
-  # Lambda accepts POST only.
+  rest_api_id             = "${var.api_id}"
+  resource_id             = "${var.resource_id}"
+  http_method             = "${aws_api_gateway_method.request_method.http_method}"
+  type                    = "AWS"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:lambda:path/2015-03-31/functions/${var.lambda_arn}/invocations"
+  passthrough_behavior    = "WHEN_NO_TEMPLATES"
   integration_http_method = "POST"
+
+  request_templates = {
+    "application/json" = "${var.request_template}"
+  }
 }
 
 resource "aws_api_gateway_method_response" "response_method" {
