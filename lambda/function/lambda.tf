@@ -18,6 +18,12 @@ variable "lambda_runtime" {
   default     = "nodejs6.10"
 }
 
+variable "lambda_environment" {
+  description = "Map of environment variables."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Variables
 # ------------------------------------------------------------------------------
@@ -31,6 +37,10 @@ resource "aws_lambda_function" "main" {
   memory_size      = 128
   timeout          = 300
   role             = "${aws_iam_role.main.arn}"
+
+  environment {
+    variables = "${var.lambda_environment}"
+  }
 }
 
 data "archive_file" "main" {
