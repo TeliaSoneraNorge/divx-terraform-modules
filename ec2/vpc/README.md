@@ -10,7 +10,7 @@ provider "aws" {
 }
 
 module "vpc" {
-  source        = "../ec2/vpc"
+  source        = "github.com/itsdalmo/tf-modules//ec2/vpc"
   prefix        = "your-project"
   environment   = "dev"
   cidr_block    = "10.8.0.0/16"
