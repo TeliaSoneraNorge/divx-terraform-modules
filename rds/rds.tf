@@ -10,20 +10,20 @@ variable "environment" {
   default     = ""
 }
 
-variable "rds_user" {
-  description = "RDS username."
+variable "username" {
+  description = "Username."
 }
 
-variable "rds_password" {
-  description = "RDS password (KMS Encrypted)."
+variable "password" {
+  description = "Password (KMS Encrypted)."
 }
 
-variable "rds_port" {
-  description = "RDS port."
+variable "port" {
+  description = "Database port."
   default     = "5439"
 }
 
-variable "rds_engine" {
+variable "engine" {
   description = "Type of DB engine."
   default     = "postgres"
 }
@@ -62,18 +62,18 @@ variable "skip_snapshot" {
 # -------------------------------------------------------------------------------
 data "aws_kms_secret" "decrypted" {
   secret {
-    name    = "rds_password"
-    payload = "${var.rds_password}"
+    name    = "password"
+    payload = "${var.password}"
   }
 }
 
 resource "aws_db_instance" "main" {
   identifier             = "${var.prefix}-db"
   name                   = "main"
-  username               = "${var.rds_user}"
-  password               = "${data.aws_kms_secret.decrypted.rds_password}"
-  port                   = "${var.rds_port}"
-  engine                 = "${var.rds_engine}"
+  username               = "${var.username}"
+  password               = "${data.aws_kms_secret.decrypted.password}"
+  port                   = "${var.port}"
+  engine                 = "${var.engine}"
   instance_class         = "${var.instance_type}"
   storage_type           = "gap2"
   allocated_storage      = "${var.storage_size}"
