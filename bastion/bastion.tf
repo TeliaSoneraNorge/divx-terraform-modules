@@ -54,6 +54,8 @@ data "aws_region" "current" {
   current = true
 }
 
+resource "aws_eip" "main" {}
+
 data "template_file" "main" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
@@ -64,111 +66,6 @@ data "template_file" "main" {
     pem_bucket      = "${var.pem_bucket}"
     pem_path        = "${var.pem_path}"
   }
-}
-
-resource "aws_eip" "main" {}
-
-resource "aws_security_group" "main" {
-  name        = "${var.prefix}-bastion-sg"
-  description = "Security group for bastion."
-  vpc_id      = "${var.vpc_id}"
-
-  tags {
-    Name        = "${var.prefix}-bastion-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
-}
-
-resource "aws_security_group_rule" "egress" {
-  security_group_id = "${aws_security_group.main.id}"
-  type              = "egress"
-  protocol          = "-1"
-  from_port         = 0
-  to_port           = 0
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "ingress" {
-  security_group_id = "${aws_security_group.main.id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = 22
-  to_port           = 22
-  cidr_blocks       = ["${var.authorized_cidr}"]
-}
-
-resource "aws_launch_configuration" "main" {
-  name_prefix          = "${var.prefix}-bastion-config-"
-  instance_type        = "${var.instance_type}"
-  iam_instance_profile = "${aws_iam_instance_profile.main.name}"
-  security_groups      = ["${aws_security_group.main.id}"]
-  image_id             = "${var.instance_ami}"
-
-  user_data = "${data.template_file.main.rendered}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_autoscaling_group" "main" {
-  name                 = "${aws_launch_configuration.main.name}"
-  desired_capacity     = "1"
-  min_size             = "1"
-  max_size             = "1"
-  launch_configuration = "${aws_launch_configuration.main.name}"
-  vpc_zone_identifier  = ["${var.subnet_ids}"]
-
-  tag {
-    key                 = "Name"
-    value               = "${var.prefix}-bastion"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "terraform"
-    value               = "true"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "environment"
-    value               = "${var.environment}"
-    propagate_at_launch = true
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_iam_role" "main" {
-  name               = "${var.prefix}-bastion-role"
-  assume_role_policy = "${data.aws_iam_policy_document.main.json}"
-}
-
-data "aws_iam_policy_document" "main" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_instance_profile" "main" {
-  name = "${var.prefix}-bastion-profile"
-  role = "${aws_iam_role.main.name}"
-}
-
-resource "aws_iam_role_policy" "main" {
-  name   = "${var.prefix}-bastion-permissions"
-  role   = "${aws_iam_role.main.id}"
-  policy = "${data.aws_iam_policy_document.permissions.json}"
 }
 
 data "aws_iam_policy_document" "permissions" {
@@ -193,15 +90,38 @@ data "aws_iam_policy_document" "permissions" {
   }
 }
 
+module "asg" {
+  source          = "../ec2/asg"
+  prefix          = "${var.prefix}-bastion"
+  environment     = "${var.environment}"
+  user_data       = "${data.template_file.main.rendered}"
+  vpc_id          = "${var.vpc_id}"
+  subnet_ids      = "${var.subnet_ids}"
+  instance_policy = "${data.aws_iam_policy_document.permissions.json}"
+  instance_count  = "1"
+  instance_type   = "${var.instance_type}"
+  instance_ami    = "${var.instance_ami}"
+  instance_key    = ""
+}
+
+resource "aws_security_group_rule" "ingress" {
+  security_group_id = "${module.asg.security_group_id}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = 22
+  to_port           = 22
+  cidr_blocks       = ["${var.authorized_cidr}"]
+}
+
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
 output "role_arn" {
-  value = "${aws_iam_role.main.arn}"
+  value = "${module.asg.role_arn}"
 }
 
 output "security_group_id" {
-  value = "${aws_security_group.main.id}"
+  value = "${module.asg.security_group_id}"
 }
 
 output "ip" {
