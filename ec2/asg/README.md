@@ -59,8 +59,8 @@ output "subnet_ids" {
   value = "${module.vpc.subnet_ids}"
 }
 
-output "sg_id" {
-  value = "${module.asg.sg_id}"
+output "security_group_id" {
+  value = "${module.asg.security_group_id}"
 }
 
 output "role_arn" {
