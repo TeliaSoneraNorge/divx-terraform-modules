@@ -25,6 +25,9 @@ variable "dns_hostnames" {
 # ------------------------------------------------------------------------------
 data "aws_availability_zones" "main" {}
 
+# NOTE: depends_on is added for the vpc because terraform sometimes
+# fails to destroy VPC's where internet gateway is attached. If this happens,
+# we can manually detach it in the console and run terraform destroy again.
 resource "aws_vpc" "main" {
   cidr_block           = "${var.cidr_block}"
   instance_tenancy     = "default"
@@ -39,6 +42,7 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_internet_gateway" "main" {
+  depends_on = ["aws_vpc.main"]
   vpc_id = "${aws_vpc.main.id}"
 
   tags {
@@ -49,6 +53,7 @@ resource "aws_internet_gateway" "main" {
 }
 
 resource "aws_route_table" "main" {
+  depends_on = ["aws_vpc.main"]
   vpc_id = "${aws_vpc.main.id}"
 
   tags {
@@ -59,6 +64,7 @@ resource "aws_route_table" "main" {
 }
 
 resource "aws_route" "main" {
+  depends_on = ["aws_internet_gateway.main", "aws_route_table.main"]
   route_table_id         = "${aws_route_table.main.id}"
   gateway_id             = "${aws_internet_gateway.main.id}"
   destination_cidr_block = "0.0.0.0/0"
