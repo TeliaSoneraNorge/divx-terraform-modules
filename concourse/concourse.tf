@@ -120,10 +120,10 @@ data "aws_region" "current" {
   current = true
 }
 
-module "elb" {
-  source = "./modules/elb"
+module "external_elb" {
+  source = "./modules/external_elb"
 
-  prefix          = "${var.prefix}-elb"
+  prefix          = "${var.prefix}-external-elb"
   environment     = "${var.environment}"
   domain          = "${var.domain}"
   zone_id         = "${var.zone_id}"
@@ -132,6 +132,15 @@ module "elb" {
   authorized_cidr = ["${var.authorized_cidr}"]
   web_port        = "${var.web_port}"
   atc_port        = "${var.atc_port}"
+}
+
+module "internal_elb" {
+  source = "./modules/internal_elb"
+
+  prefix          = "${var.prefix}-internal-elb"
+  environment     = "${var.environment}"
+  vpc_id          = "${var.vpc_id}"
+  subnet_ids      = ["${var.subnet_ids}"]
   tsa_port        = "${var.tsa_port}"
 }
 
@@ -222,7 +231,10 @@ module "atc" {
   instance_type   = "${var.instance_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
-  load_balancers  = ["${module.elb.name}"]
+  load_balancers  = [
+    "${module.internal_elb.name}",
+    "${module.external_elb.name}",
+  ]
 }
 
 resource "aws_security_group_rule" "elb_ingress_tsa" {
@@ -231,7 +243,7 @@ resource "aws_security_group_rule" "elb_ingress_tsa" {
   protocol                 = "tcp"
   from_port                = "${var.tsa_port}"
   to_port                  = "${var.tsa_port}"
-  source_security_group_id = "${module.elb.security_group_id}"
+  source_security_group_id = "${module.internal_elb.security_group_id}"
 }
 
 resource "aws_security_group_rule" "elb_ingress_atc" {
@@ -240,7 +252,7 @@ resource "aws_security_group_rule" "elb_ingress_atc" {
   protocol                 = "tcp"
   from_port                = "${var.atc_port}"
   to_port                  = "${var.atc_port}"
-  source_security_group_id = "${module.elb.security_group_id}"
+  source_security_group_id = "${module.external_elb.security_group_id}"
 }
 
 # Worker ------------------------------------------------------------------------
@@ -254,7 +266,7 @@ data "template_file" "worker" {
   vars {
     image_version      = "${var.image_version}"
     image_repository   = "${var.image_repository}"
-    concourse_tsa_host = "${module.elb.dns_name}"
+    concourse_tsa_host = "${module.internal_elb.dns_name}"
     log_group_name     = "${aws_cloudwatch_log_group.worker.name}"
     log_group_region   = "${data.aws_region.current.name}"
     worker_key         = "${file("${var.concourse_keys}/worker_key")}"
@@ -294,12 +306,12 @@ module "worker" {
 }
 
 resource "aws_security_group_rule" "worker_ingress_tsa" {
-  security_group_id = "${module.elb.security_group_id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "${var.tsa_port}"
-  to_port           = "${var.tsa_port}"
-  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id        = "${module.internal_elb.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "${var.tsa_port}"
+  to_port                  = "${var.tsa_port}"
+  source_security_group_id = "${module.worker.security_group_id}"
 }
 
 # -------------------------------------------------------------------------------
@@ -329,8 +341,12 @@ output "atc_sg" {
   value = "${module.atc.security_group_id}"
 }
 
-output "elb_sg" {
-  value = "${module.elb.security_group_id}"
+output "external_elb_sg" {
+  value = "${module.external_elb.security_group_id}"
+}
+
+output "internal_elb_sg" {
+  value = "${module.internal_elb.security_group_id}"
 }
 
 output "postgres_sg" {
