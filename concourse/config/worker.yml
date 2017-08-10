@@ -1,0 +1,58 @@
+#cloud-config
+write_files:
+  - path: "/concourse/keys/worker/tsa_host_key.pub"
+    permissions: "0644"
+    owner: "root"
+    encoding: base64
+    content: ${base64encode(pub_tsa_host_key)}
+  - path: "/concourse/keys/worker/worker_key"
+    permissions: "0644"
+    owner: "root"
+    encoding: base64
+    content: ${base64encode(worker_key)}
+  - path: "/concourse/keys/worker/worker_key.pub"
+    permissions: "0644"
+    owner: "root"
+    encoding: base64
+    content: ${base64encode(pub_worker_key)}
+coreos:
+  update:
+    reboot-strategy: "reboot"
+  locksmith:
+    window-start: 02:00
+    window-length: 6h
+  units:
+   - name: concourse-worker.service
+     command: start
+     runtime: true
+     content: |
+       [Unit]
+       Description=Concourse
+       Documentation=https://hub.docker.com/r/concourse/concourse/
+       Requires=docker.socket
+       After=docker.socket
+       [Service]
+       Environment=PEER_IP=$${COREOS_PRIVATE_IPV4}
+       Environment=CONCOURSE_REPOSITORY=${image_repository}
+       Environment=CONCOURSE_VERSION=${image_version}
+       Restart=on-failure
+       RestartSec=30
+       RestartPreventExitStatus=5
+       SyslogIdentifier=concourse-worker
+       ExecStartPre=-/usr/bin/docker kill concourse-worker
+       ExecStartPre=-/usr/bin/docker rm concourse-worker
+       ExecStartPre=/usr/bin/docker pull $${CONCOURSE_REPOSITORY}:$${CONCOURSE_VERSION}
+       ExecStart=/usr/bin/docker run --name concourse-worker \
+                                     --volume=/var/run/docker.sock:/var/run/docker.sock \
+                                     --volume=/concourse/keys/worker:/concourse-keys \
+                                     --volume=/concourse:/concourse \
+                                     --privileged \
+                                     --net=host \
+                                     --env=CONCOURSE_WORK_DIR=/concourse \
+                                     --env=CONCOURSE_TSA_HOST=${concourse_tsa_host} \
+                                     --env=CONCOURSE_PEER_IP=$${COREOS_PRIVATE_IPV4} \
+                                     --log-driver=awslogs \
+                                     --log-opt awslogs-region=${log_group_region} \
+                                     --log-opt awslogs-group=${log_group_name} \
+                                     $${CONCOURSE_REPOSITORY}:$${CONCOURSE_VERSION} \
+                                     worker

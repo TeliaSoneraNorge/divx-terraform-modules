@@ -1,0 +1,60 @@
+#cloud-config
+write_files:
+  - path: "/concourse/keys/web/tsa_host_key"
+    permissions: "0644"
+    owner: "root"
+    encoding: base64
+    content: ${base64encode(tsa_host_key)}
+  - path: "/concourse/keys/web/session_signing_key"
+    permissions: "0644"
+    owner: "root"
+    encoding: base64
+    content: ${base64encode(session_signing_key)}
+  - path: "/concourse/keys/web/authorized_worker_keys"
+    permissions: "0644"
+    owner: "root"
+    encoding: base64
+    content: ${base64encode(authorized_worker_keys)}
+coreos:
+  update:
+    reboot-strategy: "reboot"
+  locksmith:
+    window-start: 02:00
+    window-length: 6h
+  units:
+   - name: concourse-web.service
+     command: start
+     runtime: true
+     content: |
+       [Unit]
+       Description=Concourse
+       Documentation=https://hub.docker.com/r/concourse/concourse/
+       Requires=docker.socket
+       After=docker.socket
+       [Service]
+       Environment=CONCOURSE_REPOSITORY=${image_repository}
+       Environment=CONCOURSE_VERSION=${image_version}
+       Restart=on-failure
+       RestartSec=30
+       RestartPreventExitStatus=5
+       SyslogIdentifier=concourse-web
+       ExecStartPre=-/usr/bin/docker kill concourse-web
+       ExecStartPre=-/usr/bin/docker rm concourse-web
+       ExecStartPre=/usr/bin/docker pull $${CONCOURSE_REPOSITORY}:$${CONCOURSE_VERSION}
+       ExecStart=/usr/bin/docker run --name concourse-web \
+                                     --volume=/var/run/docker.sock:/var/run/docker.sock \
+                                     --volume=/concourse/keys/web:/concourse-keys \
+                                     --publish=${atc_port}:${atc_port} \
+                                     --publish=${tsa_port}:${tsa_port} \
+                                     --env=CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id} \
+                                     --env=CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret} \
+                                     --env=CONCOURSE_GITHUB_AUTH_USER=${github_users} \
+                                     --env=CONCOURSE_EXTERNAL_URL=${concourse_web_host} \
+                                     --env=CONCOURSE_PEER_URL=http://$${COREOS_PRIVATE_IPV4}:8080 \
+                                     --env=CONCOURSE_TSA_PEER_IP=$${COREOS_PRIVATE_IPV4} \
+                                     --env=CONCOURSE_POSTGRES_DATA_SOURCE=${concourse_postgres_source} \
+                                     --log-driver=awslogs \
+                                     --log-opt awslogs-region=${log_group_region} \
+                                     --log-opt awslogs-group=${log_group_name} \
+                                     $${CONCOURSE_REPOSITORY}:$${CONCOURSE_VERSION} \
+                                     web
