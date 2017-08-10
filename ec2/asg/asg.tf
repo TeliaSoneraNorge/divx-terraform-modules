@@ -24,6 +24,12 @@ variable "subnet_ids" {
   type        = "list"
 }
 
+variable "load_balancers" {
+  description = "List of load balancers to add to the ASG."
+  type        = "list"
+  default     = []
+}
+
 variable "instance_type" {
   description = "Type of instance to provision."
   default     = "t2.micro"
@@ -120,6 +126,7 @@ resource "aws_autoscaling_group" "main" {
   min_size             = "${var.instance_count}"
   max_size             = "${var.instance_count + 1}"
   launch_configuration = "${aws_launch_configuration.main.name}"
+  load_balancers       = ["${var.load_balancers}"]
   vpc_zone_identifier  = ["${var.subnet_ids}"]
 
   tag {
@@ -150,6 +157,10 @@ resource "aws_autoscaling_group" "main" {
 # ------------------------------------------------------------------------------
 output "role_arn" {
   value = "${aws_iam_role.main.arn}"
+}
+
+output "role_id" {
+  value = "${aws_iam_role.main.id}"
 }
 
 output "security_group_id" {
