@@ -83,7 +83,7 @@ resource "aws_subnet" "main" {
   map_public_ip_on_launch = "${var.public_ips}"
 
   tags {
-    Name        = "${var.prefix}-subnet-${count.index}"
+    Name        = "${var.prefix}-subnet-${count.index + 1}"
     terraform   = "true"
     environment = "${var.environment}"
   }
