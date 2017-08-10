@@ -72,6 +72,7 @@ module "concourse" {
   source = "github.com/itsdalmo/tf-modules//concourse/"
 
   prefix               = "concourse-ci"
+  environment          = "dev"
   domain               = "ci.example.com"
   zone_id              = "<zone-id>"
   concourse_keys       = "${path.root}/keys"
