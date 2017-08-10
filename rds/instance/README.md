@@ -1,6 +1,6 @@
 ## rds
 
-Module for creating an RDS instance in a VPC, with a subnet group and
+Module for creating an RDS database instance in a VPC, with a subnet group and
 security group with public egress.
 
 ```hcl
@@ -18,7 +18,7 @@ module "vpc" {
 }
 
 module "rds" {
-  source        = "github.com/itsdalmo/tf-modules//rds"
+  source        = "github.com/itsdalmo/tf-modules//rds/instance"
 
   prefix        = "your-project"
   environment   = "dev"
