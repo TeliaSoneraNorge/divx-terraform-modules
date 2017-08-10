@@ -144,6 +144,10 @@ output "endpoint" {
   value = "${aws_db_instance.main.endpoint}"
 }
 
+output "connection_string" {
+  value = "postgres://${var.username}:${data.aws_kms_secret.decrypted.password}@${aws_db_instance.main.address}:${var.port}/main"
+}
+
 output "port" {
   value = "${aws_db_instance.main.port}"
 }
