@@ -68,11 +68,6 @@ variable "instance_key" {
   default     = ""
 }
 
-variable "instance_type" {
-  description = "Instance type to provision for Concourse."
-  default     = "t2.medium"
-}
-
 variable "instance_ami" {
   description = "CoreOS AMI ID for Concourse instances."
   default     = "ami-0bcbcb6d"
@@ -90,12 +85,22 @@ variable "image_version" {
 
 variable "atc_count" {
   description = "Number of ATC instances to provision."
-  default     = "1"
+  default     = "2"
+}
+
+variable "atc_type" {
+  description = "Instance type to provision for the Concourse ATC."
+  default     = "t2.small"
 }
 
 variable "worker_count" {
   description = "Number of concourse workers to provision."
   default     = "3"
+}
+
+variable "worker_type" {
+  description = "Instance type to provision for the Concourse workers."
+  default     = "t2.medium"
 }
 
 variable "web_port" {
@@ -228,7 +233,7 @@ module "atc" {
   subnet_ids      = "${var.subnet_ids}"
   instance_policy = "${data.aws_iam_policy_document.atc.json}"
   instance_count  = "${var.atc_count}"
-  instance_type   = "${var.instance_type}"
+  instance_type   = "${var.atc_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
   load_balancers  = [
@@ -300,7 +305,7 @@ module "worker" {
   subnet_ids      = "${var.subnet_ids}"
   instance_policy = "${data.aws_iam_policy_document.worker.json}"
   instance_count  = "${var.worker_count}"
-  instance_type   = "${var.instance_type}"
+  instance_type   = "${var.worker_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
 }
