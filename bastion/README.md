@@ -23,7 +23,7 @@ module "bastion" {
   pem_path    = "example-key.pem"
 
   authorized_keys = [
-    "ssh-rsa <your-public>",
+    "ssh-rsa <your-public-key>",
   ]
 
   authorized_cidr = [
