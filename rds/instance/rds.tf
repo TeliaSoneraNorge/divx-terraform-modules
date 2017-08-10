@@ -75,7 +75,7 @@ resource "aws_db_instance" "main" {
   port                   = "${var.port}"
   engine                 = "${var.engine}"
   instance_class         = "${var.instance_type}"
-  storage_type           = "gap2"
+  storage_type           = "gp2"
   allocated_storage      = "${var.storage_size}"
   skip_final_snapshot    = "${var.skip_snapshot}"
   publicly_accessible    = "${var.public_access}"
