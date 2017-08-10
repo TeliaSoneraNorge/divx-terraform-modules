@@ -20,6 +20,11 @@ variable "dns_hostnames" {
   default     = "false"
 }
 
+variable "public_ips" {
+  description = "Boolean flag for whether the subnets should delegate public IPs."
+  default     = "true"
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -71,10 +76,11 @@ resource "aws_route" "main" {
 }
 
 resource "aws_subnet" "main" {
-  count             = "${length(data.aws_availability_zones.main.names)}"
-  vpc_id            = "${aws_vpc.main.id}"
-  cidr_block        = "${cidrsubnet(var.cidr_block, length(data.aws_availability_zones.main.names), count.index)}"
-  availability_zone = "${element(data.aws_availability_zones.main.names, count.index)}"
+  count                   = "${length(data.aws_availability_zones.main.names)}"
+  vpc_id                  = "${aws_vpc.main.id}"
+  cidr_block              = "${cidrsubnet(var.cidr_block, length(data.aws_availability_zones.main.names), count.index)}"
+  availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
+  map_public_ip_on_launch = "${var.public_ips}"
 
   tags {
     Name        = "${var.prefix}-subnet-${count.index}"
