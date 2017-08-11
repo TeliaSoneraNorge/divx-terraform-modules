@@ -70,7 +70,7 @@ variable "instance_key" {
 
 variable "instance_ami" {
   description = "CoreOS AMI ID for Concourse instances."
-  default     = "ami-0bcbcb6d"
+  default     = "ami-38ef0041"
 }
 
 variable "image_repository" {
@@ -80,7 +80,7 @@ variable "image_repository" {
 
 variable "image_version" {
   description = "Concourse image version."
-  default     = "3.1.1"
+  default     = "3.3.4"
 }
 
 variable "atc_count" {
@@ -317,6 +317,33 @@ resource "aws_security_group_rule" "worker_ingress_tsa" {
   from_port                = "${var.tsa_port}"
   to_port                  = "${var.tsa_port}"
   source_security_group_id = "${module.worker.security_group_id}"
+}
+
+resource "aws_security_group_rule" "worker_ingress_web" {
+  security_group_id        = "${module.internal_elb.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "80"
+  to_port                  = "80"
+  source_security_group_id = "${module.worker.security_group_id}"
+}
+
+resource "aws_security_group_rule" "atc_ingress_baggageclaim" {
+  security_group_id        = "${module.worker.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "7788"
+  to_port                  = "7788"
+  source_security_group_id = "${module.atc.security_group_id}"
+}
+
+resource "aws_security_group_rule" "atc_ingress_garden" {
+  security_group_id        = "${module.worker.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "7777"
+  to_port                  = "7777"
+  source_security_group_id = "${module.atc.security_group_id}"
 }
 
 # -------------------------------------------------------------------------------

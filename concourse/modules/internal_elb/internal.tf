@@ -24,6 +24,11 @@ variable "tsa_port" {
   default     = "2222"
 }
 
+variable "atc_port" {
+  description = "Port specification for the Concourse ATC."
+  default     = "8080"
+}
+
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
@@ -32,6 +37,13 @@ resource "aws_elb" "main" {
   subnets         = ["${var.subnet_ids}"]
   security_groups = ["${aws_security_group.main.id}"]
   internal        = "true"
+
+  listener {
+    instance_port      = "${var.atc_port}"
+    instance_protocol  = "http"
+    lb_port            = "80"
+    lb_protocol        = "http"
+  }
 
   listener {
     instance_port     = "${var.tsa_port}"
