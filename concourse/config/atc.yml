@@ -44,8 +44,8 @@ coreos:
        ExecStart=/usr/bin/docker run --name concourse-web \
                                      --volume=/var/run/docker.sock:/var/run/docker.sock \
                                      --volume=/concourse/keys/web:/concourse-keys \
-                                     --publish=${atc_port}:${atc_port} \
-                                     --publish=${tsa_port}:${tsa_port} \
+                                     --publish=${atc_port}:8080 \
+                                     --publish=${tsa_port}:2222 \
                                      --env=CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id} \
                                      --env=CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret} \
                                      --env=CONCOURSE_GITHUB_AUTH_USER=${github_users} \
