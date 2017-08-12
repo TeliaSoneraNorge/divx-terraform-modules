@@ -20,7 +20,7 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  description = "ID of subnets where bastion can be provisioned."
+  description = "ID of subnets where instances can be provisioned."
   type        = "list"
 }
 
@@ -120,35 +120,21 @@ resource "aws_launch_configuration" "main" {
   }
 }
 
-resource "aws_autoscaling_group" "main" {
-  name                 = "${aws_launch_configuration.main.name}"
-  desired_capacity     = "${var.instance_count}"
-  min_size             = "${var.instance_count}"
-  max_size             = "${var.instance_count + 1}"
-  launch_configuration = "${aws_launch_configuration.main.name}"
-  load_balancers       = ["${var.load_balancers}"]
-  vpc_zone_identifier  = ["${var.subnet_ids}"]
+resource "aws_cloudformation_stack" "main" {
+  name          = "${var.prefix}-asg"
+  template_body = "${data.template_file.main.rendered}"
+}
 
-  tag {
-    key                 = "Name"
-    value               = "${var.prefix}"
-    propagate_at_launch = true
-  }
+data "template_file" "main" {
+  template = "${file("${path.module}/cloudformation.yml")}"
 
-  tag {
-    key                 = "terraform"
-    value               = "true"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "environment"
-    value               = "${var.environment}"
-    propagate_at_launch = true
-  }
-
-  lifecycle {
-    create_before_destroy = true
+  vars {
+    prefix               = "${var.prefix}"
+    environment          = "${var.environment}"
+    launch_configuration = "${aws_launch_configuration.main.name}"
+    min_size             = "${var.instance_count}"
+    max_size             = "${var.instance_count + 2}"
+    subnets              = "${jsonencode(var.subnet_ids)}"
   }
 }
 
