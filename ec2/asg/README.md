@@ -31,7 +31,7 @@ module "asg" {
 }
 
 resource "aws_security_group_rule" "ingress" {
-  security_group_id = "${module.asg.sg_id}"
+  security_group_id = "${module.asg.security_group_id}"
   type              = "ingress"
   protocol          = "tcp"
   from_port         = 22
