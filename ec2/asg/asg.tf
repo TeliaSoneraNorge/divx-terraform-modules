@@ -121,6 +121,7 @@ resource "aws_launch_configuration" "main" {
 }
 
 resource "aws_cloudformation_stack" "main" {
+  depends_on    = ["aws_launch_configuration.main"]
   name          = "${var.prefix}-asg"
   template_body = "${data.template_file.main.rendered}"
 }
@@ -135,6 +136,7 @@ data "template_file" "main" {
     min_size             = "${var.instance_count}"
     max_size             = "${var.instance_count + 2}"
     subnets              = "${jsonencode(var.subnet_ids)}"
+    load_balancers       = "${join("", var.load_balancers) == "" ? "" : "LoadBalancerNames: ${jsonencode(var.load_balancers)}"}"
   }
 }
 
