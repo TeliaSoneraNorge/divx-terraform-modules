@@ -22,6 +22,40 @@ coreos:
     window-start: 02:00
     window-length: 6h
   units:
+   - name: cloudwatch-monitor.service
+     command: start
+     runtime: true
+     content: |
+       [Unit]
+       Description=Cloudwatch monitoring.
+       Documentation=https://github.com/a3linux/go-aws-mon/
+       Requires=docker.socket
+       After=docker.socket
+       [Service]
+       Type=oneshot
+       SyslogIdentifier=cloudwatch-monitor
+       ExecStartPre=-/usr/bin/docker kill cloudwatch-monitor
+       ExecStartPre=-/usr/bin/docker rm cloudwatch-monitor
+       ExecStartPre=/usr/bin/docker pull a3linux/go-aws-mon:latest
+       ExecStart=/usr/bin/docker run --name cloudwatch-monitor \
+                                     --volume=/etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/certificates.crt \
+                                     --volume=/var/log:/var/log \
+                                     a3linux/go-aws-mon /usr/bin/go-aws-mon \
+                                     --mem-used \
+                                     --mem-avail \
+                                     --disk-space-used \
+                                     --disk-space-avail \
+                                     --disk-inode-util \
+                                     --disk-path=/,/var/lib
+   - name: cloudwatch-monitor.timer
+     enable: true
+     command: start
+     content: |
+      [Unit]
+      Description=Cloudwatch logging every minute.
+      [Timer]
+      OnBootSec=0m
+      OnCalendar=minutely
    - name: concourse-worker.service
      command: start
      runtime: true
@@ -33,9 +67,8 @@ coreos:
        After=docker.socket
        [Service]
        EnvironmentFile=/etc/environment
-       Restart=on-failure
+       Restart=always
        RestartSec=30s
-       RestartPreventExitStatus=5
        TimeoutStartSec=5m
        SyslogIdentifier=concourse-worker
        ExecStartPre=-/usr/bin/docker kill concourse-worker
@@ -53,6 +86,7 @@ coreos:
                                      --env=CONCOURSE_PEER_IP=$${COREOS_PRIVATE_IPV4} \
                                      --env=CONCOURSE_BIND_IP=0.0.0.0 \
                                      --env=CONCOURSE_BAGGAGECLAIM_BIND_IP=0.0.0.0 \
+                                     --env=CONCOURSE_BAGGAGECLAIM_LOG_LEVEL=${log_level} \
                                      --log-driver=awslogs \
                                      --log-opt awslogs-region=${log_group_region} \
                                      --log-opt awslogs-group=${log_group_name} \

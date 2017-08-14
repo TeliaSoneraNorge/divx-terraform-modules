@@ -118,6 +118,16 @@ variable "tsa_port" {
   default     = "2222"
 }
 
+variable "log_level" {
+  description = "Concourse log level (debug|info|error|fatal) for ATC, TSA and Baggageclaim."
+  default     = "info"
+}
+
+variable "rolling_updates" {
+  description = "Flag for rolling updates. Requires that the Autoscaling groups are set up in Cloudformation."
+  default     = "true"
+}
+
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
@@ -200,6 +210,7 @@ data "template_file" "atc" {
     concourse_postgres_source = "${module.postgres.connection_string}"
     log_group_name            = "${aws_cloudwatch_log_group.atc.name}"
     log_group_region          = "${data.aws_region.current.name}"
+    log_level                 = "${var.log_level}"
     tsa_host_key              = "${file("${var.concourse_keys}/tsa_host_key")}"
     session_signing_key       = "${file("${var.concourse_keys}/session_signing_key")}"
     authorized_worker_keys    = "${file("${var.concourse_keys}/authorized_worker_keys")}"
@@ -221,6 +232,18 @@ data "aws_iam_policy_document" "atc" {
       "logs:PutLogEvents",
     ]
   }
+  statement {
+    effect = "Allow"
+
+    resources = ["*"]
+
+    actions = [
+      "cloudwatch:PutMetricData",
+      "cloudwatch:GetMetricStatistics",
+      "cloudwatch:ListMetrics",
+      "ec2:DescribeTags",
+    ]
+  }
 }
 
 module "atc" {
@@ -236,6 +259,7 @@ module "atc" {
   instance_type   = "${var.atc_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
+  rolling_updates = "${var.rolling_updates}"
   load_balancers  = [
     "${module.internal_elb.name}",
     "${module.external_elb.name}",
@@ -274,6 +298,7 @@ data "template_file" "worker" {
     concourse_tsa_host = "${module.internal_elb.dns_name}"
     log_group_name     = "${aws_cloudwatch_log_group.worker.name}"
     log_group_region   = "${data.aws_region.current.name}"
+    log_level          = "${var.log_level}"
     worker_key         = "${file("${var.concourse_keys}/worker_key")}"
     pub_worker_key     = "${file("${var.concourse_keys}/worker_key.pub")}"
     pub_tsa_host_key   = "${file("${var.concourse_keys}/tsa_host_key.pub")}"
@@ -293,6 +318,18 @@ data "aws_iam_policy_document" "worker" {
       "logs:PutLogEvents",
     ]
   }
+  statement {
+    effect = "Allow"
+
+    resources = ["*"]
+
+    actions = [
+      "cloudwatch:PutMetricData",
+      "cloudwatch:GetMetricStatistics",
+      "cloudwatch:ListMetrics",
+      "ec2:DescribeTags",
+    ]
+  }
 }
 
 module "worker" {
@@ -308,6 +345,7 @@ module "worker" {
   instance_type   = "${var.worker_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
+  rolling_updates = "${var.rolling_updates}"
 }
 
 resource "aws_security_group_rule" "worker_ingress_tsa" {
