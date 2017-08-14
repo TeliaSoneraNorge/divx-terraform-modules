@@ -20,7 +20,7 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  description = "ID of subnets where bastion can be provisioned."
+  description = "ID of subnets where instances can be provisioned."
   type        = "list"
 }
 
@@ -52,6 +52,11 @@ variable "instance_key" {
 
 variable "instance_policy" {
   description = "A policy document which is applied to the instance profile."
+}
+
+variable "rolling_updates" {
+  description = "Flag for rolling updates. Requires that the Autoscaling group is set up in Cloudformation."
+  default     = "false"
 }
 
 # ------------------------------------------------------------------------------
@@ -121,6 +126,7 @@ resource "aws_launch_configuration" "main" {
 }
 
 resource "aws_autoscaling_group" "main" {
+  count                = "${var.rolling_updates == "false" ? 1 : 0}"
   name                 = "${aws_launch_configuration.main.name}"
   desired_capacity     = "${var.instance_count}"
   min_size             = "${var.instance_count}"
@@ -129,11 +135,13 @@ resource "aws_autoscaling_group" "main" {
   load_balancers       = ["${var.load_balancers}"]
   vpc_zone_identifier  = ["${var.subnet_ids}"]
 
+
   tag {
     key                 = "Name"
     value               = "${var.prefix}"
     propagate_at_launch = true
   }
+
 
   tag {
     key                 = "terraform"
@@ -141,14 +149,38 @@ resource "aws_autoscaling_group" "main" {
     propagate_at_launch = true
   }
 
+
   tag {
     key                 = "environment"
     value               = "${var.environment}"
     propagate_at_launch = true
   }
 
+
   lifecycle {
     create_before_destroy = true
+  }
+}
+
+# Rolling updates
+resource "aws_cloudformation_stack" "main" {
+  count         = "${var.rolling_updates == "true" ? 1 : 0}"
+  depends_on    = ["aws_launch_configuration.main"]
+  name          = "${var.prefix}-asg"
+  template_body = "${data.template_file.main.rendered}"
+}
+
+data "template_file" "main" {
+  template = "${file("${path.module}/cloudformation.yml")}"
+
+  vars {
+    prefix               = "${var.prefix}"
+    environment          = "${var.environment}"
+    launch_configuration = "${aws_launch_configuration.main.name}"
+    min_size             = "${var.instance_count}"
+    max_size             = "${var.instance_count + 2}"
+    subnets              = "${jsonencode(var.subnet_ids)}"
+    load_balancers       = "${join("", var.load_balancers) == "" ? "" : "LoadBalancerNames: ${jsonencode(var.load_balancers)}"}"
   }
 }
 
