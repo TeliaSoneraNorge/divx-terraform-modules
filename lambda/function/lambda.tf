@@ -36,7 +36,7 @@ resource "aws_lambda_function" "main" {
   function_name    = "${var.prefix}-function"
   description      = "Lambda function."
   handler          = "index.handler"
-  filename         = "${var.source_code}${basename(var.source_code)}.zip"
+  filename         = "${path.root}/${basename(var.source_code)}.zip"
   source_code_hash = "${data.archive_file.main.output_base64sha256}"
   runtime          = "${var.runtime}"
   memory_size      = 128
@@ -57,7 +57,7 @@ resource "aws_lambda_function" "main" {
 data "archive_file" "main" {
   type        = "zip"
   source_dir  = "${var.source_code}"
-  output_path = "${var.source_code}${basename(var.source_code)}.zip"
+  output_path = "${path.root}/${basename(var.source_code)}.zip"
 }
 
 resource "aws_iam_role" "main" {
