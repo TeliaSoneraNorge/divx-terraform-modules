@@ -17,3 +17,14 @@ output "info" {
   value = "${module.user.info}"
 }
 ```
+
+To decrypt the Keybase encrypted password/secret you must wrap them in the following:
+
+```
+-----BEGIN PGP MESSAGE-----
+Version: Keybase OpenPGP v2.0.73
+Comment: https://keybase.io/crypto
+
+<encrypted-string>
+-----END PGP MESSAGE-----
+```
