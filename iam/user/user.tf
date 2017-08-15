@@ -37,7 +37,6 @@ resource "aws_iam_access_key" "main" {
   pgp_key = "keybase:${var.keybase}"
 }
 
-# NOTE: This gives view access on the account the user is registered.
 resource "aws_iam_user_policy_attachment" "view_only_policy" {
   user       = "${aws_iam_user.main.name}"
   policy_arn = "arn:aws:iam::aws:policy/job-function/ViewOnlyAccess"
@@ -56,7 +55,6 @@ data "aws_iam_policy_document" "password" {
     actions = [
       "iam:ChangePassword",
       "iam:UpdateLoginProfile",
-      "iam:EnableMFADevice",
     ]
 
     resources = [
