@@ -2,7 +2,12 @@
 # Variables
 # ------------------------------------------------------------------------------
 variable "prefix" {
-  description = "Restrict access to resources with the given prefix."
+  description = "A prefix used for naming resources."
+}
+
+variable "resources" {
+  description = "Restrict access to specific resources. Defaults to 'prefix-*'."
+  default     = ""
 }
 
 variable "account_id" {
@@ -55,9 +60,9 @@ data "aws_iam_policy_document" "main" {
     ]
 
     resources = [
-      "arn:aws:iam::${var.account_id}:role/${var.prefix}-*",
-      "arn:aws:iam::${var.account_id}:instance-profile/${var.prefix}-*",
-      "arn:aws:iam::${var.account_id}:policy/${var.prefix}-*",
+      "arn:aws:iam::${var.account_id}:role/${coalesce(var.resources, "${var.prefix}-*")}",
+      "arn:aws:iam::${var.account_id}:instance-profile/${coalesce(var.resources, "${var.prefix}-*")}",
+      "arn:aws:iam::${var.account_id}:policy/${coalesce(var.resources, "${var.prefix}-*")}",
     ]
   }
 
@@ -70,7 +75,7 @@ data "aws_iam_policy_document" "main" {
     ]
 
     resources = [
-      "arn:aws:iam::${var.account_id}:role/${var.prefix}-*",
+      "arn:aws:iam::${var.account_id}:role/${coalesce(var.resources, "${var.prefix}-*")}",
     ]
   }
 }

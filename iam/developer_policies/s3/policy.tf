@@ -2,7 +2,12 @@
 # Variables
 # ------------------------------------------------------------------------------
 variable "prefix" {
-  description = "Restrict access to resources with the given prefix."
+  description = "A prefix used for naming resources."
+}
+
+variable "resources" {
+  description = "Restrict access to specific resources. Defaults to 'prefix-*'."
+  default     = ""
 }
 
 variable "account_id" {
@@ -35,7 +40,8 @@ data "aws_iam_policy_document" "main" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}-*",
+      "arn:aws:s3:::${coalesce(var.resources, "${var.prefix}-*")}",
+      "arn:aws:s3:::${coalesce(var.resources, "${var.prefix}-*")}/*",
     ]
   }
 }

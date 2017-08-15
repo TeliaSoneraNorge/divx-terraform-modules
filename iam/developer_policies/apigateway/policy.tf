@@ -2,7 +2,7 @@
 # Variables
 # ------------------------------------------------------------------------------
 variable "prefix" {
-  description = "Restrict access to resources with the given prefix."
+  description = "A prefix used for naming resources."
 }
 
 variable "api_id" {
