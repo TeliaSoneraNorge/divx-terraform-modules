@@ -9,6 +9,11 @@ variable "keybase" {
   description = "Keybase username. Used to encrypt password and access key."
 }
 
+variable "ssh_key" {
+  description = "Public SSH key for the user. Exported for use in other modules."
+  default     = ""
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -89,6 +94,7 @@ output "info" {
 
 Username:          ${var.username}
 Password:          ${aws_iam_user_login_profile.main.encrypted_password}
+SSH key:           ${var.ssh_key}
 Keybase:           ${var.keybase}
 Access Key Id:     ${aws_iam_access_key.main.id}
 Secret Access Key: ${aws_iam_access_key.main.encrypted_secret}
@@ -102,6 +108,10 @@ output "name" {
 
 output "password" {
   value = "${aws_iam_user_login_profile.main.encrypted_password}"
+}
+
+output "ssh_key" {
+  value = "${var.ssh_key}"
 }
 
 output "keybase" {
