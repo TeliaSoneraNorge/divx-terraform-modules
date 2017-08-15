@@ -19,6 +19,8 @@ variable "ssh_key" {
 # ------------------------------------------------------------------------------
 data "aws_caller_identity" "current" {}
 
+data "aws_iam_account_alias" "current" {}
+
 resource "aws_iam_user" "main" {
   name          = "${var.username}"
   force_destroy = "true"
@@ -111,15 +113,39 @@ data "aws_iam_policy_document" "assume" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
-output "info" {
+output "instructions" {
   value = <<EOF
 
-Username:          ${var.username}
-Password:          ${aws_iam_user_login_profile.main.encrypted_password}
-SSH key:           ${var.ssh_key}
-Keybase:           ${var.keybase}
-Access Key Id:     ${aws_iam_access_key.main.id}
-Secret Access Key: ${aws_iam_access_key.main.encrypted_secret}
+1. Decrypt your password and access key on keybase:
+
+-----BEGIN PGP MESSAGE-----
+
+${aws_iam_user_login_profile.main.encrypted_password}
+-----END PGP MESSAGE-----
+
+2. Log into the console (remember to enable MFA):
+URL:      https://${data.aws_iam_account_alias.current.account_alias}.signin.aws.amazon.com/console
+Username: ${var.username}
+Password: <your-decrypted-password>
+
+3. Decrypt your secret access key:
+
+-----BEGIN PGP MESSAGE-----
+
+${aws_iam_access_key.main.encrypted_secret}
+-----END PGP MESSAGE-----
+
+4. Add a profile to ~/.aws/credentials:
+
+[account-user]
+aws_access_key_id = ${aws_iam_access_key.main.id}
+aws_secret_access_key = <your-decrypted-secret-access-key>
+
+5. Add roles to your ~/.aws/credentials. Example:
+
+[account-developer]
+role_arn = <account-role-arn>
+source_profile = account-user
 
 EOF
 }
