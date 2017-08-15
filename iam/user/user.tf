@@ -88,6 +88,26 @@ data "aws_iam_policy_document" "mfa" {
   }
 }
 
+resource "aws_iam_user_policy" "assume" {
+  name   = "assume-cross-account-role"
+  user   = "${aws_iam_user.main.name}"
+  policy = "${data.aws_iam_policy_document.assume.json}"
+}
+
+data "aws_iam_policy_document" "assume" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sts:AssumeRole",
+    ]
+
+    not_resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/*",
+    ]
+  }
+}
+
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
