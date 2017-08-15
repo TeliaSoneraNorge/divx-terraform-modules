@@ -42,7 +42,7 @@ data "aws_iam_policy_document" "assume_admin" {
     condition = {
       test     = "Bool"
       variable = "aws:MultiFactorAuthPresent"
-      values   = ["true"]
+      values   = ["true", "false"]
     }
   }
 }
