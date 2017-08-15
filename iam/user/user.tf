@@ -54,6 +54,7 @@ data "aws_iam_policy_document" "password" {
     actions = [
       "iam:ChangePassword",
       "iam:UpdateLoginProfile",
+      "iam:EnableMFADevice",
     ]
 
     resources = [
