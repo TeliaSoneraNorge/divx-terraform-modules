@@ -82,6 +82,7 @@ data "aws_iam_policy_document" "mfa" {
     ]
 
     resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/$${aws:username}",
     ]
   }
