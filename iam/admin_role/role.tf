@@ -38,12 +38,6 @@ data "aws_iam_policy_document" "assume_admin" {
       type        = "AWS"
       identifiers = ["${formatlist("arn:aws:iam::%s:user/%s", var.user_account_id, var.users)}"]
     }
-
-    condition = {
-      test     = "Bool"
-      variable = "aws:MultiFactorAuthPresent"
-      values   = ["true", "false"]
-    }
   }
 }
 
