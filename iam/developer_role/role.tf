@@ -2,7 +2,8 @@
 # Variables
 # ------------------------------------------------------------------------------
 variable "prefix" {
-  description = "Prefix used for the role name."
+  description = "(Optional) Prefix added to the role name."
+  default     = ""
 }
 
 variable "user_account_id" {

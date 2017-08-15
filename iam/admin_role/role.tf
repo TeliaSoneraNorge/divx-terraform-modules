@@ -6,8 +6,13 @@ variable "prefix" {
   default     = ""
 }
 
-variable "account_id" {
-  description = "ID of the account which is allowed to assume the admin role. sts:AssumeRole can be delegated to users on this account."
+variable "user_account_id" {
+  description = "ID of the account where the listed users exist."
+}
+
+variable "users" {
+  type        = "list"
+  description = "List of users which will be allowed to assume this role."
 }
 
 # ------------------------------------------------------------------------------
@@ -18,6 +23,10 @@ data "aws_iam_account_alias" "current" {}
 resource "aws_iam_role" "admin" {
   name               = "${join("-", compact(list("${var.prefix}", "admin-role")))}"
   assume_role_policy = "${data.aws_iam_policy_document.assume_admin.json}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 data "aws_iam_policy_document" "assume_admin" {
@@ -27,7 +36,7 @@ data "aws_iam_policy_document" "assume_admin" {
 
     principals {
       type        = "AWS"
-      identifiers = ["arn:aws:iam::${var.account_id}:root"]
+      identifiers = ["${formatlist("arn:aws:iam::%s:user/%s", var.user_account_id, var.users)}"]
     }
 
     condition = {
