@@ -21,7 +21,7 @@ module "role" {
   source = "../role"
 
   prefix          = "${var.prefix}-admin"
-  trusted_account = "${var.account_id}"
+  trusted_account = "${var.trusted_account}"
   users           = "${var.users}"
 }
 
