@@ -54,7 +54,7 @@ module "developer" {
   trusted_account = "<user-account>"
 
   users = [
-    "kristian.dalmo",
+    "first.last",
   ]
 }
 
