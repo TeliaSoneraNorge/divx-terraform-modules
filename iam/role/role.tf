@@ -20,12 +20,9 @@ variable "users" {
 data "aws_iam_account_alias" "current" {}
 
 resource "aws_iam_role" "main" {
-  name               = "${var.prefix}-role"
-  assume_role_policy = "${data.aws_iam_policy_document.assume.json}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
+  name                  = "${var.prefix}-role"
+  assume_role_policy    = "${data.aws_iam_policy_document.assume.json}"
+  force_detach_policies = "true"
 }
 
 data "aws_iam_policy_document" "assume" {
