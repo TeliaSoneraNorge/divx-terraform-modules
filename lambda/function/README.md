@@ -13,10 +13,10 @@ provider "aws" {
 module "lambda" {
   source      = "github.com/itsdalmo/tf-modules//lambda/function"
 
-  prefix         = "example"
-  lambda_policy  = "${data.aws_iam_policy_document.lambda.json}"
-  lambda_source  = "${path.root}/../src/"
-  lambda_runtime = "nodejs6.10"
+  prefix      = "example"
+  policy      = "${data.aws_iam_policy_document.lambda.json}"
+  source_code = "${path.root}/../src/"
+  runtime     = "nodejs6.10"
 }
 
 data "aws_iam_policy_document" "lambda" {
