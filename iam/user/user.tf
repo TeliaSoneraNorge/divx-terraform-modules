@@ -108,6 +108,38 @@ data "aws_iam_policy_document" "assume" {
   }
 }
 
+resource "aws_iam_user_policy" "read_policies" {
+  name   = "read-own-policies"
+  user   = "${aws_iam_user.main.name}"
+  policy = "${data.aws_iam_policy_document.read_policies.json}"
+}
+
+data "aws_iam_policy_document" "read_policies" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:GetUserPolicy",
+    ]
+
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:GetPolicyVersion",
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+}
+
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------

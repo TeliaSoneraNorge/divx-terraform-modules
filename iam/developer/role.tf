@@ -32,14 +32,39 @@ resource "aws_iam_role_policy" "protect_role" {
 }
 
 data "aws_iam_policy_document" "protect_role" {
+  # NOTE: We allow reading the policies so users can better understand the roles scope.
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:GetRolePolicy",
+    ]
+
+    resources = [
+      "${module.role.arn}",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:GetPolicyVersion",
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
   # NOTE: Disallow users from making changes to the developer role and policies.
   statement {
     effect = "Deny"
 
     not_actions = [
+      "iam:GenerateServiceLastAccessedDetails",
+      "iam:ListInstanceProfilesForRole",
       "iam:ListAttachedRolePolicies",
-      "iam:ListPolicyVersions",
-      "iam:GetPolicyVersion",
       "iam:ListRolePolicies",
       "iam:GetRolePolicy",
     ]
