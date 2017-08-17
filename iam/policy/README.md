@@ -7,7 +7,7 @@ is done by granting `*` access on resources, but limiting the roles scope to res
 - Region
 - Account Id
 
-See example in [iam/developer](../iam/developer/README.md).
+See example in [iam/developer](../developer/README.md).
 
 Note that these restrictions are used when possible, and that some services require different constraints:
 
