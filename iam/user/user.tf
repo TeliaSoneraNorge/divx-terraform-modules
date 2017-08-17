@@ -109,7 +109,7 @@ data "aws_iam_policy_document" "assume" {
 }
 
 resource "aws_iam_user_policy" "read_policies" {
-  name   = "read-own-policies"
+  name   = "inspect-own-policies"
   user   = "${aws_iam_user.main.name}"
   policy = "${data.aws_iam_policy_document.read_policies.json}"
 }

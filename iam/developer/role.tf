@@ -26,7 +26,7 @@ module "role" {
 }
 
 resource "aws_iam_role_policy" "protect_role" {
-  name   = "${var.prefix}-protect-policy"
+  name   = "protect-role-policy"
   role   = "${module.role.name}"
   policy = "${data.aws_iam_policy_document.protect_role.json}"
 }
@@ -51,7 +51,7 @@ data "aws_iam_policy_document" "protect_role" {
 }
 
 resource "aws_iam_role_policy" "inspect_role" {
-  name   = "${var.prefix}-inspect-role"
+  name   = "inspect-role-policy"
   role   = "${module.role.name}"
   policy = "${data.aws_iam_policy_document.inspect_role.json}"
 }
