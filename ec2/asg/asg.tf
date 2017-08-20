@@ -112,7 +112,7 @@ resource "aws_security_group_rule" "egress" {
 }
 
 resource "aws_launch_configuration" "main" {
-  name_prefix          = "${var.prefix}-config-"
+  name_prefix          = "${var.prefix}-asg-"
   instance_type        = "${var.instance_type}"
   iam_instance_profile = "${aws_iam_instance_profile.main.name}"
   security_groups      = ["${aws_security_group.main.id}"]
