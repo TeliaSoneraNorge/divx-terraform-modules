@@ -37,10 +37,21 @@ data "aws_iam_policy_document" "main" {
     effect = "Allow"
 
     not_actions = [
+      "ec2:CreateSecurityGroup",
       "ec2:CreateVolume",
       "ec2:CreateTags",
       "ec2:DeleteTags",
+      "ec2:DescribeTags",
       "ec2:RunInstances",
+      "ec2:AllocateAddress",
+      "ec2:AssociateAddress",
+      "ec2:DisassociateAddress",
+      "ec2:ReleaseAddress",
+      "ec2:CreateImage",
+      "ec2:RegisterImage",
+      "ec2:CreateKeyPair",
+      "ec2:DeleteKeyPair",
+      "ec2:MonitorInstances",
     ]
 
     resources = [
@@ -54,6 +65,29 @@ data "aws_iam_policy_document" "main" {
       variable = "ec2:ResourceTag/Name"
       values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
     }
+  }
+
+  # NOTE: Many EC2 actions do not support resource level permissions.
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:AllocateAddress",
+      "ec2:AssociateAddress",
+      "ec2:DisassociateAddress",
+      "ec2:ReleaseAddress",
+      "ec2:DescribeTags",
+      "ec2:CreateImage",
+      "ec2:RegisterImage",
+      "ec2:CreateKeyPair",
+      "ec2:DeleteKeyPair",
+      "ec2:MonitorInstances",
+      "ec2:CreateSecurityGroup",
+    ]
+
+    resources = [
+      "*"
+    ]
   }
 
   statement {
@@ -117,7 +151,6 @@ data "aws_iam_policy_document" "main" {
 
     resources = [
       "arn:aws:ec2:${var.region}:${var.account_id}:*/*",
-      "arn:aws:ec2:${var.region}::image/*",
       "arn:aws:ec2:${var.region}::snapshot/*",
     ]
 
@@ -135,7 +168,7 @@ data "aws_iam_policy_document" "main" {
       "ec2:RunInstances",
     ]
 
-    # NOTE: Must cover creating instance/volume with tag in request.
+    # NOTE: Tags are created when running the instance (RequestTag).
     resources = [
       "arn:aws:ec2:${var.region}:${var.account_id}:instance/*",
       "arn:aws:ec2:${var.region}:${var.account_id}:volume/*",
@@ -146,6 +179,19 @@ data "aws_iam_policy_document" "main" {
       variable = "aws:RequestTag/Name"
       values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
     }
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:RunInstances",
+    ]
+
+    # NOTE: Images are most likely not created. I.e., wildcard.
+    resources = [
+      "arn:aws:ec2:${var.region}::image/*",
+    ]
   }
 }
 
