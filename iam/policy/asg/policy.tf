@@ -37,6 +37,8 @@ data "aws_iam_policy_document" "main" {
     effect = "Allow"
 
     not_actions = [
+      "autoscaling:CreateLaunchConfiguration",
+      "autoscaling:DeleteLaunchConfiguration",
       "autoscaling:CreateAutoScalingGroup",
       "autoscaling:UpdateAutoScalingGroup",
       "autoscaling:AttachLoadBalancers",
@@ -45,7 +47,6 @@ data "aws_iam_policy_document" "main" {
     ]
 
     resources = [
-      "arn:aws:autoscaling:${var.region}:${var.account_id}:launchConfiguration:*:launchConfigurationName/${coalesce(var.resources, "${var.prefix}-*")}",
       "arn:aws:autoscaling:${var.region}:${var.account_id}:autoScalingGroup:*:autoScalingGroupName/${coalesce(var.resources, "${var.prefix}-*")}",
     ]
 
@@ -54,6 +55,20 @@ data "aws_iam_policy_document" "main" {
       variable = "autoscaling:ResourceTag/Name"
       values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
     }
+  }
+
+  # NOTE: Creating launch configurations does not support conditions.
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "autoscaling:CreateLaunchConfiguration",
+      "autoscaling:DeleteLaunchConfiguration",
+    ]
+
+    resources = [
+      "arn:aws:autoscaling:${var.region}:${var.account_id}:launchConfiguration:*:launchConfigurationName/${coalesce(var.resources, "${var.prefix}-*")}",
+    ]
   }
 
   statement {
