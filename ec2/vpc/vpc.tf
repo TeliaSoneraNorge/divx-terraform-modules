@@ -48,7 +48,7 @@ resource "aws_vpc" "main" {
 
 resource "aws_internet_gateway" "main" {
   depends_on = ["aws_vpc.main"]
-  vpc_id = "${aws_vpc.main.id}"
+  vpc_id     = "${aws_vpc.main.id}"
 
   tags {
     Name        = "${var.prefix}-internet-gateway"
@@ -59,7 +59,7 @@ resource "aws_internet_gateway" "main" {
 
 resource "aws_route_table" "main" {
   depends_on = ["aws_vpc.main"]
-  vpc_id = "${aws_vpc.main.id}"
+  vpc_id     = "${aws_vpc.main.id}"
 
   tags {
     Name        = "${var.prefix}-rt-public"
@@ -69,7 +69,7 @@ resource "aws_route_table" "main" {
 }
 
 resource "aws_route" "main" {
-  depends_on = ["aws_internet_gateway.main", "aws_route_table.main"]
+  depends_on             = ["aws_internet_gateway.main", "aws_route_table.main"]
   route_table_id         = "${aws_route_table.main.id}"
   gateway_id             = "${aws_internet_gateway.main.id}"
   destination_cidr_block = "0.0.0.0/0"

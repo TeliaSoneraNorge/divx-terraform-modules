@@ -22,7 +22,8 @@ variable "runtime" {
 variable "variables" {
   description = "Map of environment variables."
   type        = "map"
-  default     = {
+
+  default = {
     DUMMY = "VARIABLE"
   }
 }

@@ -39,10 +39,10 @@ resource "aws_elb" "main" {
   internal        = "true"
 
   listener {
-    instance_port      = "${var.atc_port}"
-    instance_protocol  = "http"
-    lb_port            = "80"
-    lb_protocol        = "http"
+    instance_port     = "${var.atc_port}"
+    instance_protocol = "http"
+    lb_port           = "80"
+    lb_protocol       = "http"
   }
 
   listener {

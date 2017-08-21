@@ -135,7 +135,7 @@ data "aws_iam_policy_document" "read_policies" {
     ]
 
     resources = [
-      "*"
+      "*",
     ]
   }
 }

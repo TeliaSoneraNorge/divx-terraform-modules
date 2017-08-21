@@ -135,13 +135,11 @@ resource "aws_autoscaling_group" "main" {
   load_balancers       = ["${var.load_balancers}"]
   vpc_zone_identifier  = ["${var.subnet_ids}"]
 
-
   tag {
     key                 = "Name"
     value               = "${var.prefix}"
     propagate_at_launch = true
   }
-
 
   tag {
     key                 = "terraform"
@@ -149,13 +147,11 @@ resource "aws_autoscaling_group" "main" {
     propagate_at_launch = true
   }
 
-
   tag {
     key                 = "environment"
     value               = "${var.environment}"
     propagate_at_launch = true
   }
-
 
   lifecycle {
     create_before_destroy = true

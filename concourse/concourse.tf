@@ -152,11 +152,11 @@ module "external_elb" {
 module "internal_elb" {
   source = "./modules/internal_elb"
 
-  prefix          = "${var.prefix}-internal-elb"
-  environment     = "${var.environment}"
-  vpc_id          = "${var.vpc_id}"
-  subnet_ids      = ["${var.subnet_ids}"]
-  tsa_port        = "${var.tsa_port}"
+  prefix      = "${var.prefix}-internal-elb"
+  environment = "${var.environment}"
+  vpc_id      = "${var.vpc_id}"
+  subnet_ids  = ["${var.subnet_ids}"]
+  tsa_port    = "${var.tsa_port}"
 }
 
 module "postgres" {
@@ -232,6 +232,7 @@ data "aws_iam_policy_document" "atc" {
       "logs:PutLogEvents",
     ]
   }
+
   statement {
     effect = "Allow"
 
@@ -260,7 +261,8 @@ module "atc" {
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
   rolling_updates = "${var.rolling_updates}"
-  load_balancers  = [
+
+  load_balancers = [
     "${module.internal_elb.name}",
     "${module.external_elb.name}",
   ]
@@ -318,6 +320,7 @@ data "aws_iam_policy_document" "worker" {
       "logs:PutLogEvents",
     ]
   }
+
   statement {
     effect = "Allow"
 

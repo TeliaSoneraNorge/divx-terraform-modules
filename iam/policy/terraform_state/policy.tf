@@ -50,8 +50,9 @@ data "aws_iam_policy_document" "main" {
     condition = {
       test     = "ForAllValues:StringLike"
       variable = "dynamodb:LeadingKeys"
-      values   = [
-        "${var.state_bucket}/${var.prefix}/*"
+
+      values = [
+        "${var.state_bucket}/${var.prefix}/*",
       ]
     }
   }

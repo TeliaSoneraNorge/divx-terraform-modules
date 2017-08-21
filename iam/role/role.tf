@@ -34,7 +34,7 @@ data "aws_iam_policy_document" "assume" {
       type = "AWS"
 
       identifiers = [
-          "${formatlist("arn:aws:iam::%s:user/%s", var.trusted_account, var.users)}"
+        "${formatlist("arn:aws:iam::%s:user/%s", var.trusted_account, var.users)}",
       ]
     }
   }
