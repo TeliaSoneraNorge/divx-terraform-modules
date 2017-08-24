@@ -42,7 +42,8 @@ resource "aws_s3_bucket" "trail" {
 }
 
 resource "aws_cloudwatch_log_group" "main" {
-  name = "${var.prefix}-cloudtrail-logs"
+  name              = "${var.prefix}-cloudtrail-logs"
+  retention_in_days = 90
 
   tags {
     Name        = "${var.prefix}-cloudtrail-logs"
@@ -91,7 +92,8 @@ module "lambda" {
   policy      = "${data.aws_iam_policy_document.lambda.json}"
   source_code = "${path.module}/src/"
   runtime     = "nodejs6.10"
-  variables   = {
+
+  variables = {
     DYNAMODB_TABLE_NAME = "${aws_dynamodb_table.mapping.id}"
   }
 }
