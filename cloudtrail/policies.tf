@@ -67,7 +67,7 @@ data "aws_iam_policy_document" "bucket" {
   }
 }
 
-# Lambda execution policy
+# Lambda handler policy
 data "aws_iam_policy_document" "lambda" {
   statement {
     effect = "Allow"
@@ -76,7 +76,7 @@ data "aws_iam_policy_document" "lambda" {
       "dynamodb:*",
     ]
 
-    resources = ["${aws_dynamodb_table.mapping.arn}"]
+    resources = ["${var.dynamodb_arn}"]
   }
 
   statement {

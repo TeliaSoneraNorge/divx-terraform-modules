@@ -14,6 +14,18 @@ variable "trail_account" {
   description = "ID of the account which sends the logs."
 }
 
+variable "dynamodb_name" {
+  description = "Name of DynamoDB table where logs will be delivered."
+}
+
+variable "dynamodb_arn" {
+  description = "ARN of DynamoDB table where logs will be delivered."
+}
+
+variable "cloudwatch_filter" {
+  description = "A string containing the cloudwatch filter to apply before sending logs to lambda."
+}
+
 variable "region" {
   description = ""
 }
@@ -29,10 +41,6 @@ resource "aws_s3_bucket" "trail" {
   acl           = "private"
   policy        = "${data.aws_iam_policy_document.bucket.json}"
   force_destroy = "true"
-
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
 
   tags {
     Name        = "${var.prefix}-cloudtrail-logs"
@@ -63,38 +71,16 @@ resource "aws_iam_role_policy" "main" {
   policy = "${data.aws_iam_policy_document.cloudtrail.json}"
 }
 
-resource "aws_dynamodb_table" "mapping" {
-  name           = "${var.prefix}-cloudtrail-mapping"
-  read_capacity  = 20
-  write_capacity = 20
-  hash_key       = "AccessKeyId"
-
-  attribute {
-    name = "AccessKeyId"
-    type = "S"
-  }
-
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
-
-  tags {
-    Name        = "${var.prefix}-user-key-mapping"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
-}
-
 module "lambda" {
-  source = "../../lambda/function"
+  source = "../lambda/function"
 
   prefix      = "${var.prefix}-cloudtrail"
   policy      = "${data.aws_iam_policy_document.lambda.json}"
-  source_code = "${path.module}/src/"
+  source_code = "${path.module}/handler/"
   runtime     = "nodejs6.10"
 
   variables = {
-    DYNAMODB_TABLE_NAME = "${aws_dynamodb_table.mapping.id}"
+    DYNAMODB_TABLE_NAME = "${var.dynamodb_name}"
   }
 }
 
@@ -113,7 +99,7 @@ resource "aws_cloudwatch_log_subscription_filter" "cloudtrail" {
   name            = "${var.prefix}-cloudtrail-logs-filter"
   log_group_name  = "${aws_cloudwatch_log_group.main.name}"
   destination_arn = "${module.lambda.function_arn}"
-  filter_pattern  = "${chomp(file("${path.module}/filter.tpl"))}"
+  filter_pattern  = "${chomp("${var.cloudwatch_filter}")}"
 }
 
 # ------------------------------------------------------------------------------
