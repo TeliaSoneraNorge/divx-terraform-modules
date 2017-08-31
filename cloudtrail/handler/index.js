@@ -5,23 +5,47 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 /**
- * Parse Lambda input from a CloudWatch subscription filter.
- * @param {Object} input - The raw Lambda input object.
- * @return {Promise} Returns the parsed log events.
+ * Unzip input from CloudWatch.
+ * @param {Object} input - The input passed to the Lambda function.
+ * @return {Promise} The unzipped data from the input.
  */
-function parse(input) {
+function unzip(input) {
     return new Promise((resolve, reject) => {
         let payload = new Buffer(input.awslogs.data, 'base64');
-        let records = zlib.gunzip(payload, (err, data) => {
+        zlib.gunzip(payload, (err, data) => {
             if (err) {
                 return reject(err);
             }
-            let parsed = JSON.parse(data.toString('ascii'));
-            let events = parsed.logEvents.map((event) => {
-                return JSON.parse(event.message);
-            });
-            return resolve(events);
+            return resolve(data.toString('ascii'));
         });
+    });
+}
+
+/**
+ * Parse log events from the (unzipped) input.
+ * @param {String} input - The unzipped input.
+ * @return {Promise} Returns the parsed log events.
+ */
+function parse(input) {
+    // Using a promise here for error handling.
+    return new Promise((resolve, reject) => {
+        try {
+            var parsed = JSON.parse(input);
+        } catch (err) {
+            return reject(err);
+        }
+        let events = parsed.logEvents.map((event) => {
+                try {
+                    return JSON.parse(event);
+                } catch (err) {
+                    return null;
+                }
+            })
+            .filter((event) => event !== null);
+        if (events.length < 1) {
+            return reject(new Error('No events to process after parsing input.'));
+        }
+        return resolve(events);
     });
 }
 
@@ -75,8 +99,9 @@ function put_item(item) {
     });
 }
 
-exports.handler = (input, context, callback) => {
+function handler(input, context, callback) {
     Promise.resolve(input)
+        .then(unzip)
         .then(parse)
         .then((records) => {
             let events = records.map((event) => {
@@ -104,4 +129,12 @@ exports.handler = (input, context, callback) => {
         .catch((err) => {
             callback(err, null);
         });
+}
+
+// Exporting helper functions for testing
+module.exports = {
+    parse,
+    create_item,
+    put_item,
+    handler
 };
