@@ -5,11 +5,11 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 /**
- * Unzip input from CloudWatch.
+ * Unzip data from CloudWatch.
  * @param {Object} input - The input passed to the Lambda function.
  * @return {Promise} The unzipped data from the input.
  */
-function unzip(input) {
+exports.unzip = (input) => {
     return new Promise((resolve, reject) => {
         let payload = new Buffer(input.awslogs.data, 'base64');
         zlib.gunzip(payload, (err, data) => {
@@ -19,21 +19,17 @@ function unzip(input) {
             return resolve(data.toString('ascii'));
         });
     });
-}
+};
 
 /**
- * Parse log events from the (unzipped) input.
- * @param {String} input - The unzipped input.
- * @return {Promise} Returns the parsed log events.
+ * Parse Cloudwatch log events from (unzipped) data.
+ * @param {String} data - The unzipped input from CloudWatch.
+ * @return {Promise} An array with the parsed log events.
  */
-function parse(input) {
+exports.parse = (data) => {
     // Using a promise here for error handling.
     return new Promise((resolve, reject) => {
-        try {
-            var parsed = JSON.parse(input);
-        } catch (err) {
-            return reject(err);
-        }
+        var parsed = JSON.parse(data);
         let events = parsed.logEvents.map((event) => {
                 try {
                     return JSON.parse(event);
@@ -47,14 +43,14 @@ function parse(input) {
         }
         return resolve(events);
     });
-}
+};
 
 /**
- * Create an item which can be inserted into DynamoDB. (TTL set to 90 days).
- * @param {Object} event - The parsed event.
- * @return {Object} The finished item.
+ * Takes an event and 'itemize' it for our CloudTrail table in DynamoDB.
+ * @param {Object} event - A parsed log event.
+ * @return {Object} The serialized item.
  */
-function create_item(event) {
+exports.itemize_event = (event) => {
     let item = {
         "eventID": event.eventID,
         "eventTime": event.eventTime,
@@ -77,14 +73,14 @@ function create_item(event) {
     }
 
     return item;
-}
+};
 
 /**
- * Put and item in the DynamoDB table.
- * @param {Object} item - The item to put.
- * @return {Promise} Returns the output from DynamoDB.
+ * Put a (serialized) item into DynamoDB.
+ * @param {Object} item - A serialized event.
+ * @return {Promise}
  */
-function put_item(item) {
+exports.put_item = (item) => {
     return new Promise((resolve, reject) => {
         dynamodb.put({
             TableName: process.env.DYNAMODB_TABLE_NAME,
@@ -97,23 +93,28 @@ function put_item(item) {
             }
         });
     });
-}
+};
 
-function handler(input, context, callback) {
-    Promise.resolve(input)
-        .then(unzip)
-        .then(parse)
-        .then((records) => {
-            let events = records.map((event) => {
-                let item = create_item(event);
-                return put_item(item)
-                    .then((data) => {
+/**
+ * Process the input and insert parsed events into DynamoDB.
+ * @param {Object} input - The input to Lambda.
+ * @return {Promise}
+ */
+exports.process = (input) => {
+    return Promise.resolve(input)
+        .then(exports.unzip)
+        .then(exports.parse)
+        .then((events) => {
+            let results = events.map((event) => {
+                let item = exports.itemize_event(event);
+                return exports.put_item(item)
+                    .then((result) => {
                         if (item.user !== 'none') {
                             console.info(`[INFO] Successfully added event for ${item.user} with key: ${item.accessKeyId}`);
                         } else {
                             console.info(`[INFO] Successfully added event: ${item.eventID}.`);
                         }
-                        return data;
+                        return result;
                     })
                     .catch((err) => {
                         // NOTE: We should tolerate failures for events (not an invocation error).
@@ -121,20 +122,16 @@ function handler(input, context, callback) {
                         return null;
                     });
             });
-            return Promise.all(events);
-        })
+            return Promise.all(results);
+        });
+};
+
+exports.handler = (input, context, callback) => {
+    exports.process(input)
         .then((output) => {
             callback(null, output);
         })
         .catch((err) => {
             callback(err, null);
         });
-}
-
-// Exporting helper functions for testing
-module.exports = {
-    parse,
-    create_item,
-    put_item,
-    handler
 };

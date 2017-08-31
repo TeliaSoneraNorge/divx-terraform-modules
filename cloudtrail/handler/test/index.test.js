@@ -1,127 +1,102 @@
 const test = require('tape'),
-      sinon = require('sinon'),
-      handler = require('../index.js');
+    sinon = require('sinon'),
+    handler = require('../index.js');
 
-var unzip_stub = sinon.stub(handler, 'unzip').callsFake((input) => input);
-var put_item_stub = sinon.stub(handler, 'put_item').callsFake((input) => input);
+// zlib wrapper function
+var unzip_stub = sinon.stub(handler, 'unzip');
+unzip_stub.callsFake((input) => Promise.resolve(input));
 
-const example = {
-    eventID: 'sampleEventID',
-    eventName: 'eventName',
-    eventTime: 'sampleEventTime',
-    userIdentity: {},
+// aws-sdk wrapper function
+var put_item_stub = sinon.stub(handler, 'put_item');
+put_item_stub.callsFake((input) => Promise.resolve(input));
+
+const event = {
+    eventID: '099ff820-00f2-4500-94fc-2b9da26d576f',
+    eventName: 'ListBuckets',
+    eventTime: '2016-04-05T20:39:39Z',
+    eventType: 'AwsApiCall',
+    userIdentity: {
+        accessKeyId: 'used_key'
+    },
     responseElements: {
-        credentials: {}
+        credentials: {
+            accessKeyId: 'temporary_key'
+        }
     }
 };
 
-test('parse() should parse both the input and the nested logEvents', (assert) => {
-    let sample = JSON.stringify({
-        'logEvents': [
-            JSON.stringify(example)
-        ]
-    }, null, 2);
-
-    handler.parse(sample).then((result) => {
-            assert.deepEqual(result, [example]);
-            assert.end();
-        })
-        .catch((err) => {
-            assert.fail(`Unexpected failure: ${err.message}`);
-            assert.end();
-        });
-});
-
-test('parse() should remove logEvents that fail to parse in the resulting array', (assert) => {
-    let sample = JSON.stringify({
-        logEvents: [
-            JSON.stringify(example),
-            'invalid {'
-        ]
+function serialize(sample) {
+    return JSON.stringify({
+        logEvents: sample.map(JSON.stringify)
     });
+}
 
-    handler.parse(sample).then((result) => {
-            assert.deepEqual(result, [example]);
+test('process() should return an array', (assert) => {
+    let input = serialize([event]);
+    handler.process(input).then((result) => {
+            assert.true(result instanceof Array);
             assert.end();
         })
         .catch((err) => {
-            assert.fail(`Unexpected failure: ${err.message}`);
-            assert.end();
-        });
-});
-
-test('parse() should reject if it is not able to return any parsed events', (assert) => {
-    let sample = JSON.stringify({
-        logEvents: [
-            'invalid {'
-        ]
-    });
-
-    handler.parse(sample).then((result) => {
-            assert.fail('Unexpected success. Should not resolve when no parsed logEvents can be returned.');
-            assert.end();
-        })
-        .catch((err) => {
-            assert.pass();
-            assert.end();
-        });
-});
-
-test('parse() should reject if it fails to parse the input at all', (assert) => {
-    let sample = 'invalid {';
-
-    handler.parse(sample).then((result) => {
-            assert.fail('Unexpected success. Should not resolve when JSON input is invalid.');
-            assert.end();
-        })
-        .catch((err) => {
-            assert.pass();
+            assert.fail(`Unexpected failure: ${err.message}\n${err.stack}`);
             assert.end();
         });
 });
 
 test('process() should include the hash and range keys for dynamodb', (assert) => {
-    let sample = [example];
-
-    handler.process(sample).then((result) => {
-            assert.equal(typeof(result), 'object');
+    let input = serialize([event]);
+    handler.process(input).then((result) => {
             assert.true(result[0].hasOwnProperty('eventID'));
             assert.true(result[0].hasOwnProperty('eventTime'));
             assert.end();
         })
         .catch((err) => {
-            assert.fail('Unexpected failure: ${err.message}');
+            assert.fail(`Unexpected failure: ${err.message}\n${err.stack}`);
             assert.end();
         });
 });
 
-test('create_item() should include the username if it exists', (assert) => {
-    let sample = example,
-        user = 'sampleUserName';
+test('process() should include the username if it exists', (assert) => {
+    let sample = event,
+        user = 'some.user';
+
     sample.userIdentity['userName'] = user;
-    let result = handler.create_item(sample);
+    let input = serialize([sample]);
 
-    assert.equal(result.user, user);
-    assert.end();
+    handler.process(input).then((result) => {
+            assert.equal(result[0].user, user);
+            assert.end();
+        })
+        .catch((err) => {
+            assert.fail(`Unexpected failure: ${err.message}\n${err.stack}`);
+            assert.end();
+        });
 });
 
-test('create_item() lists the temporary accessKeyId for AssumeRole', (assert) => {
-    let sample = example,
-        key = 'sampleKey';
+test('process() lists the accessKeyId used to authenticate for non-assumeRole actions', (assert) => {
+    let input = serialize([event]);
+
+    handler.process(input).then((result) => {
+            assert.equal(result[0].accessKeyId, 'used_key');
+            assert.end();
+        })
+        .catch((err) => {
+            assert.fail(`Unexpected failure: ${err.message}\n${err.stack}`);
+            assert.end();
+        });
+});
+
+test('process() lists the temporary accessKeyId for AssumeRole', (assert) => {
+    let sample = event;
     sample.eventName = 'AssumeRole';
-    sample.responseElements.credentials['accessKeyId'] = key;
-    let result = handler.create_item(sample);
+    let input = serialize([sample]);
 
-    assert.equal(result.accessKeyId, key);
-    assert.end();
-});
-
-test('create_item() lists accessKeyId used to authenticate for non-assumeRole actions', (assert) => {
-    let sample = example,
-        key = 'sampleKey';
-    sample.userIdentity['accessKeyId'] = key;
-    let result = handler.create_item(sample);
-
-    assert.equal(result.accessKeyId, key);
-    assert.end();
+    handler.process(input).then((result) => {
+            assert.equal(result[0].accessKeyId, 'temporary_key');
+            assert.end();
+        })
+        .catch((err) => {
+            assert.fail(`Unexpected failure: ${err.message}\n${err.stack}`);
+            assert.end();
+        });
 });
