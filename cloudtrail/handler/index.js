@@ -32,7 +32,7 @@ exports.parse = (data) => {
         var parsed = JSON.parse(data);
         let events = parsed.logEvents.map((event) => {
                 try {
-                    return JSON.parse(event);
+                    return JSON.parse(event.message);
                 } catch (err) {
                     return null;
                 }

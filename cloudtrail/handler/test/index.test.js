@@ -27,7 +27,11 @@ const event = {
 
 function serialize(sample) {
     return JSON.stringify({
-        logEvents: sample.map(JSON.stringify)
+        logEvents: sample.map((message) => {
+            return {
+                message: JSON.stringify(message)
+            };
+        })
     });
 }
 
