@@ -18,6 +18,10 @@ variable "zone_id" {
   description = "Zone ID for the domains route53 alias record."
 }
 
+variable "certificate_arn" {
+  description = "ACM certificate ARN for the domain."
+}
+
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
@@ -45,11 +49,6 @@ variable "atc_port" {
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
-data "aws_acm_certificate" "main" {
-  domain   = "${var.domain}"
-  statuses = ["ISSUED"]
-}
-
 resource "aws_route53_record" "main" {
   zone_id = "${var.zone_id}"
   name    = "${var.domain}"
@@ -72,7 +71,7 @@ resource "aws_elb" "main" {
     instance_protocol  = "http"
     lb_port            = "${var.web_port}"
     lb_protocol        = "https"
-    ssl_certificate_id = "${data.aws_acm_certificate.main.arn}"
+    ssl_certificate_id = "${var.certificate_arn}"
   }
 
   health_check {

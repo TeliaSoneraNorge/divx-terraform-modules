@@ -18,6 +18,10 @@ variable "zone_id" {
   description = "Zone ID for the domains route53 alias record."
 }
 
+variable "certificate_arn" {
+  description = "ACM certificate ARN for the domain."
+}
+
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
@@ -142,6 +146,7 @@ module "external_elb" {
   environment     = "${var.environment}"
   domain          = "${var.domain}"
   zone_id         = "${var.zone_id}"
+  certificate_arn = "${var.certificate_arn}"
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = ["${var.subnet_ids}"]
   authorized_cidr = ["${var.authorized_cidr}"]
