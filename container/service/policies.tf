@@ -58,13 +58,24 @@ data "aws_iam_policy_document" "service_permissions" {
 
     actions = [
       "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
-      "elasticloadbalancing:DeregisterTargets",
       "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
-      "elasticloadbalancing:RegisterTargets",
     ]
 
     resources = [
       "arn:aws:elasticloadbalancing:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:loadbalancer/${var.target_group == "true" ? "app/" : ""}${var.load_balancer_name}/*",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "elasticloadbalancing:DeregisterTargets",
+      "elasticloadbalancing:RegisterTargets",
+    ]
+
+    resources = [
+      "${aws_alb_target_group.main.arn}",
     ]
   }
 }
