@@ -66,6 +66,7 @@ data "aws_iam_policy_document" "service_permissions" {
     ]
   }
 
+  // NOTE: ALB does not support resource level permissions :/
   statement {
     effect = "Allow"
 
@@ -75,7 +76,7 @@ data "aws_iam_policy_document" "service_permissions" {
     ]
 
     resources = [
-      "${aws_alb_target_group.main.arn}",
+      "*",
     ]
   }
 }
