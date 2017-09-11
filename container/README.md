@@ -38,6 +38,10 @@ provider "aws" {
   region  = "eu-west-1"
 }
 
+data "aws_region" "current" {
+  current = "true"
+}
+
 // ALB w/ingress and listener rule
 module "alb" {
   source = "github.com/itsdalmo/tf-modules//ec2/alb"
@@ -59,25 +63,53 @@ module "cluster" {
   subnet_ids  = ["${var.subnets}"]
 }
 
+// Create a task definition
+resource "aws_cloudwatch_log_group" "main" {
+  name = "${var.prefix}"
+}
+
+resource "aws_ecs_task_definition" "main" {
+  family = "${var.prefix}"
+
+  container_definitions = <<EOF
+[{
+    "name": "${var.prefix}",
+    "image": "crccheck/hello-world:latest",
+    "cpu": 256,
+    "memory": 512,
+    "essential": true,
+    "portMappings": [{
+      "HostPort": 8000,
+      "ContainerPort": 8000
+    }],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "${aws_cloudwatch_log_group.main.name}",
+            "awslogs-region": "${data.aws_region.current.name}"
+        }
+    }
+}]
+EOF
+}
+
 // Service
 module "service" {
   source = "github.com/itsdalmo/tf-modules//container/service"
 
   prefix             = "${var.prefix}"
   environment        = "dev"
+  vpc_id             = "${var.vpc_id}"
   cluster_id         = "${module.cluster.id}"
   cluster_sg         = "${module.cluster.security_group_id}"
   cluster_role       = "${module.cluster.role_id}"
   load_balancer_name = "${module.alb.name}"
   load_balancer_sg   = "${module.alb.security_group_id}"
-  vpc_id             = "${var.vpc_id}"
-  target_group       = "true"
-  image_repository   = "crccheck/hello-world"
-  image_version      = "latest"
-  container_cpu      = "256"
-  container_memory   = "512"
+  task_definition    = "${aws_ecs_task_definition.main.arn}"
+  task_log_group_arn = "${aws_cloudwatch_log_group.main.arn}"
+  container_count    = "2"
 
-  container_ports = {
+  port_mapping = {
     "8000" = "8000"
   }
 }
