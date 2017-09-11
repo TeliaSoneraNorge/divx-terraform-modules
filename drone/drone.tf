@@ -74,14 +74,81 @@ data "aws_region" "current" {
   current = true
 }
 
-module "alb" {
-  source = "../ec2/alb"
+resource "aws_elb" "main" {
+  name            = "${var.prefix}-elb"
+  subnets         = ["${var.subnet_ids}"]
+  security_groups = ["${aws_security_group.main.id}"]
 
-  prefix      = "${var.prefix}"
-  environment = "dev"
-  internal    = "false"
+  listener {
+    instance_port      = "8000"
+    instance_protocol  = "tcp"
+    lb_port            = "80"
+    lb_protocol        = "tcp"
+  }
+
+  listener {
+    instance_port      = "9000"
+    instance_protocol  = "tcp"
+    lb_port            = "9000"
+    lb_protocol        = "tcp"
+  }
+
+  health_check {
+    target              = "HTTP:8000/"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 30
+  }
+
+  tags {
+    Name        = "${var.prefix}"
+    terraform   = "true"
+    environment = "${var.environment}"
+  }
+}
+
+resource "aws_security_group" "main" {
+  name        = "${var.prefix}-sg"
+  description = "Security group for the Drone.io ELB."
   vpc_id      = "${var.vpc_id}"
-  subnet_ids  = ["${var.subnet_ids}"]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags {
+    Name        = "${var.prefix}-sg"
+    terraform   = "true"
+    environment = "${var.environment}"
+  }
+}
+
+resource "aws_security_group_rule" "outbound" {
+  security_group_id = "${aws_security_group.main.id}"
+  type              = "egress"
+  protocol          = "-1"
+  from_port         = 0
+  to_port           = 0
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "web_ingress" {
+  security_group_id = "${aws_security_group.main.id}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "80"
+  to_port           = "80"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "agent_ingress" {
+  security_group_id = "${aws_security_group.main.id}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "9000"
+  to_port           = "9000"
+  cidr_blocks       = ["0.0.0.0/0"]
 }
 
 module "cluster" {
@@ -96,26 +163,6 @@ module "cluster" {
   instance_key   = "${var.instance_key}"
 }
 
-resource "aws_alb_listener" "main" {
-  load_balancer_arn = "${module.alb.arn}"
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    target_group_arn = "${module.server.target_group_arn}"
-    type             = "forward"
-  }
-}
-
-resource "aws_security_group_rule" "ingress" {
-  security_group_id = "${module.alb.security_group_id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "80"
-  to_port           = "80"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
@@ -123,5 +170,5 @@ output "security_group_id" {
   value = "${module.cluster.security_group_id}"
 }
 output "endpoint" {
-  value = "${module.alb.dns_name}"
+  value = "${aws_elb.main.dns_name}"
 }

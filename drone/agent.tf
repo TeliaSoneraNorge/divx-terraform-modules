@@ -7,8 +7,8 @@ module "agent" {
   cluster_id           = "${module.cluster.id}"
   cluster_sg           = "${module.cluster.security_group_id}"
   cluster_role         = "${module.cluster.role_id}"
-  load_balancer_name   = "${module.alb.name}"
-  load_balancer_sg     = "${module.alb.security_group_id}"
+  load_balancer_name   = "${aws_elb.main.name}"
+  load_balancer_sg     = "${aws_security_group.main.id}"
   task_definition      = "${aws_ecs_task_definition.agent.arn}"
   task_log_group_arn   = "${aws_cloudwatch_log_group.agent.arn}"
   container_count      = "${var.instance_count}"
@@ -33,7 +33,7 @@ data "template_file" "agent" {
     version       = "latest"
     log_group     = "${aws_cloudwatch_log_group.agent.name}"
     region        = "${data.aws_region.current.name}"
-    drone_server  = "ws://${module.alb.dns_name}:80/ws/broker"
+    drone_server  = "${aws_elb.main.dns_name}:9000"
     drone_secret  = "${var.drone_secret}"
   }
 }

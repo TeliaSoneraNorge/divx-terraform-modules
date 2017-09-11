@@ -5,9 +5,14 @@
     "memory": 1024,
     "essential": true,
     "portMappings": [{
-        "HostPort": 0,
-        "ContainerPort": 8000
-    }],
+            "HostPort": 8000,
+            "ContainerPort": 8000
+        },
+        {
+            "HostPort": 9000,
+            "ContainerPort": 9000
+        }
+    ],
     "MountPoints": [{
         "ContainerPath": "/var/lib/drone",
         "SourceVolume": "drone-volume"

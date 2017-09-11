@@ -7,13 +7,14 @@ module "server" {
   cluster_id           = "${module.cluster.id}"
   cluster_sg           = "${module.cluster.security_group_id}"
   cluster_role         = "${module.cluster.role_id}"
-  load_balancer_name   = "${module.alb.name}"
-  load_balancer_sg     = "${module.alb.security_group_id}"
+  load_balancer_name   = "${aws_elb.main.name}"
+  load_balancer_sg     = "${aws_security_group.main.id}"
   task_definition      = "${aws_ecs_task_definition.server.arn}"
   task_log_group_arn   = "${aws_cloudwatch_log_group.server.arn}"
   container_count      = "1"
   port_mapping         = {
-    "0" = "8000"
+    "8000" = "8000",
+    "9000" = "9000",
   }
 }
 
@@ -37,7 +38,7 @@ data "template_file" "server" {
     log_group     = "${aws_cloudwatch_log_group.server.name}"
     region        = "${data.aws_region.current.name}"
     drone_secret  = "${var.drone_secret}"
-    drone_host    = "${module.alb.dns_name}"
+    drone_host    = "${aws_elb.main.dns_name}"
     remote_driver = "${var.drone_remote_driver}"
     remote_config = "${var.drone_remote_config}"
     github_org    = "${var.drone_github_org}"
