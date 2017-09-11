@@ -71,6 +71,7 @@ resource "aws_cloudwatch_log_group" "main" {
 resource "aws_ecs_task_definition" "main" {
   family = "${var.prefix}"
 
+  // NOTE: HostPort has to be 0 when using a target group.
   container_definitions = <<EOF
 [{
     "name": "${var.prefix}",
@@ -79,7 +80,7 @@ resource "aws_ecs_task_definition" "main" {
     "memory": 512,
     "essential": true,
     "portMappings": [{
-      "HostPort": 8000,
+      "HostPort": 0,
       "ContainerPort": 8000
     }],
     "logConfiguration": {
