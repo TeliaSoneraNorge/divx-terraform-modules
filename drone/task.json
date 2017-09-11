@@ -1,0 +1,68 @@
+[{
+    "name": "${name}",
+    "image": "drone/drone:${version}",
+    "cpu": 512,
+    "memory": 1024,
+    "essential": true,
+    "portMappings": [{
+        "HostPort": 0,
+        "ContainerPort": 8000
+    }],
+    "MountPoints": [{
+            "ContainerPath": "/var/lib/drone",
+            "SourceVolume": "drone-volume"
+        },
+        {
+            "ContainerPath": "/var/run/docker.sock",
+            "SourceVolume": "docker-socket"
+        }
+    ],
+    "Environment": [{
+            "Name": "DRONE_HOST",
+            "Value": "${drone_host}"
+        },
+        {
+            "Name": "REMOTE_DRIVER",
+            "Value": "${remote_driver}"
+        },
+        {
+            "Name": "REMOTE_CONFIG",
+            "Value": "${remote_config}"
+        },
+        {
+            "Name": "DRONE_OPEN",
+            "Value": "true"
+        },
+        {
+            "Name": "DRONE_GITHUB",
+            "Value": "true"
+        },
+        {
+            "Name": "DRONE_ORGS",
+            "Value": "${github_org}"
+        },
+        {
+            "Name": "DRONE_ADMINS",
+            "Value": "${github_admins}"
+        },
+        {
+            "Name": "DRONE_GITHUB_CLIENT",
+            "Value": "${github_client}"
+        },
+        {
+            "Name": "DRONE_GITHUB_SECRET",
+            "Value": "${github_secret}"
+        },
+        {
+            "Name": "DRONE_SECRET",
+            "Value": "${drone_secret}"
+        }
+    ],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "${log_group}",
+            "awslogs-region": "${region}"
+        }
+    }
+}]

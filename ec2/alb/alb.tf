@@ -73,6 +73,10 @@ output "name" {
   value = "${element(split("/", aws_alb.main.name), 2)}"
 }
 
+output "dns_name" {
+  value = "${aws_alb.main.dns_name}"
+}
+
 output "zone_id" {
   value = "${aws_alb.main.zone_id}"
 }
