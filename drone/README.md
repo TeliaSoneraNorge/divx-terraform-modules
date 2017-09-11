@@ -1,6 +1,6 @@
 ## Drone.io (work in progress)
 
-Template for provisioning a Drone.io cluster in an autoscaling group. Tracked in #18.
+Template for provisioning a Drone.io cluster in an autoscaling group. Tracked in [#18](https://github.com/itsdalmo/tf-modules/issues/18).
 
 ```hcl
 provider "aws" {
