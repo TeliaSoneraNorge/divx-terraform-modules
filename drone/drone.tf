@@ -110,9 +110,8 @@ module "service" {
   task_definition      = "${aws_ecs_task_definition.main.arn}"
   task_log_group_arn   = "${aws_cloudwatch_log_group.main.arn}"
   container_count      = "${var.instance_count}"
-  target_group         = "true"
   port_mapping         = {
-    "8000" = "8000"
+    "0" = "8000"
   }
 }
 

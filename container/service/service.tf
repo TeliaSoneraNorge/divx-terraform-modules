@@ -35,13 +35,8 @@ variable "vpc_id" {
   default     = ""
 }
 
-variable "target_group" {
-  description = "Optional: Create a target group for use with an application load balancer. (Does not create listener rules)."
-  default     = "true"
-}
-
 variable "port_mapping" {
-  description = "A map of instance to container port mappings (host port = container port). Supports only one mapping when using an ALB."
+  description = "A map of instance to container port mappings (host port = container port). Supports only one mapping when using an ALB (enabled by setting host port to 0)."
   default     = {}
 }
 
@@ -73,7 +68,7 @@ data "aws_region" "current" {
 }
 
 resource "aws_alb_target_group" "main" {
-  count       = "${var.target_group == "true" ? 1 : 0}"
+  count       = "${contains(keys(var.port_mapping), "0") ? 1 : 0}"
   vpc_id      = "${var.vpc_id}"
   port        = "${element(values(var.port_mapping), 0)}"
   protocol    = "HTTP"
@@ -107,8 +102,8 @@ resource "aws_ecs_service" "main" {
 
   load_balancer {
     // Don't set load_balancer if we want a target_group. (But load_balancer is still required for scoping privileges).
-    elb_name         = "${var.target_group == "true" ? "" : var.load_balancer_name}"
-    target_group_arn = "${var.target_group != "true" ? "" : aws_alb_target_group.main.arn}"
+    elb_name         = "${contains(keys(var.port_mapping), "0") ? "" : var.load_balancer_name}"
+    target_group_arn = "${contains(keys(var.port_mapping), "0") ? aws_alb_target_group.main.arn : ""}"
     container_name   = "${var.prefix}"
     container_port   = "${element(values(var.port_mapping), 0)}"
   }
@@ -138,7 +133,7 @@ resource "aws_iam_role_policy" "service_permissions" {
 
 // Open dynamic port mapping range if using an ALB
 resource "aws_security_group_rule" "dynamic_port_mapping" {
-  count                    = "${var.target_group == "true" ? 1 : 0}"
+  count                    = "${contains(keys(var.port_mapping), "0") ? 1 : 0}"
   type                     = "ingress"
   security_group_id        = "${var.cluster_sg}"
   protocol                 = "tcp"
@@ -149,7 +144,7 @@ resource "aws_security_group_rule" "dynamic_port_mapping" {
 
 // Open individual ports if using a classic ELB
 resource "aws_security_group_rule" "static_port_mapping" {
-  count                    = "${var.target_group == "true" ? 0 : length(var.port_mapping)}"
+  count                    = "${contains(keys(var.port_mapping), "0") ? 0 : length(var.port_mapping)}"
   type                     = "ingress"
   security_group_id        = "${var.cluster_sg}"
   protocol                 = "tcp"
@@ -174,5 +169,5 @@ output "role_id" {
 }
 
 output "target_group_arn" {
-  value = "${var.target_group == "true" ? aws_alb_target_group.main.arn : "NONE"}"
+  value = "${contains(keys(var.port_mapping), "0") ? aws_alb_target_group.main.arn : "NONE"}"
 }

@@ -113,7 +113,7 @@ module "service" {
   container_count    = "2"
 
   port_mapping = {
-    "8000" = "8000"
+    "0" = "8000"
   }
 }
 
