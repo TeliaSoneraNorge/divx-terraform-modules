@@ -14,9 +14,11 @@ Set up an ECS cluster and register services with ease. The modules set up the fo
 
 - Usable with either an ALB or a classic ELB (to be tested).
 - Optional: Creates the ALB target group (when used with an ALB).
-- Sets up and enables logging for the task.
-- Creates IAM roles for the ECS service and for a specific task/containers.
+- Sets up and enables logging for the service.
+- Creates IAM roles for the ECS service.
 - Takes care of opening ingress on the appropriate ports from the load balancer (ALB or classic ELB) to the cluster.
+
+Note that task definitions have to be created manually (cannot be abstracted) because of `volume` blocks.
 
 ## Usage
 
