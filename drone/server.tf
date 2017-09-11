@@ -11,7 +11,7 @@ module "server" {
   load_balancer_sg     = "${module.alb.security_group_id}"
   task_definition      = "${aws_ecs_task_definition.server.arn}"
   task_log_group_arn   = "${aws_cloudwatch_log_group.server.arn}"
-  container_count      = "${var.instance_count}"
+  container_count      = "1"
   port_mapping         = {
     "0" = "8000"
   }
