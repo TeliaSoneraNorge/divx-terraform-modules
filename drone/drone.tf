@@ -41,6 +41,7 @@ variable "drone_secret" {
 
 variable "drone_github_org" {
   description = "Drone Github organization which is allowed to create users."
+  default     = ""
 }
 
 variable "drone_github_admins" {
