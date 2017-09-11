@@ -1,0 +1,28 @@
+[{
+    "name": "${name}",
+    "image": "drone/agent:${version}",
+    "cpu": 512,
+    "memory": 1024,
+    "essential": true,
+    "portMappings": [],
+    "MountPoints": [{
+        "ContainerPath": "/var/run/docker.sock",
+        "SourceVolume": "docker-socket"
+    }],
+    "Environment": [{
+            "Name": "DRONE_SERVER",
+            "Value": "${drone_server}"
+        },
+        {
+            "Name": "DRONE_SECRET",
+            "Value": "${drone_secret}"
+        }
+    ],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "${log_group}",
+            "awslogs-region": "${region}"
+        }
+    }
+}]

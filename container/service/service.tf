@@ -84,7 +84,8 @@ resource "aws_alb_target_group" "main" {
   }
 }
 
-resource "aws_ecs_service" "main" {
+resource "aws_ecs_service" "elb" {
+  count           = "${length(var.port_mapping) > 0 ? 1 : 0}"
   depends_on      = ["aws_iam_role.service"]
   name            = "${var.prefix}"
   cluster         = "${var.cluster_id}"
@@ -109,18 +110,14 @@ resource "aws_ecs_service" "main" {
   }
 }
 
-resource "aws_iam_role_policy" "log_agent" {
-  name   = "${var.prefix}-log-permissions"
-  role   = "${var.cluster_role}"
-  policy = "${data.aws_iam_policy_document.task_log.json}"
-}
-
 resource "aws_iam_role" "service" {
+  count              = "${length(var.port_mapping) > 0 ? 1 : 0}"
   name               = "${var.prefix}-service-role"
   assume_role_policy = "${data.aws_iam_policy_document.service_assume.json}"
 }
 
 resource "aws_iam_role_policy" "service_permissions" {
+  count  = "${length(var.port_mapping) > 0 ? 1 : 0}"
   name   = "${var.prefix}-service-permissions"
   role   = "${aws_iam_role.service.id}"
   policy = "${data.aws_iam_policy_document.service_permissions.json}"
@@ -148,11 +145,35 @@ resource "aws_security_group_rule" "static_port_mapping" {
   source_security_group_id = "${var.load_balancer_sg}"
 }
 
+// Support no port mapping.
+resource "aws_ecs_service" "no_elb" {
+  count           = "${length(var.port_mapping) > 0 ? 0 : 1}"
+  depends_on      = ["aws_iam_role.service"]
+  name            = "${var.prefix}"
+  cluster         = "${var.cluster_id}"
+  task_definition = "${var.task_definition}"
+  desired_count   = "${var.container_count}"
+
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 200
+
+  placement_strategy {
+    type  = "spread"
+    field = "instanceId"
+  }
+}
+
+resource "aws_iam_role_policy" "log_agent" {
+  name   = "${var.prefix}-log-permissions"
+  role   = "${var.cluster_role}"
+  policy = "${data.aws_iam_policy_document.task_log.json}"
+}
+
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
 output "arn" {
-  value = "${aws_ecs_service.main.id}"
+  value = "${length(var.port_mapping) > 0 ? "${aws_ecs_service.elb.id}" : "${aws_ecs_service.no_elb.id}"}"
 }
 
 output "role_arn" {

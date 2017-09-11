@@ -9,14 +9,9 @@
         "ContainerPort": 8000
     }],
     "MountPoints": [{
-            "ContainerPath": "/var/lib/drone",
-            "SourceVolume": "drone-volume"
-        },
-        {
-            "ContainerPath": "/var/run/docker.sock",
-            "SourceVolume": "docker-socket"
-        }
-    ],
+        "ContainerPath": "/var/lib/drone",
+        "SourceVolume": "drone-volume"
+    }],
     "Environment": [{
             "Name": "DRONE_HOST",
             "Value": "${drone_host}"
