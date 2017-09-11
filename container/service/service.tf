@@ -53,11 +53,6 @@ variable "container_count" {
   default     = "2"
 }
 
-variable "container_policy" {
-  description = "Optional: IAM inline policy added to the container (task) role."
-  default     = ""
-}
-
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
