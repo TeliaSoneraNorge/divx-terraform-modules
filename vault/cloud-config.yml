@@ -1,0 +1,37 @@
+#cloud-config
+package_update: true
+packages:
+  - curl
+  - unzip
+write_files:
+  - path: "/usr/local/etc/vault-config.json"
+    permissions: "0644"
+    owner: "root"
+    encoding: base64
+    content: ${base64encode(config)}
+  - path: "/etc/systemd/system/vault.service"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [Unit]
+      Description=Vault Server
+      Requires=network-online.target
+      After=network-online.target
+
+      [Service]
+      Restart=on-failure
+      TimeoutStartSec=5m
+      ExecStart=/usr/local/bin/vault server $VAULT_FLAGS -config=/usr/local/etc/vault-config.json >>/var/log/vault.log 2>&1
+
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - |
+    curl -L "${download_url}" > /tmp/vault.zip
+    unzip /tmp/vault.zip -d /usr/local/bin
+    chmod 0755 /usr/local/bin/vault
+    chown root:root /usr/local/bin/vault
+  - |
+    systemctl enable vault.service --now
+  - |
+    ${extra_install}

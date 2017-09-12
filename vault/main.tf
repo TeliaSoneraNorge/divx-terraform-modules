@@ -88,7 +88,7 @@ data "aws_iam_policy_document" "permissions" {
 
 data "template_file" "main" {
   depends_on = ["data.template_file.config"]
-  template = "${file("${path.module}/install.sh")}"
+  template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
     download_url  = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
@@ -107,7 +107,7 @@ data "template_file" "config" {
 }
 
 resource "aws_elb" "main" {
-  name            = "${var.prefix}"
+  name            = "${var.prefix}-vault-elb"
   subnets         = ["${var.subnet_ids}"]
   security_groups = ["${aws_security_group.main.id}"]
 
@@ -134,7 +134,7 @@ resource "aws_elb" "main" {
   }
 
   tags {
-    Name        = "${var.prefix}"
+    Name        = "${var.prefix}-vault-elb"
     terraform   = "true"
     environment = "${var.environment}"
   }
