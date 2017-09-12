@@ -16,6 +16,10 @@
         {
             "Name": "DRONE_SECRET",
             "Value": "${drone_secret}"
+        },
+        {
+            "Name": "DOCKER_API_VERSION",
+            "Value": "${docker_api_ver}"
         }
     ],
     "logConfiguration": {

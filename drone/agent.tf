@@ -29,12 +29,13 @@ data "template_file" "agent" {
   template = "${file("${path.module}/agent.json")}"
 
   vars {
-    name          = "${var.prefix}-agent"
-    version       = "latest"
-    log_group     = "${aws_cloudwatch_log_group.agent.name}"
-    region        = "${data.aws_region.current.name}"
-    drone_server  = "${aws_elb.main.dns_name}:9000"
-    drone_secret  = "${var.drone_secret}"
+    name           = "${var.prefix}-agent"
+    version        = "latest"
+    log_group      = "${aws_cloudwatch_log_group.agent.name}"
+    region         = "${data.aws_region.current.name}"
+    drone_server   = "${aws_elb.main.dns_name}:9000"
+    drone_secret   = "${var.drone_secret}"
+    docker_api_ver = "1.24"
   }
 }
 

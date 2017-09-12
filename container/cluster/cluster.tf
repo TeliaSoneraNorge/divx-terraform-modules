@@ -26,7 +26,7 @@ variable "image_version" {
 
 variable "instance_ami" {
   description = "ID of a CoreOS AMI for the instances."
-  default     = "ami-38ef0041"
+  default     = "ami-417abe38"
 }
 
 variable "instance_type" {
