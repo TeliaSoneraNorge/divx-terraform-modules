@@ -101,8 +101,9 @@ data "template_file" "config" {
   template = "${file("${path.module}/config.hcl")}"
 
   vars {
-    table  = "${var.prefix}-vault"
-    region = "${data.aws_region.current.name}"
+    table    = "${var.prefix}-vault"
+    region   = "${data.aws_region.current.name}"
+    redirect = "http://${aws_elb.main.dns_name}:8200"
   }
 }
 
