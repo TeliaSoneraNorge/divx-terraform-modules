@@ -148,9 +148,20 @@ output "instructions" {
 
 1. Decrypt your password using Keybase.io:
 
-  echo ${aws_iam_user_login_profile.main.encrypted_password} |\
-      base64 --decode |\
-      keybase pgp decrypt
+${aws_iam_user_login_profile.main.encrypted_password}
+
+1a. Decrypt using the console:
+
+  $ echo <encrypted-password> | base64 --decode | keybase pgp decrypt
+
+1b. Decrypt using the webpage (visit the url and paste):
+
+  https://keybase.io/decrypt
+
+  -----BEGIN PGP MESSAGE-----
+
+  <encrypted-password>
+  -----END PGP MESSAGE-----
 
 2. Log into the console:
 
@@ -164,14 +175,12 @@ output "instructions" {
 
 4. Decrypt your secret access key:
 
-  echo ${aws_iam_access_key.main.encrypted_secret} |\
-      base64 --decode |\
-      keybase pgp decrypt
+${aws_iam_access_key.main.encrypted_secret}
 
-5. Install and add a profile to vaulted:
+5. Install (requires homebrew) and add a profile to vaulted:
 
-  (bash)$ brew install vaulted
-  (bash)$ vaulted add <profile-name>
+  $ brew install vaulted
+  $ vaulted add <profile-name>
 
   Follow the instructions and add your keys and MFA device:
 
