@@ -146,36 +146,38 @@ data "aws_iam_policy_document" "read_policies" {
 output "instructions" {
   value = <<EOF
 
-1. Decrypt your password and access key on keybase:
+1. Decrypt your password using Keybase.io:
 
------BEGIN PGP MESSAGE-----
+  echo ${aws_iam_user_login_profile.main.encrypted_password} |\
+      base64 --decode |\
+      keybase pgp decrypt
 
-${aws_iam_user_login_profile.main.encrypted_password}
------END PGP MESSAGE-----
+2. Log into the console:
 
-2. Log into the console (remember to enable MFA):
-URL:      https://${data.aws_iam_account_alias.current.account_alias}.signin.aws.amazon.com/console
-Username: ${var.username}
-Password: <your-decrypted-password>
+  URL:      https://${data.aws_iam_account_alias.current.account_alias}.signin.aws.amazon.com/console
+  Username: ${var.username}
+  Password: <your-decrypted-password>
 
-3. Decrypt your secret access key:
+3. Enable (virtual) MFA using the console:
 
------BEGIN PGP MESSAGE-----
+  https://console.aws.amazon.com/iam/home?region=global#/users/${var.username}?section=security_credentials
 
-${aws_iam_access_key.main.encrypted_secret}
------END PGP MESSAGE-----
+4. Decrypt your secret access key:
 
-4. Add a profile to ~/.aws/credentials:
+  echo ${aws_iam_access_key.main.encrypted_secret} |\
+      base64 --decode |\
+      keybase pgp decrypt
 
-[account-user]
-aws_access_key_id = ${aws_iam_access_key.main.id}
-aws_secret_access_key = <your-decrypted-secret-access-key>
+5. Install and add a profile to vaulted:
 
-5. Add roles to your ~/.aws/credentials. Example:
+  (bash)$ brew install vaulted
+  (bash)$ vaulted add <profile-name>
 
-[account-developer]
-role_arn = <account-role-arn>
-source_profile = account-user
+  Follow the instructions and add your keys and MFA device:
+
+  Access Key ID: ${aws_iam_access_key.main.id}
+  Secret Access Key: <your-decrypted-secret-access-key>
+  MFA: arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/${var.username}
 
 EOF
 }
