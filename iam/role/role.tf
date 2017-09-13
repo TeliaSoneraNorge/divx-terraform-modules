@@ -41,13 +41,13 @@ data "aws_iam_policy_document" "assume" {
     condition = {
       test     = "Bool"
       variable = "aws:MultiFactorAuthPresent"
-      values   = "true"
+      values   = ["true"]
     }
 
     condition = {
       test     = "NumericLessThan"
       variable = "aws:MultiFactorAuthAge"
-      values   = "3600"
+      values   = ["3600"]
     }
   }
 }
