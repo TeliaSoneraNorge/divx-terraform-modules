@@ -1,5 +1,5 @@
 storage "dynamodb" {
-  ha_enabled    = "true"
+  ha_enabled    = "false"
   region        = "${region}"
   table         = "${table}"
   redirect_addr = "${redirect}"

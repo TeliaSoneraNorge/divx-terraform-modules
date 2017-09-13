@@ -40,7 +40,7 @@ variable "instance_key" {
 
 variable "config" {
   description = "Optional: Vault configuration in HCL or JSON format."
-  default = ""
+  default     = ""
 }
 
 variable "extra_install" {
@@ -66,7 +66,7 @@ module "asg" {
   subnet_ids      = "${var.subnet_ids}"
   load_balancers  = ["${aws_elb.main.name}"]
   instance_policy = "${data.aws_iam_policy_document.permissions.json}"
-  instance_count  = "3"
+  instance_count  = "1"
   instance_type   = "m3.medium"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
@@ -92,7 +92,7 @@ data "template_file" "main" {
 
   vars {
     download_url  = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
-    config        = "${data.template_file.config.rendered}"
+    config        = "${var.config != "" ? var.config : data.template_file.config.rendered}"
     extra_install = "${var.extra_install}"
   }
 }
