@@ -1,20 +1,21 @@
 module "server" {
   source = "../container/service"
 
-  prefix               = "${var.prefix}-server"
-  environment          = "${var.environment}"
-  vpc_id               = "${var.vpc_id}"
-  cluster_id           = "${module.cluster.id}"
-  cluster_sg           = "${module.cluster.security_group_id}"
-  cluster_role         = "${module.cluster.role_id}"
-  load_balancer_name   = "${aws_elb.main.name}"
-  load_balancer_sg     = "${aws_security_group.main.id}"
-  task_definition      = "${aws_ecs_task_definition.server.arn}"
-  task_log_group_arn   = "${aws_cloudwatch_log_group.server.arn}"
-  container_count      = "1"
-  port_mapping         = {
-    "8000" = "8000",
-    "9000" = "9000",
+  prefix             = "${var.prefix}-server"
+  environment        = "${var.environment}"
+  vpc_id             = "${var.vpc_id}"
+  cluster_id         = "${module.cluster.id}"
+  cluster_sg         = "${module.cluster.security_group_id}"
+  cluster_role       = "${module.cluster.role_id}"
+  load_balancer_name = "${aws_elb.main.name}"
+  load_balancer_sg   = "${aws_security_group.main.id}"
+  task_definition    = "${aws_ecs_task_definition.server.arn}"
+  task_log_group_arn = "${aws_cloudwatch_log_group.server.arn}"
+  container_count    = "1"
+
+  port_mapping = {
+    "8000" = "8000"
+    "9000" = "9000"
   }
 }
 
@@ -68,4 +69,3 @@ data "aws_iam_policy_document" "assume" {
     }
   }
 }
-

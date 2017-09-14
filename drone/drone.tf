@@ -80,17 +80,17 @@ resource "aws_elb" "main" {
   security_groups = ["${aws_security_group.main.id}"]
 
   listener {
-    instance_port      = "8000"
-    instance_protocol  = "tcp"
-    lb_port            = "80"
-    lb_protocol        = "tcp"
+    instance_port     = "8000"
+    instance_protocol = "tcp"
+    lb_port           = "80"
+    lb_protocol       = "tcp"
   }
 
   listener {
-    instance_port      = "9000"
-    instance_protocol  = "tcp"
-    lb_port            = "9000"
-    lb_protocol        = "tcp"
+    instance_port     = "9000"
+    instance_protocol = "tcp"
+    lb_port           = "9000"
+    lb_protocol       = "tcp"
   }
 
   health_check {
@@ -169,6 +169,7 @@ module "cluster" {
 output "security_group_id" {
   value = "${module.cluster.security_group_id}"
 }
+
 output "endpoint" {
   value = "${aws_elb.main.dns_name}"
 }

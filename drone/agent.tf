@@ -1,17 +1,17 @@
 module "agent" {
   source = "../container/service"
 
-  prefix               = "${var.prefix}-agent"
-  environment          = "${var.environment}"
-  vpc_id               = "${var.vpc_id}"
-  cluster_id           = "${module.cluster.id}"
-  cluster_sg           = "${module.cluster.security_group_id}"
-  cluster_role         = "${module.cluster.role_id}"
-  load_balancer_name   = "${aws_elb.main.name}"
-  load_balancer_sg     = "${aws_security_group.main.id}"
-  task_definition      = "${aws_ecs_task_definition.agent.arn}"
-  task_log_group_arn   = "${aws_cloudwatch_log_group.agent.arn}"
-  container_count      = "${var.instance_count}"
+  prefix             = "${var.prefix}-agent"
+  environment        = "${var.environment}"
+  vpc_id             = "${var.vpc_id}"
+  cluster_id         = "${module.cluster.id}"
+  cluster_sg         = "${module.cluster.security_group_id}"
+  cluster_role       = "${module.cluster.role_id}"
+  load_balancer_name = "${aws_elb.main.name}"
+  load_balancer_sg   = "${aws_security_group.main.id}"
+  task_definition    = "${aws_ecs_task_definition.agent.arn}"
+  task_log_group_arn = "${aws_cloudwatch_log_group.agent.arn}"
+  container_count    = "${var.instance_count}"
 }
 
 resource "aws_ecs_task_definition" "agent" {
@@ -59,4 +59,3 @@ data "aws_iam_policy_document" "agent_assume" {
     }
   }
 }
-
