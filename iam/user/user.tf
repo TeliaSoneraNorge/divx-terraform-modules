@@ -61,6 +61,18 @@ data "aws_iam_policy_document" "password" {
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
     ]
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:GetAccountPasswordPolicy",
+    ]
+
+    resources = [
+      "*",
+    ]
+  }
 }
 
 resource "aws_iam_user_policy" "mfa" {
