@@ -140,6 +140,26 @@ data "aws_iam_policy_document" "read_policies" {
   }
 }
 
+resource "aws_iam_user_policy" "read_user" {
+  name   = "inspect-own-user"
+  user   = "${aws_iam_user.main.name}"
+  policy = "${data.aws_iam_policy_document.read_user.json}"
+}
+
+data "aws_iam_policy_document" "read_user" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:GetUser",
+    ]
+
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
+    ]
+  }
+}
+
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
