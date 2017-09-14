@@ -148,20 +148,7 @@ output "instructions" {
 
 1. Decrypt your password using Keybase.io:
 
-${aws_iam_user_login_profile.main.encrypted_password}
-
-1a. Decrypt using the console:
-
-  $ echo <encrypted-password> | base64 --decode | keybase pgp decrypt
-
-1b. Decrypt using the webpage (visit the url and paste):
-
-  https://keybase.io/decrypt
-
-  -----BEGIN PGP MESSAGE-----
-
-  <encrypted-password>
-  -----END PGP MESSAGE-----
+echo ${aws_iam_user_login_profile.main.encrypted_password} | base64 --decode | keybase pgp decrypt
 
 2. Log into the console:
 
@@ -175,7 +162,7 @@ ${aws_iam_user_login_profile.main.encrypted_password}
 
 4. Decrypt your secret access key:
 
-${aws_iam_access_key.main.encrypted_secret}
+echo ${aws_iam_access_key.main.encrypted_secret} | base64 --decode | keybase pgp decrypt
 
 5. Install (requires homebrew) and add a profile to vaulted:
 
