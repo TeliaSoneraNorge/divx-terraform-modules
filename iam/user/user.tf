@@ -42,134 +42,22 @@ resource "aws_iam_user_policy_attachment" "view_only_policy" {
   policy_arn = "arn:aws:iam::aws:policy/job-function/ViewOnlyAccess"
 }
 
-resource "aws_iam_user_policy" "password" {
-  name   = "manage-own-password"
+resource "aws_iam_user_policy" "inspect" {
+  name   = "inspect-own-user"
   user   = "${aws_iam_user.main.name}"
-  policy = "${data.aws_iam_policy_document.password.json}"
+  policy = "${data.aws_iam_policy_document.inspect.json}"
 }
 
-data "aws_iam_policy_document" "password" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:ChangePassword",
-      "iam:UpdateLoginProfile",
-    ]
-
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:GetAccountPasswordPolicy",
-    ]
-
-    resources = [
-      "*",
-    ]
-  }
-}
-
-resource "aws_iam_user_policy" "mfa" {
-  name   = "manage-own-mfa"
+resource "aws_iam_user_policy" "manage" {
+  name   = "manage-own-user"
   user   = "${aws_iam_user.main.name}"
-  policy = "${data.aws_iam_policy_document.mfa.json}"
-}
-
-data "aws_iam_policy_document" "mfa" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:CreateVirtualMFADevice",
-      "iam:EnableMFADevice",
-      "iam:ResyncMFADevice",
-      "iam:DeactivateMFADevice",
-      "iam:DeleteVirtualMFADevice",
-    ]
-
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/$${aws:username}",
-    ]
-  }
+  policy = "${data.aws_iam_policy_document.manage.json}"
 }
 
 resource "aws_iam_user_policy" "assume" {
-  name   = "assume-cross-account-role"
+  name   = "assume-cross-account-roles"
   user   = "${aws_iam_user.main.name}"
   policy = "${data.aws_iam_policy_document.assume.json}"
-}
-
-data "aws_iam_policy_document" "assume" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sts:AssumeRole",
-    ]
-
-    not_resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/*",
-    ]
-  }
-}
-
-resource "aws_iam_user_policy" "read_policies" {
-  name   = "inspect-own-policies"
-  user   = "${aws_iam_user.main.name}"
-  policy = "${data.aws_iam_policy_document.read_policies.json}"
-}
-
-data "aws_iam_policy_document" "read_policies" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:GetUserPolicy",
-    ]
-
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:GetPolicyVersion",
-    ]
-
-    resources = [
-      "*",
-    ]
-  }
-}
-
-resource "aws_iam_user_policy" "read_user" {
-  name   = "inspect-own-user"
-  user   = "${aws_iam_user.main.name}"
-  policy = "${data.aws_iam_policy_document.read_user.json}"
-}
-
-data "aws_iam_policy_document" "read_user" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:GetUser",
-    ]
-
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
-    ]
-  }
 }
 
 # ------------------------------------------------------------------------------
