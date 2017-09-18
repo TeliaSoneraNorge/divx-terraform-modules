@@ -41,6 +41,7 @@ data "aws_iam_policy_document" "main" {
 
     resources = [
       "arn:aws:logs:${var.region}:${var.account_id}:log-group:${coalesce(var.resources, "${var.prefix}-*")}",
+      "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/lambda/${coalesce(var.resources, "${var.prefix}-*")}",
       "arn:aws:events:${var.region}:${var.account_id}:rule/${coalesce(var.resources, "${var.prefix}-*")}",
     ]
   }
