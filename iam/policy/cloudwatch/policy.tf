@@ -32,11 +32,25 @@ resource "aws_iam_role_policy" "main" {
 }
 
 data "aws_iam_policy_document" "main" {
+  // TODO: Can we restrict cloudwatch access using tags?
   statement {
     effect = "Allow"
 
     actions = [
       "cloudwatch:*",
+    ]
+
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "logs:*",
+      "events:*",
     ]
 
     resources = [
