@@ -26,7 +26,7 @@ variable "iam_role_name" {
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "main" {
-  name   = "${var.prefix}-cloudformation-policy"
+  name   = "${var.prefix}-cloudwatch-policy"
   role   = "${var.iam_role_name}"
   policy = "${data.aws_iam_policy_document.main.json}"
 }
