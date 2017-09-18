@@ -20,12 +20,12 @@ variable "subnet_id" {
 
 variable "applications" {
   description = "List of applications for the EMR cluster."
-  type = "list"
+  type        = "list"
 }
 
 variable "configurations" {
-  description = "Optional: Configuration for the EMR cluster."
-  default     = "test-fixtures/emr_configurations.json"
+  description = "Optional: JSON configuration for the EMR cluster."
+  default     = ""
 }
 
 variable "master_instance_type" {
