@@ -56,6 +56,7 @@ data "aws_iam_policy_document" "manage" {
     ]
 
     resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/$${aws:username}",
     ]
   }
@@ -69,6 +70,7 @@ data "aws_iam_policy_document" "manage" {
     ]
 
     resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
       "arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/$${aws:username}",
     ]
 
