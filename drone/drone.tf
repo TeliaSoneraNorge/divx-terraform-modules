@@ -34,6 +34,20 @@ variable "instance_key" {
   default     = ""
 }
 
+variable "postgres_username" {
+  description = "Username for Postgres."
+  default     = "superuser"
+}
+
+variable "postgres_password" {
+  description = "Password for Postgres (KMS Encrypted)."
+}
+
+variable "postgres_port" {
+  description = "Port specification for Postgres."
+  default     = "5439"
+}
+
 variable "drone_secret" {
   description = "Shared secret used to authenticate agents with the Drone server."
   default     = "12345"
@@ -57,21 +71,40 @@ variable "drone_github_secret" {
   description = "Drone Github secret."
 }
 
-variable "drone_remote_driver" {
-  description = "Remote driver for Drone."
-  default     = "sqlite3"
-}
-
-variable "drone_remote_config" {
-  description = "Remote config for Drone."
-  default     = "/var/lib/drone/drone.sqlite"
-}
-
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
 data "aws_region" "current" {
   current = true
+}
+
+module "cluster" {
+  source = "../container/cluster"
+
+  prefix         = "${var.prefix}"
+  environment    = "${var.environment}"
+  vpc_id         = "${var.vpc_id}"
+  subnet_ids     = ["${var.subnet_ids}"]
+  instance_type  = "${var.instance_type}"
+  instance_count = "${var.instance_count}"
+  instance_key   = "${var.instance_key}"
+}
+
+module "postgres" {
+  source = "../rds/instance"
+
+  prefix        = "${var.prefix}-rds"
+  environment   = "${var.environment}"
+  username      = "${var.postgres_username}"
+  password      = "${var.postgres_password}"
+  port          = "${var.postgres_port}"
+  vpc_id        = "${var.vpc_id}"
+  subnet_ids    = ["${var.subnet_ids}"]
+  engine        = "postgres"
+  instance_type = "db.m3.medium"
+  storage_size  = "50"
+  public_access = "false"
+  skip_snapshot = "true"
 }
 
 resource "aws_elb" "main" {
@@ -124,6 +157,15 @@ resource "aws_security_group" "main" {
   }
 }
 
+resource "aws_security_group_rule" "server_ingress_postgres" {
+  security_group_id        = "${module.postgres.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "${module.postgres.port}"
+  to_port                  = "${module.postgres.port}"
+  source_security_group_id = "${module.cluster.security_group_id}"
+}
+
 resource "aws_security_group_rule" "outbound" {
   security_group_id = "${aws_security_group.main.id}"
   type              = "egress"
@@ -149,18 +191,6 @@ resource "aws_security_group_rule" "agent_ingress" {
   from_port         = "9000"
   to_port           = "9000"
   cidr_blocks       = ["0.0.0.0/0"]
-}
-
-module "cluster" {
-  source = "../container/cluster"
-
-  prefix         = "${var.prefix}"
-  environment    = "${var.environment}"
-  vpc_id         = "${var.vpc_id}"
-  subnet_ids     = ["${var.subnet_ids}"]
-  instance_type  = "${var.instance_type}"
-  instance_count = "${var.instance_count}"
-  instance_key   = "${var.instance_key}"
 }
 
 # ------------------------------------------------------------------------------

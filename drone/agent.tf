@@ -26,7 +26,7 @@ resource "aws_ecs_task_definition" "agent" {
 }
 
 data "template_file" "agent" {
-  template = "${file("${path.module}/agent.json")}"
+  template = "${file("${path.module}/config/agent.json")}"
 
   vars {
     name           = "${var.prefix}-agent"

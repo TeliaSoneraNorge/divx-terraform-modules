@@ -63,16 +63,16 @@ data "aws_region" "current" {
 }
 
 resource "aws_alb_target_group" "main" {
-  count    = "${contains(keys(var.port_mapping), "0") ? 1 : 0}"
+  count    = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
   vpc_id   = "${var.vpc_id}"
   port     = "${element(values(var.port_mapping), 0)}"
   protocol = "HTTP"
 
   /**
-      * NOTE: TF is unable to destroy a target group while a listener is attached,
-      * therefor we have to create a new one before destroying the old. This also means
-      * we have to let it have a random name, and then tag it with the desired name.
-      */
+   * NOTE: TF is unable to destroy a target group while a listener is attached,
+   * therefor we have to create a new one before destroying the old. This also means
+   * we have to let it have a random name, and then tag it with the desired name.
+   */
   lifecycle {
     create_before_destroy = true
   }
@@ -84,8 +84,8 @@ resource "aws_alb_target_group" "main" {
   }
 }
 
-resource "aws_ecs_service" "elb" {
-  count           = "${length(var.port_mapping) > 0 ? 1 : 0}"
+resource "aws_ecs_service" "alb" {
+  count           = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
   depends_on      = ["aws_iam_role.service"]
   name            = "${var.prefix}"
   cluster         = "${var.cluster_id}"
@@ -97,9 +97,7 @@ resource "aws_ecs_service" "elb" {
   deployment_maximum_percent         = 200
 
   load_balancer {
-    // Don't set load_balancer if we want a target_group. (But load_balancer is still required for scoping privileges).
-    elb_name         = "${contains(keys(var.port_mapping), "0") ? "" : var.load_balancer_name}"
-    target_group_arn = "${contains(keys(var.port_mapping), "0") ? aws_alb_target_group.main.arn : ""}"
+    target_group_arn = "${aws_alb_target_group.main.arn}"
     container_name   = "${var.prefix}"
     container_port   = "${element(values(var.port_mapping), 0)}"
   }
@@ -109,6 +107,49 @@ resource "aws_ecs_service" "elb" {
     field = "instanceId"
   }
 }
+
+// Classic ELB
+resource "aws_ecs_service" "elb" {
+  count           = "${length(var.port_mapping) > 0 && !contains(keys(var.port_mapping), "0") ? 1 : 0}"
+  depends_on      = ["aws_iam_role.service"]
+  name            = "${var.prefix}"
+  cluster         = "${var.cluster_id}"
+  task_definition = "${var.task_definition}"
+  desired_count   = "${var.container_count}"
+  iam_role        = "${aws_iam_role.service.arn}"
+
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 200
+
+  load_balancer {
+    elb_name       = "${var.load_balancer_name}"
+    container_name = "${var.prefix}"
+    container_port = "${element(values(var.port_mapping), 0)}"
+  }
+
+  placement_strategy {
+    type  = "spread"
+    field = "instanceId"
+  }
+}
+
+// Support no port mapping.
+resource "aws_ecs_service" "no_elb" {
+  count           = "${length(var.port_mapping) > 0 ? 0 : 1}"
+  name            = "${var.prefix}"
+  cluster         = "${var.cluster_id}"
+  task_definition = "${var.task_definition}"
+  desired_count   = "${var.container_count}"
+
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 200
+
+  placement_strategy {
+    type  = "spread"
+    field = "instanceId"
+  }
+}
+
 
 resource "aws_iam_role" "service" {
   count              = "${length(var.port_mapping) > 0 ? 1 : 0}"
@@ -145,24 +186,6 @@ resource "aws_security_group_rule" "static_port_mapping" {
   source_security_group_id = "${var.load_balancer_sg}"
 }
 
-// Support no port mapping.
-resource "aws_ecs_service" "no_elb" {
-  count           = "${length(var.port_mapping) > 0 ? 0 : 1}"
-  depends_on      = ["aws_iam_role.service"]
-  name            = "${var.prefix}"
-  cluster         = "${var.cluster_id}"
-  task_definition = "${var.task_definition}"
-  desired_count   = "${var.container_count}"
-
-  deployment_minimum_healthy_percent = 50
-  deployment_maximum_percent         = 200
-
-  placement_strategy {
-    type  = "spread"
-    field = "instanceId"
-  }
-}
-
 resource "aws_iam_role_policy" "log_agent" {
   name   = "${var.prefix}-log-permissions"
   role   = "${var.cluster_role}"
@@ -173,7 +196,7 @@ resource "aws_iam_role_policy" "log_agent" {
 # Output
 # ------------------------------------------------------------------------------
 output "arn" {
-  value = "${length(var.port_mapping) > 0 ? "${aws_ecs_service.elb.id}" : "${aws_ecs_service.no_elb.id}"}"
+  value = "${length(var.port_mapping) > 0 ? contains(keys(var.port_mapping), "0") ? "${aws_ecs_service.alb.id}" : "${aws_ecs_service.elb.id}" : "${aws_ecs_service.no_elb.id}"}"
 }
 
 output "role_arn" {

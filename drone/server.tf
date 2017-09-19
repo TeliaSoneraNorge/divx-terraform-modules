@@ -31,7 +31,8 @@ resource "aws_ecs_task_definition" "server" {
 }
 
 data "template_file" "server" {
-  template = "${file("${path.module}/server.json")}"
+  depends_on = ["module.postgres"]
+  template   = "${file("${path.module}/config/server.json")}"
 
   vars {
     name          = "${var.prefix}-server"
@@ -40,8 +41,8 @@ data "template_file" "server" {
     region        = "${data.aws_region.current.name}"
     drone_secret  = "${var.drone_secret}"
     drone_host    = "${aws_elb.main.dns_name}"
-    remote_driver = "${var.drone_remote_driver}"
-    remote_config = "${var.drone_remote_config}"
+    remote_driver = "postgres"
+    remote_config = "${module.postgres.connection_string}?sslmode=disable"
     github_org    = "${var.drone_github_org}"
     github_admins = "${join(",", var.drone_github_admins)}"
     github_client = "${var.drone_github_client}"
