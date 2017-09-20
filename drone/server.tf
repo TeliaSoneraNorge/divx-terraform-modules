@@ -35,18 +35,18 @@ data "template_file" "server" {
   template   = "${file("${path.module}/config/server.json")}"
 
   vars {
-    name          = "${var.prefix}-server"
-    version       = "latest"
-    log_group     = "${aws_cloudwatch_log_group.server.name}"
-    region        = "${data.aws_region.current.name}"
-    drone_secret  = "${var.drone_secret}"
-    drone_host    = "${aws_elb.main.dns_name}"
-    remote_driver = "postgres"
-    remote_config = "${module.postgres.connection_string}?sslmode=disable"
-    github_org    = "${var.drone_github_org}"
-    github_admins = "${join(",", var.drone_github_admins)}"
-    github_client = "${var.drone_github_client}"
-    github_secret = "${var.drone_github_secret}"
+    name                = "${var.prefix}-server"
+    version             = "latest"
+    log_group           = "${aws_cloudwatch_log_group.server.name}"
+    region              = "${data.aws_region.current.name}"
+    drone_secret        = "${var.drone_secret}"
+    drone_host          = "${aws_elb.main.dns_name}"
+    database_driver     = "postgres"
+    database_datasource = "${module.postgres.connection_string}?sslmode=disable"
+    github_org          = "${var.drone_github_org}"
+    github_admins       = "${join(",", var.drone_github_admins)}"
+    github_client       = "${var.drone_github_client}"
+    github_secret       = "${var.drone_github_secret}"
   }
 }
 

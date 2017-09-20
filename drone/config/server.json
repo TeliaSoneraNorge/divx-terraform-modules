@@ -22,12 +22,12 @@
             "Value": "${drone_host}"
         },
         {
-            "Name": "REMOTE_DRIVER",
-            "Value": "${remote_driver}"
+            "Name": "DRONE_DATABASE_DRIVER",
+            "Value": "${database_driver}"
         },
         {
-            "Name": "REMOTE_CONFIG",
-            "Value": "${remote_config}"
+            "Name": "DRONE_DATABASE_DATASOURCE",
+            "Value": "${database_datasource}"
         },
         {
             "Name": "DRONE_OPEN",
