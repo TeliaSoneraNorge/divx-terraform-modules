@@ -67,7 +67,6 @@ variable "postgres_port" {
 
 variable "drone_secret" {
   description = "Shared secret used to authenticate agents with the Drone server. (KMS Encrypted)."
-  default     = "12345"
 }
 
 variable "drone_github_org" {
@@ -91,6 +90,13 @@ variable "drone_github_secret" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
+data "aws_kms_secret" "decrypted" {
+  secret {
+    name    = "drone_secret"
+    payload = "${var.drone_secret}"
+  }
+}
+
 resource "aws_route53_record" "main" {
   zone_id = "${var.zone_id}"
   name    = "${var.domain}"
@@ -125,7 +131,7 @@ module "server" {
   load_balancer_name  = "${module.network.external_elb_name}"
   load_balancer_sg    = "${module.network.external_elb_sg}"
   postgres_connection = "${module.postgres.connection_string}"
-  drone_secret        = "${var.drone_secret}"
+  drone_secret        = "${data.aws_kms_secret.decrypted.drone_secret}"
   drone_github_org    = "${var.drone_github_org}"
   drone_github_admins = ["${var.drone_github_admins}"]
   drone_github_client = "${var.drone_github_client}"
@@ -147,7 +153,7 @@ module "agent" {
   cluster_id   = "${module.cluster.id}"
   cluster_role = "${module.cluster.role_id}"
   task_count   = "${var.instance_count}"
-  drone_secret = "${var.drone_secret}"
+  drone_secret = "${data.aws_kms_secret.decrypted.drone_secret}"
 }
 
 module "cluster" {

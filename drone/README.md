@@ -13,9 +13,15 @@ module "drone" {
 
   prefix              = "drone-test"
   environment         = "dev"
+  domain              = "drone.example.com"
+  zone_id             = "<parent-domain-zone-id>"
+  certificate_arn     = "<domain-certificate-arn>"
+  authorized_cidr     = ["0.0.0.0/0"]
   vpc_id              = "vpc-12356789"
   subnet_ids          = ["subnet-12345678", "subnet-23456789"]
   instance_key        = ""
+  drone_secret        = "<kms-encrypted-secret>"
+  postgres_password   = "<kms-encrypted-password>"
   drone_github_admins = ["itsdalmo"]
   drone_github_client = "<github-oauth-client>"
   drone_github_secret = "<github-oauth-secret>"
