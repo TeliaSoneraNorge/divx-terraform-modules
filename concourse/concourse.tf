@@ -127,11 +127,6 @@ variable "log_level" {
   default     = "info"
 }
 
-variable "rolling_updates" {
-  description = "Flag for rolling updates. Requires that the Autoscaling groups are set up in Cloudformation."
-  default     = "true"
-}
-
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
@@ -265,17 +260,14 @@ module "atc" {
   instance_type   = "${var.atc_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
-  rolling_updates = "${var.rolling_updates}"
 }
 
 resource "aws_autoscaling_attachment" "atc_internal" {
-  depends_on             = ["module.atc"]
   autoscaling_group_name = "${module.atc.id}"
   elb                    = "${module.internal_elb.name}"
 }
 
 resource "aws_autoscaling_attachment" "atc_external" {
-  depends_on             = ["module.atc"]
   autoscaling_group_name = "${module.atc.id}"
   elb                    = "${module.external_elb.name}"
 }
@@ -360,7 +352,6 @@ module "worker" {
   instance_type   = "${var.worker_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
-  rolling_updates = "${var.rolling_updates}"
 }
 
 resource "aws_security_group_rule" "worker_ingress_tsa" {

@@ -48,10 +48,10 @@ variable "instance_policy" {
   description = "A policy document which is applied to the instance profile."
 }
 
-variable "rolling_updates" {
-  description = "Flag for rolling updates. Requires that the Autoscaling group is set up in Cloudformation."
-  default     = "false"
-}
+# variable "rolling_updates" {
+#   description = "Flag for rolling updates. Requires that the Autoscaling group is set up in Cloudformation."
+#   default     = "false"
+# }
 
 # ------------------------------------------------------------------------------
 # Resources
@@ -120,7 +120,7 @@ resource "aws_launch_configuration" "main" {
 }
 
 resource "aws_autoscaling_group" "main" {
-  count                = "${var.rolling_updates == "false" ? 1 : 0}"
+  # count                = "${var.rolling_updates == "false" ? 1 : 0}"
   name                 = "${aws_launch_configuration.main.name}"
   desired_capacity     = "${var.instance_count}"
   min_size             = "${var.instance_count}"
@@ -151,32 +151,56 @@ resource "aws_autoscaling_group" "main" {
   }
 }
 
-# Rolling updates
-resource "aws_cloudformation_stack" "main" {
-  count         = "${var.rolling_updates == "true" ? 1 : 0}"
-  depends_on    = ["aws_launch_configuration.main"]
-  name          = "${var.prefix}-asg"
-  template_body = "${data.template_file.main.rendered}"
-}
+# # Rolling updates
+# resource "aws_cloudformation_stack" "main" {
+#   count         = "${var.rolling_updates == "true" ? 1 : 0}"
+#   depends_on    = ["aws_launch_configuration.main"]
+#   name          = "${var.prefix}-asg"
+#   template_body = "${data.template_file.main.rendered}"
+# }
 
-data "template_file" "main" {
-  template = "${file("${path.module}/cloudformation.yml")}"
+# data "template_file" "main" {
+#   template = "${file("${path.module}/cloudformation.yml")}"
 
-  vars {
-    prefix               = "${var.prefix}"
-    environment          = "${var.environment}"
-    launch_configuration = "${aws_launch_configuration.main.name}"
-    min_size             = "${var.instance_count}"
-    max_size             = "${var.instance_count + 2}"
-    subnets              = "${jsonencode(var.subnet_ids)}"
-  }
-}
+#   vars {
+#     prefix               = "${var.prefix}"
+#     environment          = "${var.environment}"
+#     launch_configuration = "${aws_launch_configuration.main.name}"
+#     min_size             = "${var.instance_count}"
+#     max_size             = "${var.instance_count + 2}"
+#     subnets              = "${jsonencode(var.subnet_ids)}"
+#   }
+# }
+
+# data "aws_autoscaling_groups" "main" {
+#   # The join() hack is required because currently the ternary operator
+#   # evaluates the expressions on both branches of the condition before
+#   # returning a value. When providing and external VPC, the template VPC
+#   # resource gets a count of zero which triggers an evaluation error.
+#   #
+#   # Copied from:
+#   # https://github.com/coreos/tectonic-installer/blob/master/modules/aws/vpc/vpc.tf
+#   #
+#   # Hardcoding the ASG name for Cloudformation here because the type of ["AsgName"]
+#   # cannot be inferred when the list is empty. I.e., need to update this if we change the stack name.
+
+#   filter {
+#     name = "auto-scaling-group"
+#     values = [
+#       "${var.rolling_updates == "true" ? join(" ", aws_cloudformation_stack.main.*.outputs.AsgName) : join(" ", aws_autoscaling_group.main.*.id)}"
+#     ]
+#   }
+# }
 
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+# output "id" {
+#   value = "${element(data.aws_autoscaling_groups.main.names, 0)}"
+# }
+
 output "id" {
-  value = "${var.rolling_updates == "true" ? "${aws_cloudformation_stack.main.outputs["AsgName"]}" : "${aws_autoscaling_group.main.id}"}"
+  value = "${aws_autoscaling_group.main.id}"
 }
 
 output "role_name" {
