@@ -183,6 +183,10 @@ data "template_file" "main" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+output "id" {
+  value = "${aws_autoscaling_group.main.id}"
+}
+
 output "role_name" {
   value = "${aws_iam_role.main.name}"
 }

@@ -136,6 +136,10 @@ output "id" {
   value = "${aws_ecs_cluster.main.id}"
 }
 
+output "asg_id" {
+  value = "${module.asg.id}"
+}
+
 output "role_name" {
   value = "${module.asg.role_name}"
 }

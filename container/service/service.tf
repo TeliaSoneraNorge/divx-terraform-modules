@@ -15,7 +15,8 @@ variable "cluster_id" {
 }
 
 variable "cluster_sg" {
-  description = "ID of the security group associated with the cluster."
+  description = "Optional: ID of the security group associated with the cluster."
+  default     = ""
 }
 
 variable "cluster_role" {
@@ -23,11 +24,13 @@ variable "cluster_role" {
 }
 
 variable "load_balancer_name" {
-  description = "The name of a load balancer used with the service (classic or application)."
+  description = "Optional: The name of a load balancer used with the service (classic or application)."
+  default     = ""
 }
 
 variable "load_balancer_sg" {
-  description = "Id of the security group for the load balancer used for the service."
+  description = "Optional: Id of the security group for the load balancer used for the service."
+  default     = ""
 }
 
 variable "vpc_id" {
