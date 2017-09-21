@@ -266,11 +266,6 @@ module "atc" {
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
   rolling_updates = "${var.rolling_updates}"
-
-  load_balancers = [
-    "${module.internal_elb.name}",
-    "${module.external_elb.name}",
-  ]
 }
 
 resource "aws_autoscaling_attachment" "atc_internal" {
