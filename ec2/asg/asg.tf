@@ -24,12 +24,6 @@ variable "subnet_ids" {
   type        = "list"
 }
 
-variable "load_balancers" {
-  description = "List of load balancers to add to the ASG."
-  type        = "list"
-  default     = []
-}
-
 variable "instance_type" {
   description = "Type of instance to provision."
   default     = "t2.micro"
@@ -132,7 +126,6 @@ resource "aws_autoscaling_group" "main" {
   min_size             = "${var.instance_count}"
   max_size             = "${var.instance_count + 1}"
   launch_configuration = "${aws_launch_configuration.main.name}"
-  load_balancers       = ["${var.load_balancers}"]
   vpc_zone_identifier  = ["${var.subnet_ids}"]
 
   tag {
@@ -176,7 +169,6 @@ data "template_file" "main" {
     min_size             = "${var.instance_count}"
     max_size             = "${var.instance_count + 2}"
     subnets              = "${jsonencode(var.subnet_ids)}"
-    load_balancers       = "${join("", var.load_balancers) == "" ? "" : "LoadBalancerNames: ${jsonencode(var.load_balancers)}"}"
   }
 }
 
@@ -184,7 +176,7 @@ data "template_file" "main" {
 # Output
 # ------------------------------------------------------------------------------
 output "id" {
-  value = "${aws_autoscaling_group.main.id}"
+  value = "${var.rolling_updates == "true" ? aws_cloudformation_stack.main.outputs["AsgName"] : aws_autoscaling_group.main.id}"
 }
 
 output "role_name" {

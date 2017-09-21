@@ -273,6 +273,16 @@ module "atc" {
   ]
 }
 
+resource "aws_autoscaling_attachment" "atc_internal" {
+  autoscaling_group_name = "${module.atc.id}"
+  elb                    = "${module.internal_elb.name}"
+}
+
+resource "aws_autoscaling_attachment" "atc_external" {
+  autoscaling_group_name = "${module.atc.id}"
+  elb                    = "${module.external_elb.name}"
+}
+
 resource "aws_security_group_rule" "elb_ingress_tsa" {
   security_group_id        = "${module.atc.security_group_id}"
   type                     = "ingress"
