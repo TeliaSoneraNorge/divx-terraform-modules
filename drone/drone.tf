@@ -10,6 +10,23 @@ variable "environment" {
   default     = ""
 }
 
+variable "domain" {
+  description = "The domain name to associate with the Drone ELB. (Must have an ACM certificate)."
+}
+
+variable "zone_id" {
+  description = "Zone ID for the domains route53 alias record."
+}
+
+variable "certificate_arn" {
+  description = "ACM certificate ARN for the domain."
+}
+
+variable "authorized_cidr" {
+  description = "List of CIDR blocks which can reach the Drone web interface."
+  type        = "list"
+}
+
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
@@ -49,7 +66,7 @@ variable "postgres_port" {
 }
 
 variable "drone_secret" {
-  description = "Shared secret used to authenticate agents with the Drone server."
+  description = "Shared secret used to authenticate agents with the Drone server. (KMS Encrypted)."
   default     = "12345"
 }
 
@@ -74,8 +91,63 @@ variable "drone_github_secret" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-data "aws_region" "current" {
-  current = true
+resource "aws_route53_record" "main" {
+  zone_id = "${var.zone_id}"
+  name    = "${var.domain}"
+  type    = "A"
+
+  alias {
+    name                   = "${module.network.external_elb_dns}"
+    zone_id                = "${module.network.external_elb_zone_id}"
+    evaluate_target_health = false
+  }
+}
+
+module "network" {
+  source = "./network"
+
+  prefix          = "${var.prefix}"
+  environment     = "${var.environment}"
+  certificate_arn = "${var.certificate_arn}"
+  vpc_id          = "${var.vpc_id}"
+  subnet_ids      = ["${var.subnet_ids}"]
+}
+
+module "server" {
+  source = "./server"
+
+  prefix              = "${var.prefix}"
+  environment         = "${var.environment}"
+  domain              = "${var.domain}"
+  cluster_id          = "${module.cluster.id}"
+  cluster_sg          = "${module.cluster.security_group_id}"
+  cluster_role        = "${module.cluster.role_id}"
+  load_balancer_name  = "${module.network.external_elb_name}"
+  load_balancer_sg    = "${module.network.external_elb_sg}"
+  postgres_connection = "${module.postgres.connection_string}"
+  drone_secret        = "${var.drone_secret}"
+  drone_github_org    = "${var.drone_github_org}"
+  drone_github_admins = ["${var.drone_github_admins}"]
+  drone_github_client = "${var.drone_github_client}"
+  drone_github_secret = "${var.drone_github_secret}"
+}
+
+# Manually attach the internal ELB to the clusters ASG.
+resource "aws_autoscaling_attachment" "cluster" {
+  autoscaling_group_name = "${module.cluster.asg_id}"
+  elb                    = "${module.network.internal_elb_id}"
+}
+
+module "agent" {
+  source = "./agent"
+
+  prefix       = "${var.prefix}"
+  environment  = "${var.environment}"
+  domain       = "${module.network.internal_elb_dns}"
+  cluster_id   = "${module.cluster.id}"
+  cluster_role = "${module.cluster.role_id}"
+  task_count   = "${var.instance_count}"
+  drone_secret = "${var.drone_secret}"
 }
 
 module "cluster" {
@@ -107,56 +179,56 @@ module "postgres" {
   skip_snapshot = "true"
 }
 
-resource "aws_elb" "main" {
-  name            = "${var.prefix}-elb"
-  subnets         = ["${var.subnet_ids}"]
-  security_groups = ["${aws_security_group.main.id}"]
-
-  listener {
-    instance_port     = "8000"
-    instance_protocol = "tcp"
-    lb_port           = "80"
-    lb_protocol       = "tcp"
-  }
-
-  listener {
-    instance_port     = "9000"
-    instance_protocol = "tcp"
-    lb_port           = "9000"
-    lb_protocol       = "tcp"
-  }
-
-  health_check {
-    target              = "HTTP:8000/"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    interval            = 30
-  }
-
-  tags {
-    Name        = "${var.prefix}"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+# http/https ingress to the cluster is set up by the container service module.
+resource "aws_security_group_rule" "http_ingress" {
+  security_group_id = "${module.network.external_elb_sg}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "80"
+  to_port           = "80"
+  cidr_blocks       = ["${var.authorized_cidr}"]
 }
 
-resource "aws_security_group" "main" {
-  name        = "${var.prefix}-sg"
-  description = "Security group for the Drone.io ELB."
-  vpc_id      = "${var.vpc_id}"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags {
-    Name        = "${var.prefix}-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+resource "aws_security_group_rule" "https_ingress" {
+  security_group_id = "${module.network.external_elb_sg}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "443"
+  to_port           = "443"
+  cidr_blocks       = ["${var.authorized_cidr}"]
 }
 
+# Cluster should only allow GRPC ingress from the internal ELB
+resource "aws_security_group_rule" "grpc_ingress" {
+  security_group_id        = "${module.cluster.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "9000"
+  to_port                  = "9000"
+  source_security_group_id = "${module.network.internal_elb_sg}"
+}
+
+# Internal ELB needs access to do health checks on the cluster.
+resource "aws_security_group_rule" "internal_elb_health_checks" {
+  security_group_id        = "${module.cluster.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "8000"
+  to_port                  = "8000"
+  source_security_group_id = "${module.network.internal_elb_sg}"
+}
+
+# Cluster can ingress the internal ELB (which means agents can ingress on GRPC).
+resource "aws_security_group_rule" "cluster_ingress_internal_grpc" {
+  security_group_id        = "${module.network.internal_elb_sg}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "9000"
+  to_port                  = "9000"
+  source_security_group_id = "${module.cluster.security_group_id}"
+}
+
+# Postgres allow ingress from cluster.
 resource "aws_security_group_rule" "server_ingress_postgres" {
   security_group_id        = "${module.postgres.security_group_id}"
   type                     = "ingress"
@@ -164,33 +236,6 @@ resource "aws_security_group_rule" "server_ingress_postgres" {
   from_port                = "${module.postgres.port}"
   to_port                  = "${module.postgres.port}"
   source_security_group_id = "${module.cluster.security_group_id}"
-}
-
-resource "aws_security_group_rule" "outbound" {
-  security_group_id = "${aws_security_group.main.id}"
-  type              = "egress"
-  protocol          = "-1"
-  from_port         = 0
-  to_port           = 0
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "web_ingress" {
-  security_group_id = "${aws_security_group.main.id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "80"
-  to_port           = "80"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "agent_ingress" {
-  security_group_id = "${aws_security_group.main.id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "9000"
-  to_port           = "9000"
-  cidr_blocks       = ["0.0.0.0/0"]
 }
 
 # ------------------------------------------------------------------------------
@@ -201,5 +246,5 @@ output "security_group_id" {
 }
 
 output "endpoint" {
-  value = "${aws_elb.main.dns_name}"
+  value = "https://${var.domain}"
 }
