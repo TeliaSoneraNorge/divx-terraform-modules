@@ -176,7 +176,7 @@ data "template_file" "main" {
 # Output
 # ------------------------------------------------------------------------------
 output "id" {
-  value = "${var.rolling_updates == "true" ? aws_cloudformation_stack.main.outputs["AsgName"] : aws_autoscaling_group.main.id}"
+  value = "${var.rolling_updates == "true" ? "${aws_cloudformation_stack.main.outputs["AsgName"]}" : "${aws_autoscaling_group.main.id}"}"
 }
 
 output "role_name" {
