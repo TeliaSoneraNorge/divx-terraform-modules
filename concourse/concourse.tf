@@ -84,7 +84,7 @@ variable "image_repository" {
 
 variable "image_version" {
   description = "Concourse image version."
-  default     = "3.3.4"
+  default     = "3.5.0"
 }
 
 variable "atc_count" {
@@ -125,6 +125,16 @@ variable "tsa_port" {
 variable "log_level" {
   description = "Concourse log level (debug|info|error|fatal) for ATC, TSA and Baggageclaim."
   default     = "info"
+}
+
+variable "vault_url" {
+  description = "Optional: DNS name for the vault backend."
+  default     = ""
+}
+
+variable "vault_client_token" {
+  description = "Optional: Vault client token."
+  default     = ""
 }
 
 # -------------------------------------------------------------------------------
@@ -216,6 +226,8 @@ data "template_file" "atc" {
     authorized_worker_keys    = "${file("${var.concourse_keys}/authorized_worker_keys")}"
     atc_port                  = "${var.atc_port}"
     tsa_port                  = "${var.tsa_port}"
+    vault_url                 = "${var.vault_url}"
+    vault_client_token        = "${var.vault_client_token}"
   }
 }
 
