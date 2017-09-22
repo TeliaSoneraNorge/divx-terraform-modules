@@ -73,8 +73,16 @@ output "name" {
   value = "${element(split("/", aws_alb.main.name), 2)}"
 }
 
+output "dns_name" {
+  value = "${aws_alb.main.dns_name}"
+}
+
 output "zone_id" {
   value = "${aws_alb.main.zone_id}"
+}
+
+output "origin_id" {
+  value = "${element(split(".", aws_alb.main.dns_name), 0)}"
 }
 
 output "security_group_id" {

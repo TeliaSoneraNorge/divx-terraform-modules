@@ -84,7 +84,7 @@ variable "image_repository" {
 
 variable "image_version" {
   description = "Concourse image version."
-  default     = "3.3.4"
+  default     = "3.5.0"
 }
 
 variable "atc_count" {
@@ -127,9 +127,14 @@ variable "log_level" {
   default     = "info"
 }
 
-variable "rolling_updates" {
-  description = "Flag for rolling updates. Requires that the Autoscaling groups are set up in Cloudformation."
-  default     = "true"
+variable "vault_url" {
+  description = "Optional: DNS name for the vault backend."
+  default     = ""
+}
+
+variable "vault_client_token" {
+  description = "Optional: Vault client token."
+  default     = ""
 }
 
 # -------------------------------------------------------------------------------
@@ -221,6 +226,8 @@ data "template_file" "atc" {
     authorized_worker_keys    = "${file("${var.concourse_keys}/authorized_worker_keys")}"
     atc_port                  = "${var.atc_port}"
     tsa_port                  = "${var.tsa_port}"
+    vault_url                 = "${var.vault_url}"
+    vault_client_token        = "${var.vault_client_token}"
   }
 }
 
@@ -265,12 +272,16 @@ module "atc" {
   instance_type   = "${var.atc_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
-  rolling_updates = "${var.rolling_updates}"
+}
 
-  load_balancers = [
-    "${module.internal_elb.name}",
-    "${module.external_elb.name}",
-  ]
+resource "aws_autoscaling_attachment" "atc_internal" {
+  autoscaling_group_name = "${module.atc.id}"
+  elb                    = "${module.internal_elb.name}"
+}
+
+resource "aws_autoscaling_attachment" "atc_external" {
+  autoscaling_group_name = "${module.atc.id}"
+  elb                    = "${module.external_elb.name}"
 }
 
 resource "aws_security_group_rule" "elb_ingress_tsa" {
@@ -353,7 +364,6 @@ module "worker" {
   instance_type   = "${var.worker_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
-  rolling_updates = "${var.rolling_updates}"
 }
 
 resource "aws_security_group_rule" "worker_ingress_tsa" {

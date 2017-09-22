@@ -37,6 +37,18 @@ data "aws_iam_policy_document" "assume" {
         "${formatlist("arn:aws:iam::%s:user/%s", var.trusted_account, var.users)}",
       ]
     }
+
+    condition = {
+      test     = "Bool"
+      variable = "aws:MultiFactorAuthPresent"
+      values   = ["true"]
+    }
+
+    condition = {
+      test     = "NumericLessThan"
+      variable = "aws:MultiFactorAuthAge"
+      values   = ["3600"]
+    }
   }
 }
 

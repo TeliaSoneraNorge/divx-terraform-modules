@@ -1,23 +1,10 @@
-// Task/container can assume role
-data "aws_iam_policy_document" "task_assume" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
-}
-
 // ECS agent is allowed to log to the task log group
 data "aws_iam_policy_document" "task_log" {
   statement {
     effect = "Allow"
 
     resources = [
-      "${aws_cloudwatch_log_group.main.arn}",
+      "${var.task_log_group_arn}",
     ]
 
     actions = [
@@ -62,7 +49,7 @@ data "aws_iam_policy_document" "service_permissions" {
     ]
 
     resources = [
-      "arn:aws:elasticloadbalancing:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:loadbalancer/${var.target_group == "true" ? "app/" : ""}${var.load_balancer_name}/*",
+      "arn:aws:elasticloadbalancing:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:loadbalancer/${contains(keys(var.port_mapping), "0") ? "app/" : ""}${var.load_balancer_name}*",
     ]
   }
 

@@ -26,7 +26,7 @@ variable "image_version" {
 
 variable "instance_ami" {
   description = "ID of a CoreOS AMI for the instances."
-  default     = "ami-38ef0041"
+  default     = "ami-417abe38"
 }
 
 variable "instance_type" {
@@ -134,6 +134,14 @@ module "asg" {
 # ------------------------------------------------------------------------------
 output "id" {
   value = "${aws_ecs_cluster.main.id}"
+}
+
+output "asg_id" {
+  value = "${module.asg.id}"
+}
+
+output "role_name" {
+  value = "${module.asg.role_name}"
 }
 
 output "role_arn" {

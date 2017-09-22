@@ -15,7 +15,8 @@ variable "cluster_id" {
 }
 
 variable "cluster_sg" {
-  description = "ID of the security group associated with the cluster."
+  description = "Optional: ID of the security group associated with the cluster."
+  default     = ""
 }
 
 variable "cluster_role" {
@@ -23,11 +24,13 @@ variable "cluster_role" {
 }
 
 variable "load_balancer_name" {
-  description = "The name of a load balancer used with the service (classic or application)."
+  description = "Optional: The name of a load balancer used with the service (classic or application)."
+  default     = ""
 }
 
 variable "load_balancer_sg" {
-  description = "Id of the security group for the load balancer used for the service."
+  description = "Optional: Id of the security group for the load balancer used for the service."
+  default     = ""
 }
 
 variable "vpc_id" {
@@ -35,41 +38,22 @@ variable "vpc_id" {
   default     = ""
 }
 
-variable "target_group" {
-  description = "Optional: Create a target group for use with an application load balancer. (Does not create listener rules)."
-  default     = "true"
+variable "port_mapping" {
+  description = "A map of instance to container port mappings (host port = container port). Supports only one mapping when using an ALB (enabled by setting host port to 0)."
+  default     = {}
 }
 
-variable "image_repository" {
-  description = "Docker image repository."
+variable "task_definition" {
+  description = "ARN of a ECS task definition."
 }
 
-variable "image_version" {
-  description = "Optional: ECS image version."
-  default     = "latest"
+variable "task_log_group_arn" {
+  description = "ARN of the tasks log group."
 }
 
 variable "container_count" {
   description = "Number of containers to run for the task."
   default     = "2"
-}
-
-variable "container_cpu" {
-  description = "CPU reservation for the container."
-}
-
-variable "container_memory" {
-  description = "Memory reservation for the container."
-}
-
-variable "container_ports" {
-  description = "A map of instance to container port mappings (host port = container port)."
-  default     = {}
-}
-
-variable "container_policy" {
-  description = "Optional: IAM inline policy added to the container (task) role."
-  default     = ""
 }
 
 # ------------------------------------------------------------------------------
@@ -82,16 +66,16 @@ data "aws_region" "current" {
 }
 
 resource "aws_alb_target_group" "main" {
-  count       = "${var.target_group == "true" ? 1 : 0}"
-  vpc_id      = "${var.vpc_id}"
-  port        = "${element(values(var.container_ports), count.index)}"
-  protocol    = "HTTP"
+  count    = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
+  vpc_id   = "${var.vpc_id}"
+  port     = "${element(values(var.port_mapping), 0)}"
+  protocol = "HTTP"
 
   /**
-    * NOTE: TF is unable to destroy a target group while a listener is attached,
-    * therefor we have to create a new one before destroying the old. This also means
-    * we have to let it have a random name, and then tag it with the desired name.
-    */
+   * NOTE: TF is unable to destroy a target group while a listener is attached,
+   * therefor we have to create a new one before destroying the old. This also means
+   * we have to let it have a random name, and then tag it with the desired name.
+   */
   lifecycle {
     create_before_destroy = true
   }
@@ -103,11 +87,12 @@ resource "aws_alb_target_group" "main" {
   }
 }
 
-resource "aws_ecs_service" "main" {
+resource "aws_ecs_service" "alb" {
+  count           = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
   depends_on      = ["aws_iam_role.service"]
   name            = "${var.prefix}"
   cluster         = "${var.cluster_id}"
-  task_definition = "${aws_ecs_task_definition.main.arn}"
+  task_definition = "${var.task_definition}"
   desired_count   = "${var.container_count}"
   iam_role        = "${aws_iam_role.service.arn}"
 
@@ -115,11 +100,9 @@ resource "aws_ecs_service" "main" {
   deployment_maximum_percent         = 200
 
   load_balancer {
-    // Don't set load_balancer if we want a target_group. (But load_balancer is still required for scoping privileges).
-    elb_name         = "${var.target_group == "true" ? "" : var.load_balancer_name}"
-    target_group_arn = "${var.target_group != "true" ? "" : aws_alb_target_group.main.arn}"
+    target_group_arn = "${aws_alb_target_group.main.arn}"
     container_name   = "${var.prefix}"
-    container_port   = "${element(values(var.container_ports), 0)}"
+    container_port   = "${element(values(var.port_mapping), 0)}"
   }
 
   placement_strategy {
@@ -128,75 +111,57 @@ resource "aws_ecs_service" "main" {
   }
 }
 
-resource "aws_ecs_task_definition" "main" {
-  depends_on            = ["data.template_file.main"]
-  family                = "${var.prefix}"
-  container_definitions = "${data.template_file.main.rendered}"
-  task_role_arn         = "${aws_iam_role.task.arn}"
-}
+// Classic ELB
+resource "aws_ecs_service" "elb" {
+  count           = "${length(var.port_mapping) > 0 && !contains(keys(var.port_mapping), "0") ? 1 : 0}"
+  depends_on      = ["aws_iam_role.service"]
+  name            = "${var.prefix}"
+  cluster         = "${var.cluster_id}"
+  task_definition = "${var.task_definition}"
+  desired_count   = "${var.container_count}"
+  iam_role        = "${aws_iam_role.service.arn}"
 
-data "template_file" "main" {
-  depends_on = ["data.template_file.ports"]
-  template   = "${file("${path.module}/task.json")}"
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 200
 
-  vars {
-    name          = "${var.prefix}"
-    repository    = "${var.image_repository}"
-    version       = "${var.image_version}"
-    cpu           = "${var.container_cpu}"
-    memory        = "${var.container_memory}"
-    port_mappings = "${join(",", data.template_file.ports.*.rendered)}"
-    log_group     = "${aws_cloudwatch_log_group.main.name}"
-    region        = "${data.aws_region.current.name}"
+  load_balancer {
+    elb_name       = "${var.load_balancer_name}"
+    container_name = "${var.prefix}"
+    container_port = "${element(values(var.port_mapping), 0)}"
+  }
+
+  placement_strategy {
+    type  = "spread"
+    field = "instanceId"
   }
 }
 
-data "template_file" "ports" {
-  count = "${length(var.container_ports)}"
+// Support no port mapping.
+resource "aws_ecs_service" "no_elb" {
+  count           = "${length(var.port_mapping) > 0 ? 0 : 1}"
+  name            = "${var.prefix}"
+  cluster         = "${var.cluster_id}"
+  task_definition = "${var.task_definition}"
+  desired_count   = "${var.container_count}"
 
-  vars {
-    container_port = "${element(values(var.container_ports), count.index)}"
-    host_port      = "${var.target_group == "true" ? 0 : element(keys(var.container_ports), count.index)}" // Use dynamic port mapping when we have a target group.
-    protocol       = "tcp"                                                                                 // AWS load balancers do not support UDP.
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 200
+
+  placement_strategy {
+    type  = "spread"
+    field = "instanceId"
   }
-
-  template = <<EOF
-{
-  "containerPort": $${container_port},
-  "hostPort": $${host_port},
-  "protocol": "$${protocol}"
-}
-EOF
 }
 
-resource "aws_iam_role_policy" "log_agent" {
-  name   = "${var.prefix}-log-permissions"
-  role   = "${var.cluster_role}"
-  policy = "${data.aws_iam_policy_document.task_log.json}"
-}
-
-resource "aws_cloudwatch_log_group" "main" {
-  name = "${var.prefix}"
-}
-
-resource "aws_iam_role" "task" {
-  name               = "${var.prefix}-task-role"
-  assume_role_policy = "${data.aws_iam_policy_document.task_assume.json}"
-}
-
-resource "aws_iam_role_policy" "task_permissions" {
-  count  = "${var.container_policy == "" ? 0 : 1}"
-  name   = "${var.prefix}-task-permissions"
-  role   = "${aws_iam_role.task.id}"
-  policy = "${var.container_policy}"
-}
 
 resource "aws_iam_role" "service" {
+  count              = "${length(var.port_mapping) > 0 ? 1 : 0}"
   name               = "${var.prefix}-service-role"
   assume_role_policy = "${data.aws_iam_policy_document.service_assume.json}"
 }
 
 resource "aws_iam_role_policy" "service_permissions" {
+  count  = "${length(var.port_mapping) > 0 ? 1 : 0}"
   name   = "${var.prefix}-service-permissions"
   role   = "${aws_iam_role.service.id}"
   policy = "${data.aws_iam_policy_document.service_permissions.json}"
@@ -204,7 +169,7 @@ resource "aws_iam_role_policy" "service_permissions" {
 
 // Open dynamic port mapping range if using an ALB
 resource "aws_security_group_rule" "dynamic_port_mapping" {
-  count                    = "${var.target_group == "true" ? 1 : 0}"
+  count                    = "${contains(keys(var.port_mapping), "0") ? 1 : 0}"
   type                     = "ingress"
   security_group_id        = "${var.cluster_sg}"
   protocol                 = "tcp"
@@ -215,42 +180,36 @@ resource "aws_security_group_rule" "dynamic_port_mapping" {
 
 // Open individual ports if using a classic ELB
 resource "aws_security_group_rule" "static_port_mapping" {
-  count                    = "${var.target_group == "true" ? 0 : length(var.container_ports)}"
+  count                    = "${contains(keys(var.port_mapping), "0") ? 0 : length(var.port_mapping)}"
   type                     = "ingress"
   security_group_id        = "${var.cluster_sg}"
   protocol                 = "tcp"
-  from_port                = "${element(keys(var.container_ports), count.index)}"
-  to_port                  = "${element(keys(var.container_ports), count.index)}"
+  from_port                = "${element(keys(var.port_mapping), count.index)}"
+  to_port                  = "${element(keys(var.port_mapping), count.index)}"
   source_security_group_id = "${var.load_balancer_sg}"
+}
+
+resource "aws_iam_role_policy" "log_agent" {
+  name   = "${var.prefix}-log-permissions"
+  role   = "${var.cluster_role}"
+  policy = "${data.aws_iam_policy_document.task_log.json}"
 }
 
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
-output "task_arn" {
-  value = "${aws_ecs_task_definition.main.arn}"
+output "arn" {
+  value = "${length(var.port_mapping) > 0 ? contains(keys(var.port_mapping), "0") ? "${aws_ecs_service.alb.id}" : "${aws_ecs_service.elb.id}" : "${aws_ecs_service.no_elb.id}"}"
 }
 
-output "task_role_arn" {
-  value = "${aws_iam_role.task.arn}"
-}
-
-output "task_role_id" {
-  value = "${aws_iam_role.task.id}"
-}
-
-output "service_arn" {
-  value = "${aws_ecs_service.main.id}"
-}
-
-output "service_role_arn" {
+output "role_arn" {
   value = "${aws_iam_role.service.arn}"
 }
 
-output "service_role_id" {
+output "role_id" {
   value = "${aws_iam_role.service.id}"
 }
 
 output "target_group_arn" {
-  value = "${var.target_group == "true" ? aws_alb_target_group.main.arn : "NONE"}"
+  value = "${contains(keys(var.port_mapping), "0") ? aws_alb_target_group.main.arn : "NONE"}"
 }

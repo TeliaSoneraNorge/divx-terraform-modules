@@ -42,102 +42,22 @@ resource "aws_iam_user_policy_attachment" "view_only_policy" {
   policy_arn = "arn:aws:iam::aws:policy/job-function/ViewOnlyAccess"
 }
 
-resource "aws_iam_user_policy" "password" {
-  name   = "manage-own-password"
+resource "aws_iam_user_policy" "inspect" {
+  name   = "inspect-own-user"
   user   = "${aws_iam_user.main.name}"
-  policy = "${data.aws_iam_policy_document.password.json}"
+  policy = "${data.aws_iam_policy_document.inspect.json}"
 }
 
-data "aws_iam_policy_document" "password" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:ChangePassword",
-      "iam:UpdateLoginProfile",
-    ]
-
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
-    ]
-  }
-}
-
-resource "aws_iam_user_policy" "mfa" {
-  name   = "manage-own-mfa"
+resource "aws_iam_user_policy" "manage" {
+  name   = "manage-own-user"
   user   = "${aws_iam_user.main.name}"
-  policy = "${data.aws_iam_policy_document.mfa.json}"
-}
-
-data "aws_iam_policy_document" "mfa" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:CreateVirtualMFADevice",
-      "iam:EnableMFADevice",
-      "iam:ResyncMFADevice",
-      "iam:DeactivateMFADevice",
-      "iam:DeleteVirtualMFADevice",
-    ]
-
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/$${aws:username}",
-    ]
-  }
+  policy = "${data.aws_iam_policy_document.manage.json}"
 }
 
 resource "aws_iam_user_policy" "assume" {
-  name   = "assume-cross-account-role"
+  name   = "assume-cross-account-roles"
   user   = "${aws_iam_user.main.name}"
   policy = "${data.aws_iam_policy_document.assume.json}"
-}
-
-data "aws_iam_policy_document" "assume" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "sts:AssumeRole",
-    ]
-
-    not_resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/*",
-    ]
-  }
-}
-
-resource "aws_iam_user_policy" "read_policies" {
-  name   = "inspect-own-policies"
-  user   = "${aws_iam_user.main.name}"
-  policy = "${data.aws_iam_policy_document.read_policies.json}"
-}
-
-data "aws_iam_policy_document" "read_policies" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:GetUserPolicy",
-    ]
-
-    resources = [
-      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}",
-    ]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:GetPolicyVersion",
-    ]
-
-    resources = [
-      "*",
-    ]
-  }
 }
 
 # ------------------------------------------------------------------------------
@@ -146,36 +66,34 @@ data "aws_iam_policy_document" "read_policies" {
 output "instructions" {
   value = <<EOF
 
-1. Decrypt your password and access key on keybase:
+1. Decrypt your password using Keybase.io:
 
------BEGIN PGP MESSAGE-----
+echo ${aws_iam_user_login_profile.main.encrypted_password} | base64 --decode | keybase pgp decrypt
 
-${aws_iam_user_login_profile.main.encrypted_password}
------END PGP MESSAGE-----
+2. Log into the console:
 
-2. Log into the console (remember to enable MFA):
-URL:      https://${data.aws_iam_account_alias.current.account_alias}.signin.aws.amazon.com/console
-Username: ${var.username}
-Password: <your-decrypted-password>
+  URL:      https://${data.aws_iam_account_alias.current.account_alias}.signin.aws.amazon.com/console
+  Username: ${var.username}
+  Password: <your-decrypted-password>
 
-3. Decrypt your secret access key:
+3. Enable (virtual) MFA using the console:
 
------BEGIN PGP MESSAGE-----
+  https://console.aws.amazon.com/iam/home?region=global#/users/${var.username}?section=security_credentials
 
-${aws_iam_access_key.main.encrypted_secret}
------END PGP MESSAGE-----
+4. Decrypt your secret access key:
 
-4. Add a profile to ~/.aws/credentials:
+echo ${aws_iam_access_key.main.encrypted_secret} | base64 --decode | keybase pgp decrypt
 
-[account-user]
-aws_access_key_id = ${aws_iam_access_key.main.id}
-aws_secret_access_key = <your-decrypted-secret-access-key>
+5. Install (requires homebrew) and add a profile to vaulted:
 
-5. Add roles to your ~/.aws/credentials. Example:
+  $ brew install vaulted
+  $ vaulted add <profile-name>
 
-[account-developer]
-role_arn = <account-role-arn>
-source_profile = account-user
+  Follow the instructions and add your keys and MFA device:
+
+  Access Key ID: ${aws_iam_access_key.main.id}
+  Secret Access Key: <your-decrypted-secret-access-key>
+  MFA: arn:aws:iam::${data.aws_caller_identity.current.account_id}:mfa/${var.username}
 
 EOF
 }
