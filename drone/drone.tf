@@ -71,7 +71,8 @@ variable "drone_secret" {
 
 variable "drone_github_org" {
   description = "Drone Github organization which is allowed to create users."
-  default     = ""
+  type        = "list"
+  default     = [""]
 }
 
 variable "drone_github_admins" {
@@ -132,7 +133,7 @@ module "server" {
   load_balancer_sg    = "${module.network.external_elb_sg}"
   postgres_connection = "${module.postgres.connection_string}"
   drone_secret        = "${data.aws_kms_secret.decrypted.drone_secret}"
-  drone_github_org    = "${var.drone_github_org}"
+  drone_github_org    = "${join(",", var.drone_github_org)}"
   drone_github_admins = ["${var.drone_github_admins}"]
   drone_github_client = "${var.drone_github_client}"
   drone_github_secret = "${var.drone_github_secret}"
@@ -180,7 +181,7 @@ module "postgres" {
   subnet_ids    = ["${var.subnet_ids}"]
   engine        = "postgres"
   instance_type = "db.m3.medium"
-  storage_size  = "50"
+  storage_size  = "10"
   public_access = "false"
   skip_snapshot = "true"
 }
