@@ -74,6 +74,20 @@ data "aws_iam_policy_document" "main" {
     }
   }
 
+  # Cannot access any of our clusters from the console unless we have the following access:
+  statment {
+    effect = "Allow"
+
+    actions = [
+      "ecs:DescribeClusters"
+    ]
+
+    resources = [
+      "*",
+    ]
+
+  }
+
   statement {
     effect = "Allow"
 
