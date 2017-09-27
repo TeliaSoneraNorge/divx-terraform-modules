@@ -10,6 +10,18 @@ variable "environment" {
   default     = ""
 }
 
+variable "domain" {
+  description = "The domain name to associate with the Concourse ELB. (Must have an ACM certificate)."
+}
+
+variable "zone_id" {
+  description = "Zone ID for the domains route53 alias record."
+}
+
+variable "certificate_arn" {
+  description = "ACM certificate ARN for the domain."
+}
+
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
@@ -17,10 +29,6 @@ variable "vpc_id" {
 variable "subnet_ids" {
   description = "ID of subnets for the ELB."
   type        = "list"
-}
-
-variable "bastion_sg" {
-  description = "Bastion security group ID. Opens SSH access."
 }
 
 variable "authorized_cidr" {
@@ -57,6 +65,18 @@ data "aws_region" "current" {
 
 data "aws_caller_identity" "current" {}
 
+resource "aws_route53_record" "main" {
+  zone_id = "${var.zone_id}"
+  name    = "${var.domain}"
+  type    = "A"
+
+  alias {
+    name                   = "${aws_elb.main.dns_name}"
+    zone_id                = "${aws_elb.main.zone_id}"
+    evaluate_target_health = false
+  }
+}
+
 module "asg" {
   source          = "../ec2/asg"
   prefix          = "${var.prefix}-vault"
@@ -91,7 +111,7 @@ data "template_file" "main" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
-    download_url  = "https://releases.hashicorp.com/vault/0.8.2/vault_0.8.2_linux_amd64.zip"
+    download_url  = "https://releases.hashicorp.com/vault/0.8.3/vault_0.8.3_linux_amd64.zip"
     config        = "${var.config != "" ? var.config : data.template_file.config.rendered}"
     extra_install = "${var.extra_install}"
   }
@@ -114,16 +134,17 @@ resource "aws_elb" "main" {
 
   listener {
     instance_port     = 8200
-    instance_protocol = "tcp"
+    instance_protocol = "http"
     lb_port           = 80
-    lb_protocol       = "tcp"
+    lb_protocol       = "http"
   }
 
   listener {
-    instance_port     = 8200
-    instance_protocol = "tcp"
-    lb_port           = 443
-    lb_protocol       = "tcp"
+    instance_port      = 8200
+    instance_protocol  = "http"
+    lb_port            = 443
+    lb_protocol        = "https"
+    ssl_certificate_id = "${var.certificate_arn}"
   }
 
   health_check {
@@ -191,15 +212,6 @@ resource "aws_security_group_rule" "elb_ingress" {
   from_port                = "8200"
   to_port                  = "8200"
   source_security_group_id = "${aws_security_group.main.id}"
-}
-
-resource "aws_security_group_rule" "bastion_ingress" {
-  security_group_id        = "${module.asg.security_group_id}"
-  type                     = "ingress"
-  protocol                 = "tcp"
-  from_port                = "22"
-  to_port                  = "22"
-  source_security_group_id = "${var.bastion_sg}"
 }
 
 # ------------------------------------------------------------------------------
