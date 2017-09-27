@@ -74,8 +74,8 @@ data "aws_iam_policy_document" "main" {
     }
   }
 
-  # Cannot access any of our clusters from the console unless we have the following access:
-  statment {
+  # NOTE: ViewOnlyAccess does not include ecs:DescribeClusters.
+  statement {
     effect = "Allow"
 
     actions = [
