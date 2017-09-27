@@ -29,11 +29,10 @@ output "vault_addr" {
 
 ### Manual steps
 
-In order to get Vault up and running we also need to `init` and `unseal` the vault. This can be
-done from your local machine.
+In order to get Vault up and running we also need to `init` and `unseal` the vault. This
+has to be done by SSH'ing to the instance and running the following commands:
 
 ```bash
-export VAULT_ADDR=$(terraform output vault_addr)
 vault init \
   -pgp-keys=keybase:itsdalmo \
   -root-token-pgp-key=keybase:itsdalmo \
@@ -41,5 +40,37 @@ vault init \
   -key-threshold=1
 
 vault unseal <decrypted-unseal-keys>
+```
+
+At this point the instance will pass the health checks and be available from the outside, so
+you can switch to your local machine and set up remote access:
+
+```bash
+export VAULT_ADDR=$(terraform output domain)
 vault auth <decrypted-root-token>
+```
+
+### Concourse
+
+`policy.hcl`:
+
+```hcl
+path "concourse/*" {
+  policy = "read"
+  capabilities =  ["read", "list"]
+}
+```
+
+```bash
+vault mount -path=/concourse -description="Secrets for concourse pipelines" generic
+vault policy-write policy-concourse policy.hcl
+vault token-create --policy=policy-concourse -period="600h" -format=json
+
+# Write some value
+vault write concourse/main/repository value=ubuntu
+vault read -field=value concourse/main/repository
+
+# Write value from file
+cat secret.pem | vault write concourse/main/github_deploy_key value=-
+vault read -field=value concourse/main/github_deploy_key
 ```
