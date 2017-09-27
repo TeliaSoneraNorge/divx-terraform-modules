@@ -32,6 +32,7 @@ runcmd:
     chmod 0755 /usr/local/bin/vault
     chown root:root /usr/local/bin/vault
   - |
+    export VAULT_ADDR=http://127.0.0.1:8200
     systemctl enable vault.service --now
   - |
     ${extra_install}
