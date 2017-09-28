@@ -8,7 +8,7 @@ data "aws_iam_policy_document" "cloudtrail_assume" {
       type = "AWS"
 
       identifiers = [
-        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+        "arn:aws:iam::${var.trail_account}:root",
       ]
     }
   }
