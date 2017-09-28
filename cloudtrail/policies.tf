@@ -5,11 +5,12 @@ data "aws_iam_policy_document" "cloudtrail_assume" {
     actions = ["sts:AssumeRole"]
 
     principals {
-      type        = "Service"
-      identifiers = ["cloudtrail.amazonaws.com"]
-    }
+      type = "AWS"
 
-    # TODO: Limit to the source account.
+      identifiers = [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+      ]
+    }
   }
 }
 
@@ -25,6 +26,17 @@ data "aws_iam_policy_document" "cloudtrail" {
     ]
 
     resources = ["${aws_cloudwatch_log_group.main.arn}*"]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "iam:GetRole",
+      "iam:PassRole",
+    ]
+
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.prefix}-cloudtrail-role"]
   }
 }
 
