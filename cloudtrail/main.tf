@@ -105,6 +105,13 @@ resource "aws_cloudwatch_log_subscription_filter" "cloudtrail" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+output "info" {
+  value = <<EOF
+Bucket name:   ${aws_s3_bucket.trail.id}
+Log group ARN: ${aws_cloudwatch_log_group.main.arn}
+Role ARN:      ${aws_iam_role.main.arn}
+}
+
 output "role_arn" {
   value = "${aws_iam_role.main.arn}"
 }
