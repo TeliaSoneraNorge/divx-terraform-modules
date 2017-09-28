@@ -64,7 +64,7 @@ resource "aws_lambda_permission" "cloudwatch" {
   function_name  = "${var.prefix}-cloudtrail-function"
   principal      = "logs.amazonaws.com"
   action         = "lambda:InvokeFunction"
-  source_arn     = "arn:aws:logs:eu-west-1:${var.source_account_id}:log-group:*"
+  source_arn     = "arn:aws:logs:eu-west-1:${var.source_account_id}:log-group:*:*"
   source_account = "${var.source_account_id}"
 }
 
