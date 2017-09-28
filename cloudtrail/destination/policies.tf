@@ -72,17 +72,9 @@ data "aws_iam_policy_document" "cloudwatch_assume" {
   }
 }
 
-data "aws_iam_policy_document" "destination" {
+data "aws_iam_policy_document" "cloudwatch" {
   statement {
     effect = "Allow"
-
-    principals {
-      type = "AWS"
-
-      identifiers = [
-        "arn:aws:iam::${var.source_account_id}:root",
-      ]
-    }
 
     actions = [
       "lambda:Invoke*",
