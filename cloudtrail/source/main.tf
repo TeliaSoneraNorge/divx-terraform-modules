@@ -86,8 +86,6 @@ data "aws_iam_policy_document" "cloudtrail_assume" {
       type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
     }
-
-    # TODO: Limit to the source account.
   }
 }
 
