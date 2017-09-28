@@ -74,6 +74,7 @@ resource "aws_lambda_permission" "cloudwatch" {
 
 output "info" {
   value = <<EOF
+
 Bucket name: ${aws_s3_bucket.trail.id}
 Lambda ARN:  ${module.lambda.function_arn}
 EOF
