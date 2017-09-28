@@ -20,6 +20,7 @@ variable "lambda_arn" {
 
 variable "cloudwatch_filter" {
   description = "A string containing the cloudwatch filter to apply before sending logs to lambda."
+  default     = ""
 }
 
 # ------------------------------------------------------------------------------
