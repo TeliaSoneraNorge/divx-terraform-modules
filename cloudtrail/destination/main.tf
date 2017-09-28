@@ -58,14 +58,26 @@ module "lambda" {
   }
 }
 
-resource "aws_lambda_permission" "cloudwatch" {
-  depends_on     = ["module.lambda"]
-  statement_id   = "${var.prefix}-cloudtrail-logs-lambda"
-  function_name  = "${var.prefix}-cloudtrail-function"
-  principal      = "logs.amazonaws.com"
-  action         = "lambda:InvokeFunction"
-  source_arn     = "arn:aws:logs:eu-west-1:${var.source_account_id}:log-group:*:*"
-  source_account = "${var.source_account_id}"
+resource "aws_iam_role" "main" {
+  name               = "${var.prefix}-log-destination-role"
+  assume_role_policy = "${data.aws_iam_policy_document.cloudwatch_assume.json}"
+}
+
+resource "aws_iam_role_policy" "main" {
+  name   = "${var.prefix}-log-destination-permissions"
+  role   = "${aws_iam_role.main.id}"
+  policy = "${data.aws_iam_policy_document.cloudwatch.json}"
+}
+
+resource "aws_cloudwatch_log_destination" "main" {
+  name       = "${var.prefix}-cloudtrail-destination"
+  role_arn   = "${aws_iam_role.main.arn}"
+  target_arn = "${module.lambda.function_arn}"
+}
+
+resource "aws_cloudwatch_log_destination_policy" "main" {
+  destination_name = "${aws_cloudwatch_log_destination.main.name}"
+  access_policy    = "${data.aws_iam_policy_document.destination.json}"
 }
 
 # ------------------------------------------------------------------------------
@@ -75,8 +87,8 @@ resource "aws_lambda_permission" "cloudwatch" {
 output "info" {
   value = <<EOF
 
-Bucket name: ${aws_s3_bucket.trail.id}
-Lambda ARN:  ${module.lambda.function_arn}
+Bucket name:      ${aws_s3_bucket.trail.id}
+Destination ARN:  ${aws_cloudwatch_log_destination.main.arn}
 EOF
 }
 
