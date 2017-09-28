@@ -110,6 +110,7 @@ output "info" {
 Bucket name:   ${aws_s3_bucket.trail.id}
 Log group ARN: ${aws_cloudwatch_log_group.main.arn}
 Role ARN:      ${aws_iam_role.main.arn}
+EOF
 }
 
 output "role_arn" {
