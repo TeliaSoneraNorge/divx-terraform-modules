@@ -1,51 +1,3 @@
-# Cloud trail role trusted relationship
-data "aws_iam_policy_document" "cloudtrail_assume" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type = "AWS"
-
-      identifiers = [
-        "arn:aws:iam::${var.trail_account}:root",
-      ]
-    }
-
-    principals {
-      type        = "Service"
-      identifiers = ["cloudtrail.amazonaws.com"]
-    }
-  }
-}
-
-# Cloudtrail role permissions
-data "aws_iam_policy_document" "cloudtrail" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "logs:DescribeLogStreams",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-
-    resources = ["${aws_cloudwatch_log_group.main.arn}*"]
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "iam:GetRole",
-      "iam:PassRole",
-    ]
-
-    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.prefix}-cloudtrail-role"]
-  }
-}
-
-# S3 Bucket policy
 data "aws_iam_policy_document" "bucket" {
   statement {
     effect = "Allow"
@@ -84,7 +36,6 @@ data "aws_iam_policy_document" "bucket" {
   }
 }
 
-# Lambda handler policy
 data "aws_iam_policy_document" "lambda" {
   statement {
     effect = "Allow"

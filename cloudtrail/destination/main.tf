@@ -10,7 +10,7 @@ variable "environment" {
   default     = ""
 }
 
-variable "trail_account" {
+variable "source_account_id" {
   description = "ID of the account which sends the logs."
 }
 
@@ -20,10 +20,6 @@ variable "dynamodb_name" {
 
 variable "dynamodb_arn" {
   description = "ARN of DynamoDB table where logs will be delivered."
-}
-
-variable "cloudwatch_filter" {
-  description = "A string containing the cloudwatch filter to apply before sending logs to lambda."
 }
 
 variable "region" {
@@ -49,28 +45,6 @@ resource "aws_s3_bucket" "trail" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "main" {
-  name              = "${var.prefix}-cloudtrail-logs"
-  retention_in_days = 90
-
-  tags {
-    Name        = "${var.prefix}-cloudtrail-logs"
-    environment = "${var.environment}"
-    terraform   = "true"
-  }
-}
-
-resource "aws_iam_role" "main" {
-  name               = "${var.prefix}-cloudtrail-role"
-  assume_role_policy = "${data.aws_iam_policy_document.cloudtrail_assume.json}"
-}
-
-resource "aws_iam_role_policy" "main" {
-  name   = "${var.prefix}-cloudtrail-permissions"
-  role   = "${aws_iam_role.main.id}"
-  policy = "${data.aws_iam_policy_document.cloudtrail.json}"
-}
-
 module "lambda" {
   source = "../lambda/function"
 
@@ -90,41 +64,25 @@ resource "aws_lambda_permission" "cloudwatch" {
   function_name  = "${var.prefix}-cloudtrail-function"
   principal      = "logs.amazonaws.com"
   action         = "lambda:InvokeFunction"
-  source_arn     = "${aws_cloudwatch_log_group.main.arn}"
-  source_account = "${data.aws_caller_identity.current.account_id}"
-}
-
-resource "aws_cloudwatch_log_subscription_filter" "cloudtrail" {
-  depends_on      = ["aws_lambda_permission.cloudwatch"]
-  name            = "${var.prefix}-cloudtrail-logs-filter"
-  log_group_name  = "${aws_cloudwatch_log_group.main.name}"
-  destination_arn = "${module.lambda.function_arn}"
-  filter_pattern  = "${chomp("${var.cloudwatch_filter}")}"
+  source_arn     = "arn:aws:logs:eu-west-1:${var.source_account_id}:log-group:*"
+  source_account = "${var.source_account_id}"
 }
 
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+
 output "info" {
   value = <<EOF
-Bucket name:   ${aws_s3_bucket.trail.id}
-Log group ARN: ${aws_cloudwatch_log_group.main.arn}
-Role ARN:      ${aws_iam_role.main.arn}
+Bucket name: ${aws_s3_bucket.trail.id}
+Lambda ARN:  ${module.lambda.function_arn}
 EOF
 }
 
-output "role_arn" {
-  value = "${aws_iam_role.main.arn}"
-}
-
-output "log_group_arn" {
-  value = "${aws_cloudwatch_log_group.main.arn}"
+output "lambda_arn" {
+  value = "${module.lambda.function_arn}"
 }
 
 output "bucket_name" {
   value = "${aws_s3_bucket.trail.id}"
-}
-
-output "bucket_arn" {
-  value = "${aws_s3_bucket.trail.arn}"
 }
