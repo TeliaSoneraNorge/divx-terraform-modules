@@ -22,10 +22,6 @@ variable "cloudwatch_filter" {
   description = "A string containing the cloudwatch filter to apply before sending logs to lambda."
 }
 
-variable "region" {
-  description = ""
-}
-
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -42,7 +38,7 @@ resource "aws_cloudtrail" "main" {
   enable_logging                = "true"
 
   tags {
-    environment = "prod"
+    environment = "${var.environment}"
     terraform   = "true"
   }
 }
