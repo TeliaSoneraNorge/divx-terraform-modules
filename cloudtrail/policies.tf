@@ -11,6 +11,11 @@ data "aws_iam_policy_document" "cloudtrail_assume" {
         "arn:aws:iam::${var.trail_account}:root",
       ]
     }
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
   }
 }
 
