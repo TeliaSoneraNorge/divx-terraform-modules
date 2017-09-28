@@ -46,7 +46,7 @@ resource "aws_s3_bucket" "trail" {
 }
 
 module "lambda" {
-  source = "../lambda/function"
+  source = "../../lambda/function"
 
   prefix      = "${var.prefix}-cloudtrail"
   policy      = "${data.aws_iam_policy_document.lambda.json}"
