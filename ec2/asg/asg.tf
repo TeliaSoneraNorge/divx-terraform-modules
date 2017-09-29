@@ -5,6 +5,7 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
+# TODO: Remove this in favor of a tags block.
 variable "environment" {
   description = "Environment tag which is applied to resources."
   default     = ""
@@ -48,6 +49,12 @@ variable "instance_policy" {
   description = "A policy document which is applied to the instance profile."
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs)."
+  type        = "map"
+  default     = {}
+}
+
 # variable "rolling_updates" {
 #   description = "Flag for rolling updates. Requires that the Autoscaling group is set up in Cloudformation."
 #   default     = "false"
@@ -56,6 +63,17 @@ variable "instance_policy" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
+module "tags" {
+  source = "../../terraform/tags"
+  passed = "${var.tags}"
+
+  tags {
+    Name        = "${var.prefix}"
+    terraform   = "true"
+    environment = "${var.environment}"
+  }
+}
+
 resource "aws_iam_role" "main" {
   name               = "${var.prefix}-role"
   assume_role_policy = "${data.aws_iam_policy_document.main.json}"
@@ -89,11 +107,7 @@ resource "aws_security_group" "main" {
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
 
-  tags {
-    Name        = "${var.prefix}-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${module.tags.standard}"
 }
 
 resource "aws_security_group_rule" "egress" {
@@ -128,23 +142,7 @@ resource "aws_autoscaling_group" "main" {
   launch_configuration = "${aws_launch_configuration.main.name}"
   vpc_zone_identifier  = ["${var.subnet_ids}"]
 
-  tag {
-    key                 = "Name"
-    value               = "${var.prefix}"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "terraform"
-    value               = "true"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "environment"
-    value               = "${var.environment}"
-    propagate_at_launch = true
-  }
+  tags = ["${module.tags.autoscaling}"]
 
   lifecycle {
     create_before_destroy = true
