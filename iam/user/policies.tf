@@ -53,6 +53,7 @@ data "aws_iam_policy_document" "manage" {
       "iam:CreateVirtualMFADevice",
       "iam:EnableMFADevice",
       "iam:ResyncMFADevice",
+      "iam:DeleteVirtualMFADevice",
     ]
 
     resources = [
@@ -66,7 +67,6 @@ data "aws_iam_policy_document" "manage" {
 
     actions = [
       "iam:DeactivateMFADevice",
-      "iam:DeleteVirtualMFADevice",
     ]
 
     resources = [
