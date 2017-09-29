@@ -14,8 +14,8 @@ variable "bucket_name" {
   description = "Name of the bucket where the raw CloudTrail logs should be delivered."
 }
 
-variable "lambda_arn" {
-  description = "ARN of the Lambda function which will be invoked by the CloudWatch filter."
+variable "destination_arn" {
+  description = "ARN of the log destination."
 }
 
 variable "cloudwatch_filter" {

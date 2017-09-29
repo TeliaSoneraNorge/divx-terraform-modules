@@ -70,6 +70,7 @@ resource "aws_iam_role_policy" "main" {
 }
 
 resource "aws_cloudwatch_log_destination" "main" {
+  depends_on = ["module.lambda"]
   name       = "${var.prefix}-cloudtrail-destination"
   role_arn   = "${aws_iam_role.main.arn}"
   target_arn = "${module.lambda.function_arn}"
