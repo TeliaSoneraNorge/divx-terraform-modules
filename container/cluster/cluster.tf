@@ -49,6 +49,11 @@ variable "ecs_log_level" {
   default     = "info"
 }
 
+variable "tags" {
+  description = "A map of tags (key/value)."
+  type        = "map"
+  default     = {}
+}
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -127,6 +132,7 @@ module "asg" {
   instance_type   = "${var.instance_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
+  tags = "${var.tags}"
 }
 
 # ------------------------------------------------------------------------------

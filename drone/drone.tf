@@ -88,6 +88,12 @@ variable "drone_github_secret" {
   description = "Drone Github secret."
 }
 
+variable "tags" {
+  description = "A map of tags (key/value)."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -167,6 +173,7 @@ module "cluster" {
   instance_type  = "${var.instance_type}"
   instance_count = "${var.instance_count}"
   instance_key   = "${var.instance_key}"
+  tags           = "${var.tags}"
 }
 
 module "postgres" {
