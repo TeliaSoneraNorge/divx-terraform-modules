@@ -10,14 +10,6 @@ variable "environment" {
   default     = ""
 }
 
-variable "source_account_id" {
-  description = "ID of the account which sends the logs."
-}
-
-variable "region" {
-  description = ""
-}
-
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -70,7 +62,7 @@ resource "aws_dynamodb_table" "main" {
 }
 
 module "lambda" {
-  source = "../../lambda/function"
+  source = "../lambda/function"
 
   prefix      = "${var.prefix}-cloudtrail"
   policy      = "${data.aws_iam_policy_document.lambda.json}"
