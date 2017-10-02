@@ -10,6 +10,11 @@ variable "environment" {
   default     = ""
 }
 
+variable "source_accounts" {
+  description = "List of account ID's which will be allowed to enable CloudTrail logging in the bucket."
+  type        = "list"
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -35,7 +40,7 @@ resource "aws_s3_bucket" "main" {
 resource "aws_dynamodb_table" "main" {
   name           = "${var.prefix}-cloudtrail-logs"
   read_capacity  = 10
-  write_capacity = 60
+  write_capacity = 40
   hash_key       = "eventID"
   range_key      = "eventTime"
 

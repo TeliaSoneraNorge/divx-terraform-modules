@@ -26,7 +26,9 @@ data "aws_iam_policy_document" "bucket" {
       "s3:PutObject",
     ]
 
-    resources = ["arn:aws:s3:::${var.prefix}-cloudtrail-logs/*"]
+    resources = [
+      "${formatlist("arn:aws:s3:::${var.prefix}-cloudtrail-logs/AWSLogs/%s/*", var.source_accounts)}",
+    ]
 
     condition = {
       test     = "StringEquals"
