@@ -14,14 +14,6 @@ variable "source_account_id" {
   description = "ID of the account which sends the logs."
 }
 
-variable "dynamodb_name" {
-  description = "Name of DynamoDB table where logs will be delivered."
-}
-
-variable "dynamodb_arn" {
-  description = "ARN of DynamoDB table where logs will be delivered."
-}
-
 variable "region" {
   description = ""
 }
@@ -31,12 +23,44 @@ variable "region" {
 # ------------------------------------------------------------------------------
 
 data "aws_caller_identity" "current" {}
+data "aws_region" "current" {
+  current = "true"
+}
 
-resource "aws_s3_bucket" "trail" {
+resource "aws_s3_bucket" "main" {
   bucket        = "${var.prefix}-cloudtrail-logs"
   acl           = "private"
   policy        = "${data.aws_iam_policy_document.bucket.json}"
   force_destroy = "true"
+
+  tags {
+    Name        = "${var.prefix}-cloudtrail-logs"
+    terraform   = "true"
+    environment = "${var.environment}"
+  }
+}
+
+resource "aws_dynamodb_table" "main" {
+  name           = "${var.prefix}-cloudtrail-logs"
+  read_capacity  = 10
+  write_capacity = 60
+  hash_key       = "eventID"
+  range_key      = "eventTime"
+
+  attribute {
+    name = "eventID"
+    type = "S"
+  }
+
+  attribute {
+    name = "eventTime"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = "true"
+  }
 
   tags {
     Name        = "${var.prefix}-cloudtrail-logs"
@@ -54,49 +78,37 @@ module "lambda" {
   runtime     = "nodejs6.10"
 
   variables = {
-    DYNAMODB_TABLE_NAME = "${var.dynamodb_name}"
+    DYNAMODB_TABLE_NAME = "${aws_dynamodb_table.main.id}"
+    REGION = "${data.aws_region.current.name}"
   }
 }
 
-resource "aws_iam_role" "main" {
-  name               = "${var.prefix}-log-destination-role"
-  assume_role_policy = "${data.aws_iam_policy_document.cloudwatch_assume.json}"
+resource "aws_lambda_permission" "main" {
+  statement_id   = "cloudtrail-bucket-invoke"
+  function_name  = "${module.lambda.function_arn}"
+  principal      = "s3.amazonaws.com"
+  action         = "lambda:InvokeFunction"
+  source_arn     = "${aws_s3_bucket.main.arn}"
+  source_account = "${data.aws_caller_identity.current.account_id}"
 }
 
-resource "aws_iam_role_policy" "main" {
-  name   = "${var.prefix}-log-destination-permissions"
-  role   = "${aws_iam_role.main.id}"
-  policy = "${data.aws_iam_policy_document.cloudwatch.json}"
-}
+resource "aws_s3_bucket_notification" "main" {
+  bucket = "${aws_s3_bucket.main.id}"
 
-resource "aws_cloudwatch_log_destination" "main" {
-  depends_on = ["module.lambda"]
-  name       = "${var.prefix}-cloudtrail-destination"
-  role_arn   = "${aws_iam_role.main.arn}"
-  target_arn = "${module.lambda.function_arn}"
-}
-
-resource "aws_cloudwatch_log_destination_policy" "main" {
-  destination_name = "${aws_cloudwatch_log_destination.main.name}"
-  access_policy    = "${data.aws_iam_policy_document.destination.json}"
+  lambda_function {
+    lambda_function_arn = "${module.lambda.function_arn}"
+    events              = ["s3:ObjectCreated:*"]
+  }
 }
 
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
 
-output "info" {
-  value = <<EOF
-
-Bucket name:      ${aws_s3_bucket.trail.id}
-Destination ARN:  ${aws_cloudwatch_log_destination.main.arn}
-EOF
-}
-
 output "lambda_arn" {
   value = "${module.lambda.function_arn}"
 }
 
 output "bucket_name" {
-  value = "${aws_s3_bucket.trail.id}"
+  value = "${aws_s3_bucket.main.id}"
 }

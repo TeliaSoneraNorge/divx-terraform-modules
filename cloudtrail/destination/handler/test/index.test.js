@@ -2,6 +2,10 @@ const test = require('tape'),
     sinon = require('sinon'),
     handler = require('../index.js');
 
+// S3.getObject wrapper function
+var read_stub = sinon.stub(handler, 'read');
+read_stub.callsFake((input) => Promise.resolve(input));
+
 // zlib wrapper function
 var unzip_stub = sinon.stub(handler, 'unzip');
 unzip_stub.callsFake((input) => Promise.resolve(input));
@@ -27,11 +31,7 @@ const event = {
 
 function serialize(sample) {
     return JSON.stringify({
-        logEvents: sample.map((message) => {
-            return {
-                message: JSON.stringify(message)
-            };
-        })
+        Records: sample
     });
 }
 

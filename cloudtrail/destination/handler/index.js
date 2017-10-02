@@ -3,15 +3,36 @@
 const zlib = require('zlib');
 const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
+const s3 = new AWS.S3({region: process.env.REGION});
 
 /**
- * Unzip data from CloudWatch.
+ * Read an object from an S3 bucket.
+ * @param {Object} input - A record from an S3 event.
+ * @return {Promise} The body of the object.
+ */
+exports.read = (record) => {
+    let request = {
+        Bucket: record.s3.bucket.name,
+        Key: decodeURI(record.s3.object.key)
+    };
+    return new Promise((resolve, reject) => {
+        s3.getObject(request, (err, data) => {
+            if (err) {
+                return reject(err);
+            }
+            return resolve(data.Body);
+        });
+    });
+};
+
+/**
+ * Unzip data/body after reading from S3.
  * @param {Object} input - The input passed to the Lambda function.
  * @return {Promise} The unzipped data from the input.
  */
-exports.unzip = (input) => {
+exports.unzip = (body) => {
     return new Promise((resolve, reject) => {
-        let payload = new Buffer(input.awslogs.data, 'base64');
+        let payload = new Buffer(body, 'base64');
         zlib.gunzip(payload, (err, data) => {
             if (err) {
                 return reject(err);
@@ -22,26 +43,15 @@ exports.unzip = (input) => {
 };
 
 /**
- * Parse Cloudwatch log events from (unzipped) data.
- * @param {String} data - The unzipped input from CloudWatch.
+ * Parse records from the (unzipped) data.
+ * @param {String} data - The unzipped logs.
  * @return {Promise} An array with the parsed log events.
  */
 exports.parse = (data) => {
     // Using a promise here for error handling.
     return new Promise((resolve, reject) => {
         var parsed = JSON.parse(data);
-        let events = parsed.logEvents.map((event) => {
-                try {
-                    return JSON.parse(event.message);
-                } catch (err) {
-                    return null;
-                }
-            })
-            .filter((event) => event !== null);
-        if (events.length < 1) {
-            return reject(new Error('No events to process after parsing input.'));
-        }
-        return resolve(events);
+        return resolve(parsed.Records);
     });
 };
 
@@ -102,6 +112,7 @@ exports.put_item = (item) => {
  */
 exports.process = (input) => {
     return Promise.resolve(input)
+        .then(exports.read)
         .then(exports.unzip)
         .then(exports.parse)
         .then((events) => {
@@ -126,12 +137,11 @@ exports.process = (input) => {
         });
 };
 
-exports.handler = (input, context, callback) => {
-    exports.process(input)
-        .then((output) => {
-            callback(null, output);
-        })
-        .catch((err) => {
-            callback(err, null);
-        });
+exports.handler = (event, context, callback) => {
+    let results = event.Records.forEach((record) => {
+        return exports.process(record)
+            .catch((err) => {
+                console.error(`[ERROR] Failed to process record. Cause: ${err}. Record: ${JSON.stringify(record)}`);
+            });
+    });
 };
