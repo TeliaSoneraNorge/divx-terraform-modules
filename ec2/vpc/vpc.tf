@@ -5,11 +5,6 @@ variable "prefix" {
   description = "Prefix used for resource names."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "cidr_block" {
   description = "CIDR block to use for the VPC."
   default     = "10.0.0.0/16"
@@ -25,10 +20,25 @@ variable "public_ips" {
   default     = "true"
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs)."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
 data "aws_availability_zones" "main" {}
+
+module "tags" {
+  source = "../../terraform/tags"
+  passed = "${var.tags}"
+
+  tags {
+    terraform   = "True"
+  }
+}
 
 # NOTE: depends_on is added for the vpc because terraform sometimes
 # fails to destroy VPC's where internet gateway is attached. If this happens,
@@ -39,33 +49,21 @@ resource "aws_vpc" "main" {
   enable_dns_support   = "true"
   enable_dns_hostnames = "${var.dns_hostnames}"
 
-  tags {
-    Name        = "${var.prefix}-vpc"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-vpc"))}"
 }
 
 resource "aws_internet_gateway" "main" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags {
-    Name        = "${var.prefix}-internet-gateway"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-internet-gateway"))}"
 }
 
 resource "aws_route_table" "main" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags {
-    Name        = "${var.prefix}-rt-public"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-rt-public"))}"
 }
 
 resource "aws_route" "main" {
@@ -82,11 +80,7 @@ resource "aws_subnet" "main" {
   availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
   map_public_ip_on_launch = "${var.public_ips}"
 
-  tags {
-    Name        = "${var.prefix}-subnet-${count.index + 1}"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-subnet-${count.index + 1}"))}"
 }
 
 resource "aws_route_table_association" "main" {
