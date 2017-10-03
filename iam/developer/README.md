@@ -37,7 +37,7 @@ output "url" {
 Use [iam/policies](../policies/README.md) to attach additional privileges to the role. The
 below example would grant the role access to manage `ec2`, `ecs` and `iam` resources that have
 the prefix (`example-project-*`) in their name (and write to the terraform state bucket under 
-`/example-project-*/*`).
+`/example-project/*`).
 
 ```hcl
 provider "aws" {
