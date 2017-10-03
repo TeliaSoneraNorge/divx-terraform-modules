@@ -52,3 +52,6 @@ resource "aws_autoscaling_group" "main" {
 }
 
 ```
+
+NOTE: A side-effect of using `null_data_source` is that `"true"` gets converted to
+`1` in the output. This is a known issue which is being tracked [here](https://github.com/hashicorp/terraform/issues/13512).
