@@ -34,7 +34,10 @@ output "url" {
 }
 ```
 
-Use [iam/policy](../policy/README.md) to attach additional privileges to the role:
+Use [iam/policies](../policies/README.md) to attach additional privileges to the role. The
+below example would grant the role access to manage `ec2`, `ecs` and `iam` resources that have
+the prefix (`example-project-*`) in their name (and write to the terraform state bucket under 
+`/example-project-*/*`).
 
 ```hcl
 provider "aws" {
@@ -58,74 +61,26 @@ module "developer" {
   ]
 }
 
-module "s3_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/s3"
-
+module "policies" {
+  source        = "github.com/itsdalmo/tf-modules//iam/policies"
   prefix        = "example-project"
   region        = "eu-west-1"
   account_id    = "${data.aws_caller_identity.current.account_id}"
   iam_role_name = "${module.developer.name}"
+
+  services = [
+    "ec2",
+    "ecs",
+    "iam",
+  ]
 }
 
-module "cloudformation_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/cloudformation"
-
+module "terraform_state_policy" {
+  source        = "github.com/itsdalmo/tf-modules//terraform/policy"
   prefix        = "example-project"
+  state_bucket  = "some-state-bucket"
   region        = "eu-west-1"
   account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
-}
-
-module "codedeploy_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/codedeploy"
-
-  prefix        = "example-project"
-  region        = "eu-west-1"
-  account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
-}
-
-module "ec2_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/ec2"
-
-  prefix        = "example-project"
-  region        = "eu-west-1"
-  account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
-}
-
-module "iam_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/iam"
-
-  prefix        = "example-project"
-  account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
-}
-
-module "kinesis_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/kinesis"
-
-  prefix        = "example-project"
-  region        = "eu-west-1"
-  account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
-}
-
-module "lambda_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/lambda"
-
-  prefix        = "example-project"
-  region        = "eu-west-1"
-  account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
-}
-
-module "apigateway_access" {
-  source = "github.com/itsdalmo/tf-modules//iam/policy/apigateway"
-
-  prefix        = "example-project"
-  region        = "eu-west-1"
-  api_id        = "<your-api-gateway-rest-api-id>"
   iam_role_name = "${module.developer.name}"
 }
 
