@@ -5,6 +5,12 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
+# TODO: Remove this in favor of a tags block.
+variable "environment" {
+  description = "Environment tag which is applied to resources."
+  default     = ""
+}
+
 variable "user_data" {
   description = "User data script for the launch configuration."
   default     = ""
