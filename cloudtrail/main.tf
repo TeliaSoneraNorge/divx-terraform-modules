@@ -15,6 +15,11 @@ variable "source_accounts" {
   type        = "list"
 }
 
+variable "read_capacity" {
+  description = "Read capacity for the DynamoDB table."
+  default     = 30
+}
+
 variable "write_capacity" {
   description = "Write capacity for the DynamoDB table."
   default     = 30
@@ -44,7 +49,7 @@ resource "aws_s3_bucket" "main" {
 
 resource "aws_dynamodb_table" "main" {
   name           = "${var.prefix}-cloudtrail-logs"
-  read_capacity  = 10
+  read_capacity  = "${var.read_capacity}"
   write_capacity = "${var.write_capacity}"
   hash_key       = "eventID"
   range_key      = "eventTime"
