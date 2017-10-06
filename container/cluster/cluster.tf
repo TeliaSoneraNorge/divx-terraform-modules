@@ -121,7 +121,7 @@ data "aws_iam_policy_document" "permissions" {
 }
 
 module "asg" {
-  source          = "../../ec2/asg"
+  source          = "github.com/itsdalmo/tf-modules//ec2/asg"
   prefix          = "${var.prefix}-cluster"
   environment     = "${var.environment}"
   user_data       = "${data.template_file.main.rendered}"
