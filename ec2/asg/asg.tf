@@ -64,7 +64,7 @@ variable "tags" {
 # Resources
 # ------------------------------------------------------------------------------
 module "tags" {
-  source = "../../terraform/tags"
+  source = "github.com/itsdalmo/tf-modules//terraform/tags"
   passed = "${var.tags}"
 
   tags {

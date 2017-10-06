@@ -32,7 +32,7 @@ variable "tags" {
 data "aws_availability_zones" "main" {}
 
 module "tags" {
-  source = "../../terraform/tags"
+  source = "github.com/itsdalmo/tf-modules//terraform/tags"
   passed = "${var.tags}"
 
   tags {
