@@ -23,15 +23,18 @@ data "aws_iam_policy_document" "ecs" {
     ]
   }
 
+  # NOTE: http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-supported-iam-actions-resources.html
   statement {
     effect = "Allow"
 
     actions = [
+      "ecs:DescribeContainerInstances",
       "ecs:DescribeTasks",
       "ecs:PutAttributes",
       "ecs:DeleteAttributes",
       "ecs:Poll",
       "ecs:ListTasks",
+      "ecs:StartTask",
       "ecs:StopTask",
       "ecs:StartTelemetrySession",
       "ecs:UpdateContainerAgent",
@@ -39,9 +42,7 @@ data "aws_iam_policy_document" "ecs" {
     ]
 
     resources = [
-      "arn:aws:ecs:${var.region}:${var.account_id}:task/*",
-      "arn:aws:ecs:${var.region}:${var.account_id}:container/*",
-      "arn:aws:ecs:${var.region}:${var.account_id}:container-instance/*",
+      "*",
     ]
 
     condition = {
@@ -51,7 +52,8 @@ data "aws_iam_policy_document" "ecs" {
     }
   }
 
-  # NOTE: ViewOnlyAccess does not include ecs:Describe*
+  # NOTE: ViewOnlyAccess does not include ecs:Describe*. This is required to make the console work.
+  # Most scary part is the wildcard access to task definitions, which may or may not contain secrets.
   statement {
     effect = "Allow"
 
