@@ -51,6 +51,11 @@ variable "task_log_group_arn" {
   description = "ARN of the tasks log group."
 }
 
+variable "target_group_arn" {
+  description = "ARN of the required target group"
+
+}
+
 variable "container_count" {
   description = "Number of containers to run for the task."
   default     = "2"
@@ -65,6 +70,7 @@ data "aws_region" "current" {
   current = true
 }
 
+/*
 resource "aws_alb_target_group" "main" {
   count    = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
   vpc_id   = "${var.vpc_id}"
@@ -76,6 +82,7 @@ resource "aws_alb_target_group" "main" {
    * therefor we have to create a new one before destroying the old. This also means
    * we have to let it have a random name, and then tag it with the desired name.
    */
+/*
   lifecycle {
     create_before_destroy = true
   }
@@ -86,9 +93,10 @@ resource "aws_alb_target_group" "main" {
     environment = "${var.environment}"
   }
 }
+*/
 
 resource "aws_ecs_service" "alb" {
-  count           = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
+//  count           = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
   depends_on      = ["aws_iam_role.service"]
   name            = "${var.prefix}"
   cluster         = "${var.cluster_id}"
@@ -100,7 +108,8 @@ resource "aws_ecs_service" "alb" {
   deployment_maximum_percent         = 200
 
   load_balancer {
-    target_group_arn = "${aws_alb_target_group.main.arn}"
+//    target_group_arn = "${aws_alb_target_group.main.arn}"
+    target_group_arn = "${var.target_group_arn}"
     container_name   = "${var.prefix}"
     container_port   = "${element(values(var.port_mapping), 0)}"
   }
@@ -111,6 +120,7 @@ resource "aws_ecs_service" "alb" {
   }
 }
 
+/*
 // Classic ELB
 resource "aws_ecs_service" "elb" {
   count           = "${length(var.port_mapping) > 0 && !contains(keys(var.port_mapping), "0") ? 1 : 0}"
@@ -135,6 +145,9 @@ resource "aws_ecs_service" "elb" {
     field = "instanceId"
   }
 }
+*/
+
+/*
 
 // Support no port mapping.
 resource "aws_ecs_service" "no_elb" {
@@ -153,20 +166,22 @@ resource "aws_ecs_service" "no_elb" {
   }
 }
 
+*/
 
 resource "aws_iam_role" "service" {
-  count              = "${length(var.port_mapping) > 0 ? 1 : 0}"
+//  count              = "${length(var.port_mapping) > 0 ? 1 : 0}"
   name               = "${var.prefix}-service-role"
   assume_role_policy = "${data.aws_iam_policy_document.service_assume.json}"
 }
 
 resource "aws_iam_role_policy" "service_permissions" {
-  count  = "${length(var.port_mapping) > 0 ? 1 : 0}"
+//  count  = "${length(var.port_mapping) > 0 ? 1 : 0}"
   name   = "${var.prefix}-service-permissions"
   role   = "${aws_iam_role.service.id}"
   policy = "${data.aws_iam_policy_document.service_permissions.json}"
 }
 
+/*
 // Open dynamic port mapping range if using an ALB
 resource "aws_security_group_rule" "dynamic_port_mapping" {
   count                    = "${contains(keys(var.port_mapping), "0") ? 1 : 0}"
@@ -177,7 +192,9 @@ resource "aws_security_group_rule" "dynamic_port_mapping" {
   to_port                  = 65535
   source_security_group_id = "${var.load_balancer_sg}"
 }
+*/
 
+/*
 // Open individual ports if using a classic ELB
 resource "aws_security_group_rule" "static_port_mapping" {
   count                    = "${contains(keys(var.port_mapping), "0") ? 0 : length(var.port_mapping)}"
@@ -188,6 +205,7 @@ resource "aws_security_group_rule" "static_port_mapping" {
   to_port                  = "${element(keys(var.port_mapping), count.index)}"
   source_security_group_id = "${var.load_balancer_sg}"
 }
+*/
 
 resource "aws_iam_role_policy" "log_agent" {
   name   = "${var.prefix}-log-permissions"
@@ -198,9 +216,11 @@ resource "aws_iam_role_policy" "log_agent" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+/*
 output "arn" {
   value = "${length(var.port_mapping) > 0 ? contains(keys(var.port_mapping), "0") ? "${aws_ecs_service.alb.id}" : "${aws_ecs_service.elb.id}" : "${aws_ecs_service.no_elb.id}"}"
 }
+*/
 
 output "role_arn" {
   value = "${aws_iam_role.service.arn}"
@@ -209,7 +229,8 @@ output "role_arn" {
 output "role_id" {
   value = "${aws_iam_role.service.id}"
 }
-
+/*
 output "target_group_arn" {
   value = "${contains(keys(var.port_mapping), "0") ? aws_alb_target_group.main.arn : "NONE"}"
 }
+*/
