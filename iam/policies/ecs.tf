@@ -27,6 +27,7 @@ data "aws_iam_policy_document" "ecs" {
     effect = "Allow"
 
     actions = [
+      "ecs:DescribeTasks",
       "ecs:PutAttributes",
       "ecs:DeleteAttributes",
       "ecs:Poll",
