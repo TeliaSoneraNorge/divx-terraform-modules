@@ -48,7 +48,9 @@ data "aws_iam_policy_document" "ecs" {
     condition = {
       test     = "StringLike"
       variable = "ecs:cluster"
-      values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
+      values   = [
+        "arn:aws:ecs:${var.region}:${var.account_id}:cluster/${coalesce(var.resources, "${var.prefix}-*")}",
+      ]
     }
   }
 
