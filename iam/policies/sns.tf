@@ -18,7 +18,7 @@ data "aws_iam_policy_document" "sns" {
 
     resources = [
       "arn:aws:sns:${var.region}:${var.account_id}:${coalesce(var.resources, "${var.prefix}-*")}",
-      "arn:aws:sns:${var.region}:${account_id}:${coalesce(var.resources, "${var.prefix}-*:*")}",
+      "arn:aws:sns:${var.region}:${var.account_id}:${coalesce(var.resources, "${var.prefix}-*:*")}",
     ]
   }
 }
