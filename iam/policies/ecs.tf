@@ -23,7 +23,6 @@ data "aws_iam_policy_document" "ecs" {
     ]
   }
 
-  # NOTE: Describe* is also granted via ViewOnlyAccess.
   statement {
     effect = "Allow"
 
@@ -51,13 +50,14 @@ data "aws_iam_policy_document" "ecs" {
     }
   }
 
-  # NOTE: ViewOnlyAccess does not include ecs:DescribeClusters.
+  # NOTE: ViewOnlyAccess does not include ecs:Describe*
   statement {
     effect = "Allow"
 
     actions = [
       "ecs:DescribeClusters",
       "ecs:DescribeServices",
+      "ecs:DescribeTaskDefinition",
     ]
 
     resources = [
