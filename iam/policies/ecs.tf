@@ -56,7 +56,8 @@ data "aws_iam_policy_document" "ecs" {
     effect = "Allow"
 
     actions = [
-      "ecs:DescribeClusters"
+      "ecs:DescribeClusters",
+      "ecs:DescribeServices",
     ]
 
     resources = [
