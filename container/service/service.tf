@@ -66,10 +66,11 @@ data "aws_region" "current" {
 }
 
 resource "aws_alb_target_group" "main" {
-  count    = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
-  vpc_id   = "${var.vpc_id}"
-  port     = "${element(values(var.port_mapping), 0)}"
-  protocol = "HTTP"
+  count      = "${length(var.port_mapping) > 0 && contains(keys(var.port_mapping), "0") ? 1 : 0}"
+  depends_on = ["aws_iam_role_policy.service_permissions"]
+  vpc_id     = "${var.vpc_id}"
+  port       = "${element(values(var.port_mapping), 0)}"
+  protocol   = "HTTP"
 
   /**
    * NOTE: TF is unable to destroy a target group while a listener is attached,
