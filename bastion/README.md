@@ -18,7 +18,6 @@ provider "aws" {
 module "bastion" {
   source      = "github.com/itsdalmo/tf-modules//bastion"
   prefix      = "example"
-  environment = "stage"
   pem_bucket  = "your-key-bucket"
   pem_path    = "example-key.pem"
 
@@ -37,6 +36,11 @@ module "bastion" {
     "subnet-23456789",
     "subnet-34567890",
   ]
+
+  tags {
+    environment = "dev"
+    terraform   = "True"
+  }
 }
 
 output "bastion_ip" {
