@@ -12,9 +12,13 @@ module "cluster" {
   source = "../../ec2/emr"
 
   prefix          = "my-project"
-  environment     = "dev"
   vpc_id          = "vpc-12345678"
   subnet_id       = "subnet-f1234567"
   applications    = ["Spark"]
+
+  tags {
+    environment = "prod"
+    terraform   = "True"
+  }
 }
 ```

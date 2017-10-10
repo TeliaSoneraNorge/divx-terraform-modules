@@ -17,6 +17,11 @@ module "lambda" {
   policy      = "${data.aws_iam_policy_document.lambda.json}"
   source_code = "${path.root}/../src/"
   runtime     = "nodejs6.10"
+  
+  tags {
+    environment = "prod"
+    terraform   = "True"
+  }
 }
 
 data "aws_iam_policy_document" "lambda" {

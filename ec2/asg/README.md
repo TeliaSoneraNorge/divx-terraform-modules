@@ -15,19 +15,27 @@ provider "aws" {
 module "vpc" {
   source        = "github.com/itsdalmo/tf-modules//ec2/vpc"
   prefix        = "your-project"
-  environment   = "dev"
   cidr_block    = "10.8.0.0/16"
   dns_hostnames = "true"
+
+  tags {
+    environment = "prod"
+    terraform   = "True"
+  }
 }
 
 module "asg" {
   source        = "github.com/itsdalmo/tf-modules//ec2/asg"
   prefix          = "your-project"
-  environment     = "dev"
   user_data       = "#!bin/bash\necho hello world"
   vpc_id          = "${module.vpc.vpc_id}"
   subnet_ids      = "${module.vpc.subnet_ids}"
   instance_policy = "${data.aws_iam_policy_document.permissions.json}"
+
+  tags {
+    environment = "prod"
+    terraform   = "True"
+  }
 }
 
 resource "aws_security_group_rule" "ingress" {
