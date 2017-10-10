@@ -43,17 +43,20 @@ module "vpc" {
   source        = "github.com/itsdalmo/tf-modules//ec2/vpc"
 
   prefix        = "concourse-ci"
-  environment   = "dev"
   cidr_block    = "10.0.0.0/16"
   dns_hostnames = "true"
   public_ips    = "true"
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
 }
 
 module "bastion" {
   source      = "github.com/itsdalmo/tf-modules//bastion"
 
   prefix      = "concourse-ci"
-  environment = "dev"
   vpc_id      = "${module.vpc.vpc_id}"
   subnet_ids  = "${module.vpc.subnet_ids}"
   pem_bucket  = "your-key-bucket"
@@ -66,13 +69,17 @@ module "bastion" {
   authorized_cidr = [
     "0.0.0.0/0",
   ]
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
 }
 
 module "concourse" {
   source = "github.com/itsdalmo/tf-modules//concourse/"
 
   prefix               = "concourse-ci"
-  environment          = "dev"
   domain               = "ci.example.com"
   zone_id              = "<zone-id>"
   concourse_keys       = "${path.root}/keys"
@@ -88,6 +95,11 @@ module "concourse" {
   github_users = [
     "itsdalmo",
   ]
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
 }
 
 # Open ATC and workers to Bastion SSH
