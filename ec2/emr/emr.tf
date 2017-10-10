@@ -45,6 +45,7 @@ variable "instance_key" {
 
 variable "instance_policy" {
   description = "A policy document which is applied to the instance profile."
+  default     = ""
 }
 
 variable "keep_alive" {
@@ -106,6 +107,7 @@ resource "aws_iam_instance_profile" "main" {
 }
 
 resource "aws_iam_role_policy" "main" {
+  count  = "${var.instance_policy == "" ? 0 : 1}"
   name   = "${var.prefix}-emr-permissions"
   role   = "${aws_iam_role.instance.id}"
   policy = "${var.instance_policy}"
