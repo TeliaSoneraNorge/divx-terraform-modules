@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
