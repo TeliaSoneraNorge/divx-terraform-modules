@@ -63,6 +63,7 @@ data "aws_iam_policy_document" "ecs" {
       "ecs:DescribeClusters",
       "ecs:DescribeServices",
       "ecs:DescribeTaskDefinition",
+      "application-autoscaling:Describe*",
     ]
 
     resources = [
