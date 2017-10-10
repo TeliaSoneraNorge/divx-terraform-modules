@@ -26,8 +26,19 @@ provider "aws" {
 module "cloudtrail" {
   source = "github.com/itsdalmo/tf-modules//cloudtrail"
   
-  prefix      = "company-cloudtrail"
-  environment = "prod"
+  prefix          = "company-cloudtrail"
+  read_capacity   = "30"
+  write_capacity  = "30"
+
+  source_accounts = [
+    "<jump-account-id>",
+    "<dev-account-id>",
+  ]
+
+  tags {
+    environment = "prod"
+    terraform   = "True"
+  }
 }
 ```
 
@@ -48,7 +59,7 @@ resource "aws_cloudtrail" "users" {
 
   tags {
     environment = "prod"
-    terraform   = "true"
+    terraform   = "True"
   }
 }
 ```
