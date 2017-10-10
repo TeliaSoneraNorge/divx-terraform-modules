@@ -12,7 +12,6 @@ module "drone" {
   source = "../../drone"
 
   prefix              = "drone-test"
-  environment         = "dev"
   domain              = "drone.example.com"
   zone_id             = "<parent-domain-zone-id>"
   certificate_arn     = "<domain-certificate-arn>"
@@ -25,6 +24,11 @@ module "drone" {
   drone_github_admins = ["itsdalmo"]
   drone_github_client = "<github-oauth-client>"
   drone_github_secret = "<github-oauth-secret>"
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
 }
 
 resource "aws_security_group_rule" "ssh_ingress" {
