@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "vpc_id" {
   description = "ID of the VPC for the subnet."
 }
@@ -55,6 +50,12 @@ variable "instance_policy" {
 variable "keep_alive" {
   description = "Keep cluster alive after job flows finish running."
   default     = "false"
+}
+
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
 }
 
 # ------------------------------------------------------------------------------
@@ -126,11 +127,7 @@ resource "aws_security_group" "master" {
     ignore_changes = ["ingress", "egress"]
   }
 
-  tags {
-    Name        = "${var.prefix}-emr-master-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-emr-master-sg"))}"
 }
 
 resource "aws_security_group" "core" {
@@ -149,11 +146,7 @@ resource "aws_security_group" "core" {
     ignore_changes = ["ingress", "egress"]
   }
 
-  tags {
-    Name        = "${var.prefix}-emr-core-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-emr-core-sg"))}"
 }
 
 resource "aws_emr_cluster" "main" {
@@ -176,11 +169,7 @@ resource "aws_emr_cluster" "main" {
     instance_profile                  = "${aws_iam_instance_profile.main.arn}"
   }
 
-  tags {
-    Name        = "${var.prefix}-emr"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-emr"))}"
 }
 
 # ------------------------------------------------------------------------------
