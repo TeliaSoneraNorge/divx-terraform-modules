@@ -14,12 +14,16 @@ module "vault" {
   source = "../../vault"
 
   prefix          = "my-project"
-  environment     = "dev"
   vpc_id          = "vpc-12345678"
   subnet_ids      = ["subnet-12345678","subnet-23456789","subnet-34567890"]
   bastion_sg      = "sg-12345678"
   authorized_cidr = ["0.0.0.0/0"]
   instance_key    = ""
+
+  tags {
+    environment = "dev"
+    terraform   = "True"
+  }
 }
 
 output "vault_addr" {
