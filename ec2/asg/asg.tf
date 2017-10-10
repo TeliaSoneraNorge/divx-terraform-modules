@@ -63,15 +63,9 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-module "tags" {
-  source = "../../terraform/tags"
-  passed = "${var.tags}"
-
-  tags {
-    Name        = "${var.prefix}"
-    terraform   = "True"
-    environment = "${var.environment}"
-  }
+locals {
+  tags     = "${merge(var.tags, map("terraform", "True"))}"
+  asg_tags = "${merge(local.tags, map("Name", "${var.prefix}"))}"
 }
 
 resource "aws_iam_role" "main" {
@@ -107,7 +101,7 @@ resource "aws_security_group" "main" {
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
 
-  tags = "${module.tags.standard}"
+  tags        = "${merge(local.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "egress" {
@@ -133,6 +127,17 @@ resource "aws_launch_configuration" "main" {
   }
 }
 
+# Handle tags for the Autoscaling group
+data "null_data_source" "autoscaling" {
+  count = "${length(local.asg_tags)}"
+
+  inputs = {
+    key                 = "${element(keys(local.asg_tags), count.index)}"
+    value               = "${element(values(local.asg_tags), count.index)}"
+    propagate_at_launch = "true"
+  }
+}
+
 resource "aws_autoscaling_group" "main" {
   # count                = "${var.rolling_updates == "false" ? 1 : 0}"
   name                 = "${aws_launch_configuration.main.name}"
@@ -142,7 +147,7 @@ resource "aws_autoscaling_group" "main" {
   launch_configuration = "${aws_launch_configuration.main.name}"
   vpc_zone_identifier  = ["${var.subnet_ids}"]
 
-  tags = ["${module.tags.autoscaling}"]
+  tags = ["${data.null_data_source.autoscaling.*.outputs}"]
 
   lifecycle {
     create_before_destroy = true

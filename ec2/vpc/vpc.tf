@@ -29,16 +29,11 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-data "aws_availability_zones" "main" {}
-
-module "tags" {
-  source = "../../terraform/tags"
-  passed = "${var.tags}"
-
-  tags {
-    terraform   = "True"
-  }
+locals {
+  tags = "${merge(var.tags, map("terraform", "True"))}"
 }
+
+data "aws_availability_zones" "main" {}
 
 # NOTE: depends_on is added for the vpc because terraform sometimes
 # fails to destroy VPC's where internet gateway is attached. If this happens,
@@ -49,21 +44,21 @@ resource "aws_vpc" "main" {
   enable_dns_support   = "true"
   enable_dns_hostnames = "${var.dns_hostnames}"
 
-  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-vpc"))}"
+  tags = "${merge(local.tags, map("Name", "${var.prefix}-vpc"))}"
 }
 
 resource "aws_internet_gateway" "main" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-internet-gateway"))}"
+  tags = "${merge(local.tags, map("Name", "${var.prefix}-internet-gateway"))}"
 }
 
 resource "aws_route_table" "main" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-rt-public"))}"
+  tags = "${merge(local.tags, map("Name", "${var.prefix}-rt-public"))}"
 }
 
 resource "aws_route" "main" {
@@ -80,7 +75,7 @@ resource "aws_subnet" "main" {
   availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
   map_public_ip_on_launch = "${var.public_ips}"
 
-  tags = "${merge(module.tags.standard, map("Name", "${var.prefix}-subnet-${count.index + 1}"))}"
+  tags = "${merge(local.tags, map("Name", "${var.prefix}-subnet-${count.index + 1}"))}"
 }
 
 resource "aws_route_table_association" "main" {
