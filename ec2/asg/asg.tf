@@ -101,7 +101,7 @@ resource "aws_security_group" "main" {
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
 
-  tags        = "${merge(local.tags, map("Name", "${var.prefix}-sg"))}"
+  tags = "${merge(local.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "egress" {
