@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "username" {
   description = "Username."
 }
@@ -57,6 +52,12 @@ variable "skip_snapshot" {
   default     = "true"
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
@@ -85,11 +86,7 @@ resource "aws_db_instance" "main" {
   # NOTE: This is duplicated because subnet_group does not return the name.
   db_subnet_group_name = "${var.prefix}-subnet-group"
 
-  tags {
-    Name        = "${var.prefix}-db"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-db"))}"
 }
 
 resource "aws_db_subnet_group" "main" {
@@ -97,11 +94,7 @@ resource "aws_db_subnet_group" "main" {
   description = "Terraformed subnet group."
   subnet_ids  = ["${var.subnet_ids}"]
 
-  tags {
-    Name        = "${var.prefix}-subnet-group"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-subnet-group"))}"
 }
 
 resource "aws_security_group" "main" {
@@ -109,11 +102,7 @@ resource "aws_security_group" "main" {
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
 
-  tags {
-    Name        = "${var.prefix}-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "egress" {
