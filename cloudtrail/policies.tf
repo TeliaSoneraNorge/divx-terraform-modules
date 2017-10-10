@@ -50,7 +50,7 @@ data "aws_iam_policy_document" "lambda" {
   }
 
   statement {
-    effect =  "Allow"
+    effect = "Allow"
 
     actions = [
       "s3:GetObject",
@@ -73,4 +73,3 @@ data "aws_iam_policy_document" "lambda" {
     resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"]
   }
 }
-

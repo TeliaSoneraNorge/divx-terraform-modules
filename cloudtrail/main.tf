@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "source_accounts" {
   description = "List of account ID's which will be allowed to enable CloudTrail logging in the bucket."
   type        = "list"
@@ -25,11 +20,18 @@ variable "write_capacity" {
   default     = 30
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
 
 data "aws_caller_identity" "current" {}
+
 data "aws_region" "current" {
   current = "true"
 }
@@ -40,11 +42,7 @@ resource "aws_s3_bucket" "main" {
   policy        = "${data.aws_iam_policy_document.bucket.json}"
   force_destroy = "true"
 
-  tags {
-    Name        = "${var.prefix}-cloudtrail-logs"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-cloudtrail-logs"))}"
 }
 
 resource "aws_dynamodb_table" "main" {
@@ -69,11 +67,7 @@ resource "aws_dynamodb_table" "main" {
     enabled        = "true"
   }
 
-  tags {
-    Name        = "${var.prefix}-cloudtrail-logs"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-cloudtrail-logs"))}"
 }
 
 module "lambda" {
@@ -83,10 +77,11 @@ module "lambda" {
   policy      = "${data.aws_iam_policy_document.lambda.json}"
   source_code = "${path.module}/handler/"
   runtime     = "nodejs6.10"
+  tags        = "${var.tags}"
 
   variables = {
     DYNAMODB_TABLE_NAME = "${aws_dynamodb_table.main.id}"
-    REGION = "${data.aws_region.current.name}"
+    REGION              = "${data.aws_region.current.name}"
   }
 }
 
