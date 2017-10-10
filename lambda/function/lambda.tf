@@ -5,11 +5,6 @@ variable "prefix" {
   description = "Prefix used for resource names."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "source_code" {
   description = "Absolute path of the source code for the lambda handler. (Path with trailing slash)."
 }
@@ -30,6 +25,12 @@ variable "variables" {
 
 variable "policy" {
   description = "A policy document for the lambda execution role."
+}
+
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
 }
 
 # ------------------------------------------------------------------------------
@@ -54,11 +55,7 @@ resource "aws_lambda_function" "main" {
     variables = "${var.variables}"
   }
 
-  tags {
-    Name        = "${var.prefix}-function"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-function"))}"
 }
 
 data "archive_file" "main" {
