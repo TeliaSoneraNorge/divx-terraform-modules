@@ -5,12 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-# TODO: Remove this in favor of a tags block.
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "user_data" {
   description = "User data script for the launch configuration."
   default     = ""
@@ -50,7 +44,7 @@ variable "instance_policy" {
 }
 
 variable "tags" {
-  description = "A map of tags (key-value pairs)."
+  description = "A map of tags (key-value pairs) passed to resources."
   type        = "map"
   default     = {}
 }
@@ -63,11 +57,6 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-locals {
-  tags     = "${merge(var.tags, map("terraform", "True"))}"
-  asg_tags = "${merge(local.tags, map("Name", "${var.prefix}"))}"
-}
-
 resource "aws_iam_role" "main" {
   name               = "${var.prefix}-role"
   assume_role_policy = "${data.aws_iam_policy_document.main.json}"
@@ -101,7 +90,7 @@ resource "aws_security_group" "main" {
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
 
-  tags = "${merge(local.tags, map("Name", "${var.prefix}-sg"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "egress" {
@@ -128,6 +117,10 @@ resource "aws_launch_configuration" "main" {
 }
 
 # Handle tags for the Autoscaling group
+locals {
+  asg_tags = "${merge(var.tags, map("Name", "${var.prefix}"))}"
+}
+
 data "null_data_source" "autoscaling" {
   count = "${length(local.asg_tags)}"
 

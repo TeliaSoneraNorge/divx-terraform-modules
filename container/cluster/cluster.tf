@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
@@ -54,6 +49,7 @@ variable "tags" {
   type        = "map"
   default     = {}
 }
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -123,7 +119,6 @@ data "aws_iam_policy_document" "permissions" {
 module "asg" {
   source          = "../../ec2/asg"
   prefix          = "${var.prefix}-cluster"
-  environment     = "${var.environment}"
   user_data       = "${data.template_file.main.rendered}"
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = "${var.subnet_ids}"
@@ -132,7 +127,7 @@ module "asg" {
   instance_type   = "${var.instance_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
-  tags = "${var.tags}"
+  tags            = "${var.tags}"
 }
 
 # ------------------------------------------------------------------------------

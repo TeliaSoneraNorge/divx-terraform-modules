@@ -21,7 +21,7 @@ variable "public_ips" {
 }
 
 variable "tags" {
-  description = "A map of tags (key-value pairs)."
+  description = "A map of tags (key-value pairs) passed to resources."
   type        = "map"
   default     = {}
 }
@@ -29,10 +29,6 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-locals {
-  tags = "${merge(var.tags, map("terraform", "True"))}"
-}
-
 data "aws_availability_zones" "main" {}
 
 # NOTE: depends_on is added for the vpc because terraform sometimes
@@ -44,21 +40,21 @@ resource "aws_vpc" "main" {
   enable_dns_support   = "true"
   enable_dns_hostnames = "${var.dns_hostnames}"
 
-  tags = "${merge(local.tags, map("Name", "${var.prefix}-vpc"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-vpc"))}"
 }
 
 resource "aws_internet_gateway" "main" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags = "${merge(local.tags, map("Name", "${var.prefix}-internet-gateway"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-internet-gateway"))}"
 }
 
 resource "aws_route_table" "main" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags = "${merge(local.tags, map("Name", "${var.prefix}-rt-public"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-rt-public"))}"
 }
 
 resource "aws_route" "main" {
@@ -75,7 +71,7 @@ resource "aws_subnet" "main" {
   availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
   map_public_ip_on_launch = "${var.public_ips}"
 
-  tags = "${merge(local.tags, map("Name", "${var.prefix}-subnet-${count.index + 1}"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-subnet-${count.index + 1}"))}"
 }
 
 resource "aws_route_table_association" "main" {

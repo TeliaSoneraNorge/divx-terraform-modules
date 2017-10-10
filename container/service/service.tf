@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "cluster_id" {
   description = "ID of an ECS cluster which the service will be deployed to."
 }
@@ -56,6 +51,12 @@ variable "container_count" {
   default     = "2"
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -73,19 +74,15 @@ resource "aws_alb_target_group" "main" {
   protocol   = "HTTP"
 
   /**
-   * NOTE: TF is unable to destroy a target group while a listener is attached,
-   * therefor we have to create a new one before destroying the old. This also means
-   * we have to let it have a random name, and then tag it with the desired name.
-   */
+     * NOTE: TF is unable to destroy a target group while a listener is attached,
+     * therefor we have to create a new one before destroying the old. This also means
+     * we have to let it have a random name, and then tag it with the desired name.
+     */
   lifecycle {
     create_before_destroy = true
   }
 
-  tags {
-    Name        = "${var.prefix}-target"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-target"))}"
 }
 
 resource "aws_ecs_service" "alb" {
@@ -153,7 +150,6 @@ resource "aws_ecs_service" "no_elb" {
     field = "instanceId"
   }
 }
-
 
 resource "aws_iam_role" "service" {
   count              = "${length(var.port_mapping) > 0 ? 1 : 0}"
