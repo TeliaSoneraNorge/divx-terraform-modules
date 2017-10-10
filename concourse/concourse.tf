@@ -5,11 +5,6 @@ variable "prefix" {
   description = "Prefix used for resource names."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "domain" {
   description = "The domain name to associate with the Concourse ELB. (Must have an ACM certificate)."
 }
@@ -137,6 +132,12 @@ variable "vault_client_token" {
   default     = ""
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
@@ -148,7 +149,6 @@ module "external_elb" {
   source = "./modules/external_elb"
 
   prefix          = "${var.prefix}-external-elb"
-  environment     = "${var.environment}"
   domain          = "${var.domain}"
   zone_id         = "${var.zone_id}"
   certificate_arn = "${var.certificate_arn}"
@@ -157,23 +157,23 @@ module "external_elb" {
   authorized_cidr = ["${var.authorized_cidr}"]
   web_port        = "${var.web_port}"
   atc_port        = "${var.atc_port}"
+  tags            = "${var.tags}"
 }
 
 module "internal_elb" {
   source = "./modules/internal_elb"
 
-  prefix      = "${var.prefix}-internal-elb"
-  environment = "${var.environment}"
-  vpc_id      = "${var.vpc_id}"
-  subnet_ids  = ["${var.subnet_ids}"]
-  tsa_port    = "${var.tsa_port}"
+  prefix     = "${var.prefix}-internal-elb"
+  vpc_id     = "${var.vpc_id}"
+  subnet_ids = ["${var.subnet_ids}"]
+  tsa_port   = "${var.tsa_port}"
+  tags       = "${var.tags}"
 }
 
 module "postgres" {
   source = "../rds/instance"
 
   prefix        = "${var.prefix}-rds"
-  environment   = "${var.environment}"
   username      = "${var.postgres_username}"
   password      = "${var.postgres_password}"
   port          = "${var.postgres_port}"
@@ -184,6 +184,7 @@ module "postgres" {
   storage_size  = "50"
   public_access = "false"
   skip_snapshot = "true"
+  tags          = "${var.tags}"
 }
 
 resource "aws_security_group_rule" "atc_ingress_postgres" {
@@ -263,7 +264,6 @@ module "atc" {
   source = "../ec2/asg"
 
   prefix          = "${var.prefix}-atc"
-  environment     = "${var.environment}"
   user_data       = "${data.template_file.atc.rendered}"
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = "${var.subnet_ids}"
@@ -272,6 +272,7 @@ module "atc" {
   instance_type   = "${var.atc_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
+  tags            = "${var.tags}"
 }
 
 resource "aws_autoscaling_attachment" "atc_internal" {
@@ -355,7 +356,6 @@ module "worker" {
   source = "../ec2/asg"
 
   prefix          = "${var.prefix}-worker"
-  environment     = "${var.environment}"
   user_data       = "${data.template_file.worker.rendered}"
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = "${var.subnet_ids}"
@@ -364,6 +364,7 @@ module "worker" {
   instance_type   = "${var.worker_type}"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
+  tags            = "${var.tags}"
 }
 
 resource "aws_security_group_rule" "worker_ingress_tsa" {

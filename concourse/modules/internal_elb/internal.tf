@@ -29,6 +29,12 @@ variable "atc_port" {
   default     = "8080"
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
@@ -60,11 +66,7 @@ resource "aws_elb" "main" {
     interval            = 30
   }
 
-  tags {
-    Name        = "${var.prefix}"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}"))}"
 }
 
 resource "aws_security_group" "main" {
@@ -76,11 +78,7 @@ resource "aws_security_group" "main" {
     create_before_destroy = true
   }
 
-  tags {
-    Name        = "${var.prefix}-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "outbound" {

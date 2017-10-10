@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "domain" {
   description = "The domain name to associate with the Concourse ELB. (Must have an ACM certificate)."
 }
@@ -44,6 +39,12 @@ variable "web_port" {
 variable "atc_port" {
   description = "Port specification for the Concourse ATC."
   default     = "8080"
+}
+
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
 }
 
 # -------------------------------------------------------------------------------
@@ -82,11 +83,7 @@ resource "aws_elb" "main" {
     interval            = 30
   }
 
-  tags {
-    Name        = "${var.prefix}"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}"))}"
 }
 
 resource "aws_security_group" "main" {
@@ -98,11 +95,7 @@ resource "aws_security_group" "main" {
     create_before_destroy = true
   }
 
-  tags {
-    Name        = "${var.prefix}-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "outbound" {
