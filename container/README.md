@@ -49,10 +49,14 @@ module "alb" {
   source = "github.com/itsdalmo/tf-modules//ec2/alb"
 
   prefix      = "${var.prefix}"
-  environment = "dev"
   internal    = "false"
   vpc_id      = "${var.vpc_id}"
   subnet_ids  = ["${var.subnets}"]
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
 }
 
 // Cluster
@@ -60,9 +64,13 @@ module "cluster" {
   source = "github.com/itsdalmo/tf-modules//container/cluster"
 
   prefix      = "${var.prefix}"
-  environment = "dev"
   vpc_id      = "${var.vpc_id}"
   subnet_ids  = ["${var.subnets}"]
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
 }
 
 // Create a task definition
@@ -101,7 +109,6 @@ module "service" {
   source = "github.com/itsdalmo/tf-modules//container/service"
 
   prefix             = "${var.prefix}"
-  environment        = "dev"
   vpc_id             = "${var.vpc_id}"
   cluster_id         = "${module.cluster.id}"
   cluster_sg         = "${module.cluster.security_group_id}"
@@ -114,6 +121,11 @@ module "service" {
 
   port_mapping = {
     "0" = "8000"
+  }
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
   }
 }
 
