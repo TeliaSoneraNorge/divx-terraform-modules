@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "domain" {
   description = "The domain name to associate with the Concourse ELB. (Must have an ACM certificate)."
 }
@@ -56,6 +51,12 @@ variable "extra_install" {
   default     = ""
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
@@ -80,16 +81,20 @@ resource "aws_route53_record" "main" {
 module "asg" {
   source          = "../ec2/asg"
   prefix          = "${var.prefix}-vault"
-  environment     = "${var.environment}"
   user_data       = "${data.template_file.main.rendered}"
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = "${var.subnet_ids}"
-  load_balancers  = ["${aws_elb.main.name}"]
   instance_policy = "${data.aws_iam_policy_document.permissions.json}"
   instance_count  = "1"
   instance_type   = "m3.medium"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
+  tags            = "${var.tags}"
+}
+
+resource "aws_autoscaling_attachment" "main" {
+  autoscaling_group_name = "${module.asg.id}"
+  elb                    = "${aws_elb.main.name}"
 }
 
 data "aws_iam_policy_document" "permissions" {
@@ -155,11 +160,7 @@ resource "aws_elb" "main" {
     interval            = 15
   }
 
-  tags {
-    Name        = "${var.prefix}-vault-elb"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-vault-elb"))}"
 }
 
 resource "aws_security_group" "main" {
@@ -171,11 +172,7 @@ resource "aws_security_group" "main" {
     create_before_destroy = true
   }
 
-  tags {
-    Name        = "${var.prefix}-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "egress" {
