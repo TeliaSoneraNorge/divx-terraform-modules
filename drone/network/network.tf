@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "certificate_arn" {
   description = "ACM certificate ARN for the domain."
 }
@@ -23,6 +18,12 @@ variable "subnet_ids" {
   type        = "list"
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -32,10 +33,10 @@ resource "aws_elb" "external" {
   security_groups = ["${aws_security_group.external.id}"]
 
   listener {
-    instance_port      = "8000"
-    instance_protocol  = "tcp"
-    lb_port            = "80"
-    lb_protocol        = "tcp"
+    instance_port     = "8000"
+    instance_protocol = "tcp"
+    lb_port           = "80"
+    lb_protocol       = "tcp"
   }
 
   listener {
@@ -54,11 +55,7 @@ resource "aws_elb" "external" {
     interval            = 30
   }
 
-  tags {
-    Name        = "${var.prefix}-external-elb"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-external-elb"))}"
 }
 
 resource "aws_security_group" "external" {
@@ -70,11 +67,7 @@ resource "aws_security_group" "external" {
     create_before_destroy = true
   }
 
-  tags {
-    Name        = "${var.prefix}-external-elb-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-external-elb-sg"))}"
 }
 
 resource "aws_security_group_rule" "external_egress" {
@@ -107,11 +100,7 @@ resource "aws_elb" "internal" {
     interval            = 30
   }
 
-  tags {
-    Name        = "${var.prefix}-internal-elb"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-internal-elb"))}"
 }
 
 resource "aws_security_group" "internal" {
@@ -123,11 +112,7 @@ resource "aws_security_group" "internal" {
     create_before_destroy = true
   }
 
-  tags {
-    Name        = "${var.prefix}-internal-elb-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-internal-elb-sg"))}"
 }
 
 resource "aws_security_group_rule" "internal_egress" {

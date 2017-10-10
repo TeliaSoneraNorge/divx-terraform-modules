@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "domain" {
   description = "The domain name to associate with the Drone ELB. (Must have an ACM certificate)."
 }
@@ -89,7 +84,7 @@ variable "drone_github_secret" {
 }
 
 variable "tags" {
-  description = "A map of tags (key/value)."
+  description = "A map of tags (key-value pairs) passed to resources."
   type        = "map"
   default     = {}
 }
@@ -120,17 +115,16 @@ module "network" {
   source = "./network"
 
   prefix          = "${var.prefix}"
-  environment     = "${var.environment}"
   certificate_arn = "${var.certificate_arn}"
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = ["${var.subnet_ids}"]
+  tags            = "${var.tags}"
 }
 
 module "server" {
   source = "./server"
 
   prefix              = "${var.prefix}"
-  environment         = "${var.environment}"
   domain              = "${var.domain}"
   cluster_id          = "${module.cluster.id}"
   cluster_sg          = "${module.cluster.security_group_id}"
@@ -143,6 +137,7 @@ module "server" {
   drone_github_admins = ["${var.drone_github_admins}"]
   drone_github_client = "${var.drone_github_client}"
   drone_github_secret = "${var.drone_github_secret}"
+  tags                = "${var.tags}"
 }
 
 # Manually attach the internal ELB to the clusters ASG.
@@ -155,19 +150,18 @@ module "agent" {
   source = "./agent"
 
   prefix       = "${var.prefix}"
-  environment  = "${var.environment}"
   domain       = "${module.network.internal_elb_dns}"
   cluster_id   = "${module.cluster.id}"
   cluster_role = "${module.cluster.role_id}"
   task_count   = "${var.instance_count}"
   drone_secret = "${data.aws_kms_secret.decrypted.drone_secret}"
+  tags         = "${var.tags}"
 }
 
 module "cluster" {
   source = "../container/cluster"
 
   prefix         = "${var.prefix}"
-  environment    = "${var.environment}"
   vpc_id         = "${var.vpc_id}"
   subnet_ids     = ["${var.subnet_ids}"]
   instance_type  = "${var.instance_type}"
@@ -180,7 +174,6 @@ module "postgres" {
   source = "../rds/instance"
 
   prefix        = "${var.prefix}-rds"
-  environment   = "${var.environment}"
   username      = "${var.postgres_username}"
   password      = "${var.postgres_password}"
   port          = "${var.postgres_port}"
@@ -191,6 +184,7 @@ module "postgres" {
   storage_size  = "10"
   public_access = "false"
   skip_snapshot = "true"
+  tags          = "${var.tags}"
 }
 
 # http/https ingress to the cluster is set up by the container service module.

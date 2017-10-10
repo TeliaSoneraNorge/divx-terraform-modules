@@ -5,10 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-}
-
 variable "domain" {
   description = "The domain name to associate with the Drone ELB. (Must have an ACM certificate)."
 }
@@ -29,6 +25,12 @@ variable "drone_secret" {
   description = "Shared secret used to authenticate agents with the Drone server. (KMS Encrypted)."
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -40,12 +42,12 @@ module "agent" {
   source = "../../container/service"
 
   prefix             = "${var.prefix}-agent"
-  environment        = "${var.environment}"
   cluster_id         = "${var.cluster_id}"
   cluster_role       = "${var.cluster_role}"
   task_definition    = "${aws_ecs_task_definition.agent.arn}"
   task_log_group_arn = "${aws_cloudwatch_log_group.agent.arn}"
   container_count    = "${var.task_count}"
+  tags               = "${var.tags}"
 }
 
 resource "aws_ecs_task_definition" "agent" {
@@ -97,3 +99,4 @@ data "aws_iam_policy_document" "agent_assume" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+

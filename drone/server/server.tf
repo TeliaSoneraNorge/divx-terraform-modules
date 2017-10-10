@@ -5,10 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-}
-
 variable "domain" {
   description = "The domain name to associate with the Drone ELB. (Must have an ACM certificate)."
 }
@@ -58,6 +54,12 @@ variable "drone_github_secret" {
   description = "Drone Github secret."
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -69,7 +71,6 @@ module "server" {
   source = "../../container/service"
 
   prefix             = "${var.prefix}-server"
-  environment        = "${var.environment}"
   cluster_id         = "${var.cluster_id}"
   cluster_sg         = "${var.cluster_sg}"
   cluster_role       = "${var.cluster_role}"
@@ -78,9 +79,10 @@ module "server" {
   task_definition    = "${aws_ecs_task_definition.server.arn}"
   task_log_group_arn = "${aws_cloudwatch_log_group.server.arn}"
   container_count    = "1"
+  tags               = "${var.tags}"
 
   port_mapping = {
-    "8000" = "8000",
+    "8000" = "8000"
   }
 }
 
@@ -96,7 +98,7 @@ resource "aws_ecs_task_definition" "server" {
 }
 
 data "template_file" "server" {
-  template   = "${file("${path.module}/server.json")}"
+  template = "${file("${path.module}/server.json")}"
 
   vars {
     name                = "${var.prefix}-server"
@@ -138,3 +140,4 @@ data "aws_iam_policy_document" "assume" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+
