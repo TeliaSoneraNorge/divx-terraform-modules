@@ -5,11 +5,6 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "environment" {
-  description = "Environment tag which is applied to resources."
-  default     = ""
-}
-
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
@@ -24,6 +19,12 @@ variable "internal" {
   default     = "false"
 }
 
+variable "tags" {
+  description = "A map of tags (key-value pairs) passed to resources."
+  type        = "map"
+  default     = {}
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -33,11 +34,7 @@ resource "aws_alb" "main" {
   subnets         = ["${var.subnet_ids}"]
   security_groups = ["${aws_security_group.main.id}"]
 
-  tags {
-    Name        = "${var.prefix}"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}"))}"
 }
 
 resource "aws_security_group" "main" {
@@ -45,11 +42,7 @@ resource "aws_security_group" "main" {
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
 
-  tags {
-    Name        = "${var.prefix}-sg"
-    terraform   = "true"
-    environment = "${var.environment}"
-  }
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
 }
 
 resource "aws_security_group_rule" "egress" {
