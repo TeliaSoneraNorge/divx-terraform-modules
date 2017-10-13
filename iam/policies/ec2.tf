@@ -120,7 +120,7 @@ data "aws_iam_policy_document" "ec2" {
   }
 
   /*
-  NOTE: Different resources have differing levels of resources.
+  NOTE: ec2:RunInstances has differing levels of resource control:
   1. RequestTag: Instance/volume is tagged at launch.
   2. ARN: key-pair is the only resource that can be limited by resource name.
   3. ResourceTag (including default): Special case for Subnet, in case users want to launch in the default vpc.
