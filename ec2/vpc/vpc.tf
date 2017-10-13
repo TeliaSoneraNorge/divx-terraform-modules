@@ -10,14 +10,14 @@ variable "cidr_block" {
   default     = "10.0.0.0/16"
 }
 
+variable "nat_gateways" {
+  description = "Number of NAT gateways to provision. (A number between 0 and N. An elastic IP is created for each NAT gateway.)"
+  default     = "0"
+}
+
 variable "dns_hostnames" {
   description = "Boolean flag for whether instances should be given a dns hostname."
   default     = "false"
-}
-
-variable "public_ips" {
-  description = "Boolean flag for whether the subnets should delegate public IPs."
-  default     = "true"
 }
 
 variable "tags" {
@@ -30,6 +30,11 @@ variable "tags" {
 # Resources
 # ------------------------------------------------------------------------------
 data "aws_availability_zones" "main" {}
+
+locals {
+  az_count  = "${length(data.aws_availability_zones.main.names)}"
+  nat_count = "${min(length(data.aws_availability_zones.main.names), var.nat_gateways)}"
+}
 
 # NOTE: depends_on is added for the vpc because terraform sometimes
 # fails to destroy VPC's where internet gateway is attached. If this happens,
@@ -64,20 +69,47 @@ resource "aws_route" "main" {
   destination_cidr_block = "0.0.0.0/0"
 }
 
-resource "aws_subnet" "main" {
-  count                   = "${length(data.aws_availability_zones.main.names)}"
+resource "aws_subnet" "public" {
+  count                   = "${local.az_count}"
   vpc_id                  = "${aws_vpc.main.id}"
-  cidr_block              = "${cidrsubnet(var.cidr_block, length(data.aws_availability_zones.main.names), count.index)}"
+  cidr_block              = "${cidrsubnet(var.cidr_block, local.az_count * 2, count.index)}"
   availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
-  map_public_ip_on_launch = "${var.public_ips}"
+  map_public_ip_on_launch = "true"
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}-subnet-${count.index + 1}"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-public-subnet-${count.index + 1}"))}"
 }
 
-resource "aws_route_table_association" "main" {
-  count          = "${length(data.aws_availability_zones.main.names)}"
-  subnet_id      = "${element(aws_subnet.main.*.id, count.index)}"
+resource "aws_route_table_association" "public" {
+  count          = "${local.az_count}"
+  subnet_id      = "${element(aws_subnet.public.*.id, count.index)}"
   route_table_id = "${aws_route_table.main.id}"
+}
+
+resource "aws_subnet" "private" {
+  count                   = "${local.az_count}"
+  vpc_id                  = "${aws_vpc.main.id}"
+  cidr_block              = "${cidrsubnet(var.cidr_block, local.az_count * 2, count.index)}"
+  availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
+  map_public_ip_on_launch = "false"
+
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-private-subnet-${count.index + 1}"))}"
+}
+
+resource "aws_route_table_association" "private" {
+  count          = "${local.az_count}"
+  subnet_id      = "${element(aws_subnet.private.*.id, count.index)}"
+  route_table_id = "${aws_route_table.main.id}"
+}
+
+resource "aws_eip" "private" {
+  count = "${local.nat_count}"
+}
+
+resource "aws_nat_gateway" "private" {
+  depends_on    = ["aws_internet_gateway.main"]
+  count         = "${local.nat_count}"
+  allocation_id = "${element(aws_eip.private.*.id, count.index)}"
+  subnet_id     = "${element(aws_subnet.private.*.id, count.index)}"
 }
 
 # ------------------------------------------------------------------------------
@@ -87,6 +119,10 @@ output "vpc_id" {
   value = "${aws_vpc.main.id}"
 }
 
-output "subnet_ids" {
-  value = "${aws_subnet.main.*.id}"
+output "public_subnet_ids" {
+  value = "${aws_subnet.public.*.id}"
+}
+
+output "private_subnet_ids" {
+  value = "${aws_subnet.private.*.id}"
 }
