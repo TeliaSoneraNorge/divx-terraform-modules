@@ -119,6 +119,15 @@ data "aws_iam_policy_document" "ec2" {
     }
   }
 
+  /*
+  NOTE: Different resources have differing levels of resources.
+  1. RequestTag: Instance/volume is tagged at launch.
+  2. ARN: key-pair is the only resource that can be limited by resource name.
+  3. ResourceTag (including default): Special case for Subnet, in case users want to launch in the default vpc.
+  4. ResourceTag: Only for snapshot, as users should not be allowed to launch a snapshot that is not guaranteed to be their own.
+  5. ResourceTag (if exists): Certain resources don't have a Name tag when created by AWS or launched in the console.
+  6. No restriction: Some resources cannot be constrained.
+  */
   statement {
     effect = "Allow"
 
@@ -126,26 +135,6 @@ data "aws_iam_policy_document" "ec2" {
       "ec2:RunInstances",
     ]
 
-    resources = [
-      "arn:aws:ec2:${var.region}:${var.account_id}:*/*",
-      "arn:aws:ec2:${var.region}::snapshot/*",
-    ]
-
-    condition = {
-      test     = "StringLike"
-      variable = "ec2:ResourceTag/Name"
-      values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
-    }
-  }
-
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "ec2:RunInstances",
-    ]
-
-    # NOTE: Tags are created when running the instance (RequestTag).
     resources = [
       "arn:aws:ec2:${var.region}:${var.account_id}:instance/*",
       "arn:aws:ec2:${var.region}:${var.account_id}:volume/*",
@@ -165,9 +154,80 @@ data "aws_iam_policy_document" "ec2" {
       "ec2:RunInstances",
     ]
 
-    # NOTE: Images are most likely not created. I.e., wildcard.
     resources = [
-      "arn:aws:ec2:${var.region}::image/*",
+      "arn:aws:ec2:${var.region}:${var.account_id}:key-pair/${coalesce(var.resources, "${var.prefix}-*")}",
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:RunInstances",
+    ]
+
+    resources = [
+      "arn:aws:ec2:${var.region}:${var.account_id}:subnet/*",
+    ]
+
+    condition = {
+      test = "StringLike"
+      variable = "ec2:ResourceTag/Name"
+      values = ["default-subnet-*", "${coalesce(var.resources, "${var.prefix}-*")}"]
+    }
+
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:RunInstances",
+    ]
+
+    resources = [
+      "arn:aws:ec2:${var.region}:${var.account_id}:snapshot/*",
+    ]
+
+    condition = {
+      test = "StringLike"
+      variable = "ec2:ResourceTag/Name"
+      values = ["${coalesce(var.resources, "${var.prefix}-*")}"]
+    }
+
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:RunInstances",
+    ]
+
+    resources = [
+      "arn:aws:ec2:${var.region}::image/*",                                # Most images don't have a Name tag and don't support account_id.
+      "arn:aws:ec2:${var.region}:${var.account_id}:network-interface/*",   # All network interfaces created by AWS lack a Name tag.
+      "arn:aws:ec2:${var.region}:${var.account_id}:security-group/*",      # Security groups don't have a Name tag when created via Console.
+    ]
+
+    condition = {
+      test = "StringLikeIfExists"
+      variable = "ec2:ResourceTag/Name"
+      values = ["${coalesce(var.resources, "${var.prefix}-*")}"]
+    }
+
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:RunInstances",
+    ]
+
+    resources = [
+      "arn:aws:ec2:${var.region}:${var.account_id}:elastic-gpu/*",
+      "arn:aws:ec2:${var.region}:${var.account_id}:placement-group/*",
     ]
   }
 }
