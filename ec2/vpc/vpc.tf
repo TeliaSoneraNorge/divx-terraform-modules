@@ -10,8 +10,8 @@ variable "cidr_block" {
   default     = "10.0.0.0/16"
 }
 
-variable "nat_gateways" {
-  description = "Number of NAT gateways to provision. (A number between 0 and N. An elastic IP is created for each NAT gateway.)"
+variable "private_subnets" {
+  description = "Number of private subnets to provision (will not exceed the number of AZ's in the region)."
   default     = "0"
 }
 
@@ -32,8 +32,8 @@ variable "tags" {
 data "aws_availability_zones" "main" {}
 
 locals {
-  az_count  = "${length(data.aws_availability_zones.main.names)}"
-  nat_count = "${min(length(data.aws_availability_zones.main.names), var.nat_gateways)}"
+  az_count      = "${length(data.aws_availability_zones.main.names)}"
+  private_count = "${min(length(data.aws_availability_zones.main.names), var.private_subnets)}"
 }
 
 # NOTE: depends_on is added for the vpc because terraform sometimes
@@ -48,31 +48,31 @@ resource "aws_vpc" "main" {
   tags = "${merge(var.tags, map("Name", "${var.prefix}-vpc"))}"
 }
 
-resource "aws_internet_gateway" "main" {
+resource "aws_internet_gateway" "public" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}-internet-gateway"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-public-igw"))}"
 }
 
-resource "aws_route_table" "main" {
+resource "aws_route_table" "public" {
   depends_on = ["aws_vpc.main"]
   vpc_id     = "${aws_vpc.main.id}"
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}-rt-public"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-public-rt"))}"
 }
 
-resource "aws_route" "main" {
-  depends_on             = ["aws_internet_gateway.main", "aws_route_table.main"]
-  route_table_id         = "${aws_route_table.main.id}"
-  gateway_id             = "${aws_internet_gateway.main.id}"
+resource "aws_route" "public" {
+  depends_on             = ["aws_internet_gateway.public", "aws_route_table.public"]
+  route_table_id         = "${aws_route_table.public.id}"
+  gateway_id             = "${aws_internet_gateway.public.id}"
   destination_cidr_block = "0.0.0.0/0"
 }
 
 resource "aws_subnet" "public" {
   count                   = "${local.az_count}"
   vpc_id                  = "${aws_vpc.main.id}"
-  cidr_block              = "${cidrsubnet(var.cidr_block, local.az_count * 2, count.index)}"
+  cidr_block              = "${cidrsubnet(var.cidr_block, local.az_count + local.private_count, count.index)}"
   availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
   map_public_ip_on_launch = "true"
 
@@ -82,13 +82,42 @@ resource "aws_subnet" "public" {
 resource "aws_route_table_association" "public" {
   count          = "${local.az_count}"
   subnet_id      = "${element(aws_subnet.public.*.id, count.index)}"
-  route_table_id = "${aws_route_table.main.id}"
+  route_table_id = "${aws_route_table.public.id}"
+}
+
+resource "aws_eip" "private" {
+  count = "${local.private_count}"
+}
+
+resource "aws_nat_gateway" "private" {
+  depends_on    = ["aws_internet_gateway.public", "aws_eip.private"]
+  count         = "${local.private_count}"
+  allocation_id = "${element(aws_eip.private.*.id, count.index)}"
+  subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
+
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-nat-gateway-${count.index + 1}"))}"
+}
+
+resource "aws_route_table" "private" {
+  depends_on = ["aws_vpc.main"]
+  count      = "${local.private_count}"
+  vpc_id     = "${aws_vpc.main.id}"
+
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-private-rt-${count.index + 1}"))}"
+}
+
+resource "aws_route" "private" {
+  depends_on             = ["aws_nat_gateway.private", "aws_route_table.private"]
+  count                  = "${local.private_count}"
+  route_table_id         = "${element(aws_route_table.private.*.id, count.index)}"
+  nat_gateway_id         = "${element(aws_nat_gateway.private.*.id, count.index)}"
+  destination_cidr_block = "0.0.0.0/0"
 }
 
 resource "aws_subnet" "private" {
-  count                   = "${local.az_count}"
+  count                   = "${local.private_count}"
   vpc_id                  = "${aws_vpc.main.id}"
-  cidr_block              = "${cidrsubnet(var.cidr_block, local.az_count * 2, count.index)}"
+  cidr_block              = "${cidrsubnet(var.cidr_block, local.az_count + local.private_count, local.az_count + count.index)}"
   availability_zone       = "${element(data.aws_availability_zones.main.names, count.index)}"
   map_public_ip_on_launch = "false"
 
@@ -96,20 +125,9 @@ resource "aws_subnet" "private" {
 }
 
 resource "aws_route_table_association" "private" {
-  count          = "${local.az_count}"
+  count          = "${local.private_count}"
   subnet_id      = "${element(aws_subnet.private.*.id, count.index)}"
-  route_table_id = "${aws_route_table.main.id}"
-}
-
-resource "aws_eip" "private" {
-  count = "${local.nat_count}"
-}
-
-resource "aws_nat_gateway" "private" {
-  depends_on    = ["aws_internet_gateway.main"]
-  count         = "${local.nat_count}"
-  allocation_id = "${element(aws_eip.private.*.id, count.index)}"
-  subnet_id     = "${element(aws_subnet.private.*.id, count.index)}"
+  route_table_id = "${element(aws_route_table.private.*.id, count.index)}"
 }
 
 # ------------------------------------------------------------------------------
