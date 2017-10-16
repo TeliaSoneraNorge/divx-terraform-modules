@@ -57,6 +57,7 @@ module "base" {
   source = "../"
 
   prefix          = "${var.prefix}"
+  vpc_id          = "${var.vpc_id}"
   instance_policy = "${var.instance_policy}"
   instance_type   = "${var.instance_type}"
   instance_ami    = "${var.instance_ami}"
