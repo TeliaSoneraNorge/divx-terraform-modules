@@ -123,7 +123,7 @@ data "null_data_source" "autoscaling" {
   inputs = {
     Key               = "${element(keys(local.asg_tags), count.index)}"
     Value             = "${element(values(local.asg_tags), count.index)}"
-    PropagateAtLaunch = "true"
+    PropagateAtLaunch = "TRUE"
   }
 }
 
