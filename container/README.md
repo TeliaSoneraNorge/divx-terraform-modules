@@ -6,17 +6,17 @@ Set up an ECS cluster and register services with ease. The modules set up the fo
 
 - Autoscaling group/launch configuration.
 - CoreOS instances with ECS agent running.
-- A security group for the cluster (with all egress).
+- A security group for the cluster (with all egress and ingress from the specified load balancers).
 - CloudWatch log group.
 - IAM role/instance profile with appropriate privileges.
 
 #### container/service
 
-- Usable with either an ALB or a classic ELB (to be tested).
-- Optional: Creates the ALB target group (when used with an ALB).
+- Can be used with or without a load balancer.
+- Usable with either an ALB or a NLB.
+- Creates target group and listeners when used with a load balancer (for dynamic port mapping).
 - Sets up and enables logging for the service.
 - Creates IAM roles for the ECS service.
-- Takes care of opening ingress on the appropriate ports from the load balancer (ALB or classic ELB) to the cluster.
 
 Note that task definitions have to be created manually (cannot be abstracted) because of `volume` blocks.
 
@@ -44,14 +44,15 @@ data "aws_region" "current" {
   current = "true"
 }
 
-// ALB w/ingress and listener rule
-module "alb" {
-  source = "github.com/itsdalmo/tf-modules//ec2/alb"
+// Create the external ALB (or NLB)
+module "lb" {
+  source = "github.com/itsdalmo/tf-modules//ec2/lb"
 
-  prefix      = "${var.prefix}"
-  internal    = "false"
-  vpc_id      = "${var.vpc_id}"
-  subnet_ids  = ["${var.subnets}"]
+  prefix     = "${var.prefix}"
+  type       = "application"
+  internal   = "false"
+  vpc_id     = "${var.vpc_id}"
+  subnet_ids = ["${var.subnets}"]
 
   tags {
     terraform   = "True"
@@ -59,13 +60,18 @@ module "alb" {
   }
 }
 
-// Cluster
+// Create cluster and open ingress from the LB on the dynamic port range.
 module "cluster" {
   source = "github.com/itsdalmo/tf-modules//container/cluster"
 
-  prefix      = "${var.prefix}"
-  vpc_id      = "${var.vpc_id}"
-  subnet_ids  = ["${var.subnets}"]
+  prefix           = "${var.prefix}"
+  vpc_id           = "${var.vpc_id}"
+  subnet_ids       = ["${var.subnets}"]
+  ingress_length   = 1
+
+  ingress {
+    "0" = "${module.lb.security_group_id}"
+  }
 
   tags {
     terraform   = "True"
@@ -73,7 +79,33 @@ module "cluster" {
   }
 }
 
-// Create a task definition
+// Create a target group with listeners.
+module "target" {
+  source = "../../container/target"
+
+  prefix            = "${var.prefix}"
+  vpc_id            = "${var.vpc_id}"
+  load_balancer_arn = "${module.lb.arn}"
+
+  target {
+    protocol        = "HTTP"
+    port            = "8000"
+    health          = "HTTP:traffic-port/"
+  }
+
+  listeners = [{
+    protocol = "HTTP"
+    port     = "80"
+  }]
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
+}
+
+// Create a task definition for the service.
+// NOTE: HostPort must be 0 to use dynamic port mapping.
 resource "aws_cloudwatch_log_group" "main" {
   name = "${var.prefix}"
 }
@@ -81,7 +113,6 @@ resource "aws_cloudwatch_log_group" "main" {
 resource "aws_ecs_task_definition" "main" {
   family = "${var.prefix}"
 
-  // NOTE: HostPort has to be 0 when using a target group.
   container_definitions = <<EOF
 [{
     "name": "${var.prefix}",
@@ -104,23 +135,21 @@ resource "aws_ecs_task_definition" "main" {
 EOF
 }
 
-// Service
+// Finally, create the service with the given task definition and target group.
 module "service" {
-  source = "github.com/itsdalmo/tf-modules//container/service"
+  source = "../../container/service"
 
   prefix             = "${var.prefix}"
-  vpc_id             = "${var.vpc_id}"
   cluster_id         = "${module.cluster.id}"
-  cluster_sg         = "${module.cluster.security_group_id}"
   cluster_role       = "${module.cluster.role_id}"
-  load_balancer_name = "${module.alb.name}"
-  load_balancer_sg   = "${module.alb.security_group_id}"
   task_definition    = "${aws_ecs_task_definition.main.arn}"
   task_log_group_arn = "${aws_cloudwatch_log_group.main.arn}"
   container_count    = "2"
 
-  port_mapping = {
-    "0" = "8000"
+  load_balancer {
+    target_group_arn = "${module.target.target_group_arn}"
+    container_name   = "${var.prefix}"
+    container_port   = "${module.target.container_port}"
   }
 
   tags {
@@ -129,21 +158,9 @@ module "service" {
   }
 }
 
-// Listeners are added manually
-resource "aws_alb_listener" "main" {
-  load_balancer_arn = "${module.alb.arn}"
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    target_group_arn = "${module.service.target_group_arn}"
-    type             = "forward"
-  }
-}
-
-// ... and SG ingress
-resource "aws_security_group_rule" "ingress" {
-  security_group_id = "${module.alb.security_group_id}"
+// SG rules for ingress to the LB is created manually.
+resource "aws_security_group_rule" "ingress_80" {
+  security_group_id = "${module.lb.security_group_id}"
   type              = "ingress"
   protocol          = "tcp"
   from_port         = "80"
