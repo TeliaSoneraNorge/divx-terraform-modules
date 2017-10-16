@@ -5,18 +5,22 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "vpc_id" {
-  description = "ID of the VPC for the subnets."
-}
-
-variable "subnet_ids" {
-  description = "ID of subnets where instances can be provisioned."
-  type        = "list"
+variable "type" {
+  description = "Type of load balancer to provision (network or application)."
 }
 
 variable "internal" {
   description = "Provision an internal ALB. Defaults to false."
   default     = "false"
+}
+
+variable "vpc_id" {
+  description = "ID of the VPC for the subnets."
+}
+
+variable "subnet_ids" {
+  description = "ID of subnets which will be attached to the load balancer."
+  type        = "list"
 }
 
 variable "tags" {
@@ -28,13 +32,18 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-resource "aws_alb" "main" {
-  name            = "${var.prefix}-alb"
-  internal        = "${var.internal}"
-  subnets         = ["${var.subnet_ids}"]
-  security_groups = ["${aws_security_group.main.id}"]
+locals {
+  name = "${var.prefix}-${var.type == "network" ? "nlb" : "alb"}"
+}
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}"))}"
+resource "aws_alb" "main" {
+  name               = "${local.name}"
+  load_balancer_type = "${var.type}"
+  internal           = "${var.internal}"
+  subnets            = ["${var.subnet_ids}"]
+  security_groups    = ["${aws_security_group.main.id}"]
+
+  tags = "${merge(var.tags, map("Name", "${local.name}"))}"
 }
 
 resource "aws_security_group" "main" {
