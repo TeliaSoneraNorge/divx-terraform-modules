@@ -14,6 +14,11 @@ variable "subnet_ids" {
   type        = "list"
 }
 
+variable "ingress" {
+  description = "Map of security groups which will be granted ingress on the specified ports (port = sg id). If a port of 0 is specified, the dynamic range used by ECS is opened instead."
+  default     = {}
+}
+
 variable "image_version" {
   description = "Docker image version."
   default     = "latest"
@@ -128,6 +133,21 @@ module "asg" {
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
   tags            = "${var.tags}"
+}
+
+locals {
+  ports = "${keys(var.ingress)}"
+  sources = "${values(var.ingress)}"
+}
+
+resource "aws_security_group_rule" "ingress" {
+  count                    = "${length(var.ingress)}"
+  type                     = "ingress"
+  security_group_id        = "${module.asg.security_group_id}"
+  protocol                 = "tcp"
+  from_port                = "${element(local.ports, count.index) == "0" ? "32768" : element(local.ports, count.index)}"
+  to_port                  = "${element(local.ports, count.index) == "0" ? "65535" : element(local.ports, count.index)}"
+  source_security_group_id = "${element(local.sources, count.index)}"
 }
 
 # ------------------------------------------------------------------------------

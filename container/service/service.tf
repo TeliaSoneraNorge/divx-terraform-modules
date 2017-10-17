@@ -9,10 +9,6 @@ variable "cluster_id" {
   description = "ID of an ECS cluster which the service will be deployed to."
 }
 
-variable "cluster_sg" {
-  description = "Optional: ID of the security group associated with the cluster."
-  default     = ""
-}
 
 variable "cluster_role" {
   description = "ID of the clusters IAM role (used for the instance profiles)."
@@ -162,28 +158,6 @@ resource "aws_iam_role_policy" "service_permissions" {
   name   = "${var.prefix}-service-permissions"
   role   = "${aws_iam_role.service.id}"
   policy = "${data.aws_iam_policy_document.service_permissions.json}"
-}
-
-// Open dynamic port mapping range if using an ALB
-resource "aws_security_group_rule" "dynamic_port_mapping" {
-  count                    = "${contains(keys(var.port_mapping), "0") ? 1 : 0}"
-  type                     = "ingress"
-  security_group_id        = "${var.cluster_sg}"
-  protocol                 = "tcp"
-  from_port                = 32768
-  to_port                  = 65535
-  source_security_group_id = "${var.load_balancer_sg}"
-}
-
-// Open individual ports if using a classic ELB
-resource "aws_security_group_rule" "static_port_mapping" {
-  count                    = "${contains(keys(var.port_mapping), "0") ? 0 : length(var.port_mapping)}"
-  type                     = "ingress"
-  security_group_id        = "${var.cluster_sg}"
-  protocol                 = "tcp"
-  from_port                = "${element(keys(var.port_mapping), count.index)}"
-  to_port                  = "${element(keys(var.port_mapping), count.index)}"
-  source_security_group_id = "${var.load_balancer_sg}"
 }
 
 resource "aws_iam_role_policy" "log_agent" {
