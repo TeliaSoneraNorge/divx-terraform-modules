@@ -52,6 +52,11 @@ variable "skip_snapshot" {
   default     = "true"
 }
 
+variable "multi_az" {
+  description = "Optional: Disable multiple availability zones for the DB instance."
+  default     = "true"
+}
+
 variable "tags" {
   description = "A map of tags (key-value pairs) passed to resources."
   type        = "map"
@@ -81,7 +86,7 @@ resource "aws_db_instance" "main" {
   skip_final_snapshot    = "${var.skip_snapshot}"
   publicly_accessible    = "${var.public_access}"
   vpc_security_group_ids = ["${aws_security_group.main.id}"]
-  multi_az               = "true"
+  multi_az               = "${var.multi_az}"
 
   # NOTE: This is duplicated because subnet_group does not return the name.
   db_subnet_group_name = "${var.prefix}-subnet-group"
