@@ -21,7 +21,6 @@ module "rds" {
   source        = "github.com/itsdalmo/tf-modules//rds/instance"
 
   prefix        = "your-project"
-  environment   = "dev"
   username      = "someuser"
   password      = "<kms-encrypted-password>"
   port          = "5000"
@@ -52,4 +51,23 @@ output "address" {
 output "port" {
   value = "${module.rds.port}"
 }
+```
+
+## source_security_group_id
+Need an valid id, or 0.0.0.0./0 - allow from anywhere.
+## Create KMS_KEY_ID
+
+https://console.aws.amazon.com/iam/home?region=eu-west-1#/encryptionKeys/eu-west-1
+
+Take note of the Id, and the Availabillity Zone
+
+## Create <kms-encrypted-password>
+
+``` 
+aws kms encrypt \
+  --key-id <KMS_KEY_ID> \
+  --plaintext WowSuchTest123 \
+  --output text \
+  --query CiphertextBlob \
+  --profile <your aws profile>
 ```
