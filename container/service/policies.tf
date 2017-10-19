@@ -49,7 +49,7 @@ data "aws_iam_policy_document" "service_permissions" {
     ]
 
     resources = [
-      "arn:aws:elasticloadbalancing:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:loadbalancer/${contains(keys(var.port_mapping), "0") ? "app/" : ""}${var.load_balancer_name}*",
+      "arn:aws:elasticloadbalancing:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:loadbalancer/${length(local.tcp_ports) > 0 ? "network/" : "app/"}${var.load_balancer_name}*",
     ]
   }
 

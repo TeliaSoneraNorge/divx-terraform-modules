@@ -6,17 +6,17 @@ Set up an ECS cluster and register services with ease. The modules set up the fo
 
 - Autoscaling group/launch configuration.
 - CoreOS instances with ECS agent running.
-- A security group for the cluster (with all egress).
+- A security group for the cluster (with all egress and ingress from the specified load balancers).
 - CloudWatch log group.
 - IAM role/instance profile with appropriate privileges.
 
 #### container/service
 
-- Usable with either an ALB or a classic ELB (to be tested).
-- Optional: Creates the ALB target group (when used with an ALB).
+- Can be used with or without a load balancer.
+- Usable with either an ALB or a NLB.
+- Creates target group and listeners when used with a load balancer (for dynamic port mapping).
 - Sets up and enables logging for the service.
 - Creates IAM roles for the ECS service.
-- Takes care of opening ingress on the appropriate ports from the load balancer (ALB or classic ELB) to the cluster.
 
 Note that task definitions have to be created manually (cannot be abstracted) because of `volume` blocks.
 
@@ -44,14 +44,15 @@ data "aws_region" "current" {
   current = "true"
 }
 
-// ALB w/ingress and listener rule
-module "alb" {
-  source = "github.com/itsdalmo/tf-modules//ec2/alb"
+// NLB w/ingress and listener rule
+module "lb" {
+  source = "github.com/itsdalmo/tf-modules//ec2/lb"
 
-  prefix      = "${var.prefix}"
-  internal    = "false"
-  vpc_id      = "${var.vpc_id}"
-  subnet_ids  = ["${var.subnets}"]
+  prefix     = "${var.prefix}"
+  type       = "network"
+  internal   = "false"
+  vpc_id     = "${var.vpc_id}"
+  subnet_ids = ["${var.subnets}"]
 
   tags {
     terraform   = "True"
@@ -59,13 +60,32 @@ module "alb" {
   }
 }
 
-// Cluster
+resource "aws_security_group_rule" "ingress_80" {
+  security_group_id = "${module.lb.security_group_id}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "80"
+  to_port           = "80"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "ingress_8000" {
+  security_group_id = "${module.lb.security_group_id}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "8000"
+  to_port           = "8000"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+// Cluster which allows ingress from the NLB
 module "cluster" {
   source = "github.com/itsdalmo/tf-modules//container/cluster"
 
-  prefix      = "${var.prefix}"
-  vpc_id      = "${var.vpc_id}"
-  subnet_ids  = ["${var.subnets}"]
+  prefix           = "${var.prefix}"
+  vpc_id           = "${var.vpc_id}"
+  subnet_ids       = ["${var.subnets}"]
+  load_balancer_sg = ["${module.lb.security_group_id}"]
 
   tags {
     terraform   = "True"
@@ -73,7 +93,36 @@ module "cluster" {
   }
 }
 
-// Create a task definition
+// Service w/dynamic port mapping and two tcp listeners (port 80 and 8000)
+module "service" {
+  source = "github.com/itsdalmo/tf-modules//container/service"
+
+  prefix             = "${var.prefix}"
+  vpc_id             = "${var.vpc_id}"
+  cluster_id         = "${module.cluster.id}"
+  cluster_role       = "${module.cluster.role_id}"
+  load_balancer_arn  = "${module.lb.arn}"
+  load_balancer_name = "${module.lb.name}"
+  task_definition    = "${aws_ecs_task_definition.main.arn}"
+  task_log_group_arn = "${aws_cloudwatch_log_group.main.arn}"
+  container_count    = "2"
+
+  target {
+    port     = "8000"
+    protocol = "TCP"
+  }
+
+  listeners {
+    tcp  = "80,8000"
+  }
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
+}
+
+// Task definition for the service
 resource "aws_cloudwatch_log_group" "main" {
   name = "${var.prefix}"
 }
@@ -102,52 +151,5 @@ resource "aws_ecs_task_definition" "main" {
     }
 }]
 EOF
-}
-
-// Service
-module "service" {
-  source = "github.com/itsdalmo/tf-modules//container/service"
-
-  prefix             = "${var.prefix}"
-  vpc_id             = "${var.vpc_id}"
-  cluster_id         = "${module.cluster.id}"
-  cluster_sg         = "${module.cluster.security_group_id}"
-  cluster_role       = "${module.cluster.role_id}"
-  load_balancer_name = "${module.alb.name}"
-  load_balancer_sg   = "${module.alb.security_group_id}"
-  task_definition    = "${aws_ecs_task_definition.main.arn}"
-  task_log_group_arn = "${aws_cloudwatch_log_group.main.arn}"
-  container_count    = "2"
-
-  port_mapping = {
-    "0" = "8000"
-  }
-
-  tags {
-    terraform   = "True"
-    environment = "dev"
-  }
-}
-
-// Listeners are added manually
-resource "aws_alb_listener" "main" {
-  load_balancer_arn = "${module.alb.arn}"
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    target_group_arn = "${module.service.target_group_arn}"
-    type             = "forward"
-  }
-}
-
-// ... and SG ingress
-resource "aws_security_group_rule" "ingress" {
-  security_group_id = "${module.alb.security_group_id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "80"
-  to_port           = "80"
-  cidr_blocks       = ["0.0.0.0/0"]
 }
 ```
