@@ -14,11 +14,6 @@ variable "subnet_ids" {
   type        = "list"
 }
 
-variable "load_balancer_sg" {
-  description = "List of load balancer security groups which will be allowed ingress to the cluster. (All ports/protocols.)."
-  default     = []
-}
-
 variable "image_version" {
   description = "Docker image version."
   default     = "latest"
@@ -133,16 +128,6 @@ module "asg" {
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
   tags            = "${var.tags}"
-}
-
-resource "aws_security_group_rule" "ingress" {
-  count                    = "${length(var.load_balancer_sg)}"
-  security_group_id        = "${module.asg.security_group_id}"
-  type                     = "ingress"
-  protocol                 = "-1"
-  from_port                = 0
-  to_port                  = 0
-  source_security_group_id = "${element(var.load_balancer_sg, count.index)}"
 }
 
 # ------------------------------------------------------------------------------
