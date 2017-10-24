@@ -44,6 +44,12 @@ variable "ecs_log_level" {
   default     = "info"
 }
 
+// NOTE: This would just be a list of TF was able to calculate length on resources.
+variable "ingress" {
+  type = "map"
+  default = {}
+}
+
 variable "tags" {
   description = "A map of tags (key/value)."
   type        = "map"
@@ -128,6 +134,16 @@ module "asg" {
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
   tags            = "${var.tags}"
+}
+
+resource "aws_security_group_rule" "ingress" {
+  count                    = "${length(keys(var.ingress))}"
+  security_group_id        = "${module.asg.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "${element(keys(var.ingress), count.index) == "0" ? "32768" : element(keys(var.ingress), count.index)}"
+  to_port                  = "${element(keys(var.ingress), count.index) == "0" ? "65535" : element(keys(var.ingress), count.index)}"
+  source_security_group_id = "${element(values(var.ingress), count.index)}"
 }
 
 # ------------------------------------------------------------------------------

@@ -44,12 +44,12 @@ data "aws_region" "current" {
   current = "true"
 }
 
-// NLB w/ingress and listener rule
+// Set up the external ALB
 module "lb" {
   source = "github.com/itsdalmo/tf-modules//ec2/lb"
 
   prefix     = "${var.prefix}"
-  type       = "network"
+  type       = "application"
   internal   = "false"
   vpc_id     = "${var.vpc_id}"
   subnet_ids = ["${var.subnets}"]
@@ -60,6 +60,7 @@ module "lb" {
   }
 }
 
+// Open ingress on the desired ports
 resource "aws_security_group_rule" "ingress_80" {
   security_group_id = "${module.lb.security_group_id}"
   type              = "ingress"
@@ -78,14 +79,20 @@ resource "aws_security_group_rule" "ingress_8000" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
-// Cluster which allows ingress from the NLB
+// Create the cluster and specify that the LB can reach it on the dynamic port range
 module "cluster" {
   source = "github.com/itsdalmo/tf-modules//container/cluster"
 
   prefix           = "${var.prefix}"
   vpc_id           = "${var.vpc_id}"
   subnet_ids       = ["${var.subnets}"]
-  load_balancer_sg = ["${module.lb.security_group_id}"]
+
+  # Opening 80 and 8000 as an example
+  ingress {
+       "0" = "${module.lb.security_group_id}"
+      "80" = "${module.lb.security_group_id}"
+    "8000" = "${module.lb.security_group_id}"
+  }
 
   tags {
     terraform   = "True"
@@ -93,7 +100,7 @@ module "cluster" {
   }
 }
 
-// Service w/dynamic port mapping and two tcp listeners (port 80 and 8000)
+// Service with dynamic target (enforced) and two tcp listeners (port 80 and 8000)
 module "service" {
   source = "github.com/itsdalmo/tf-modules//container/service"
 
@@ -102,19 +109,26 @@ module "service" {
   cluster_id         = "${module.cluster.id}"
   cluster_role       = "${module.cluster.role_id}"
   load_balancer_arn  = "${module.lb.arn}"
-  load_balancer_name = "${module.lb.name}"
   task_definition    = "${aws_ecs_task_definition.main.arn}"
   task_log_group_arn = "${aws_cloudwatch_log_group.main.arn}"
   container_count    = "2"
 
   target {
-    port     = "8000"
-    protocol = "TCP"
+    protocol        = "HTTP"
+    port            = "8000"
+    health          = "HTTP/"
   }
 
-  listeners {
-    tcp  = "80,8000"
-  }
+  listeners = [
+    {
+      protocol = "HTTP"
+      port     = "80"
+    },
+    {
+      protocol = "HTTP"
+      port     = "8000"
+    },
+  ]
 
   tags {
     terraform   = "True"

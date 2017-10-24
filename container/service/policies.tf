@@ -40,24 +40,14 @@ data "aws_iam_policy_document" "service_permissions" {
     resources = ["*"]
   }
 
+  // NOTE: ALB does not support resource level permissions :/
+  // TODO: Check whether this is still valid/also applies to network load balancers.
   statement {
     effect = "Allow"
 
     actions = [
       "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
       "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
-    ]
-
-    resources = [
-      "arn:aws:elasticloadbalancing:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:loadbalancer/${length(local.tcp_ports) > 0 ? "network/" : "app/"}${var.load_balancer_name}*",
-    ]
-  }
-
-  // NOTE: ALB does not support resource level permissions :/
-  statement {
-    effect = "Allow"
-
-    actions = [
       "elasticloadbalancing:DeregisterTargets",
       "elasticloadbalancing:RegisterTargets",
     ]
