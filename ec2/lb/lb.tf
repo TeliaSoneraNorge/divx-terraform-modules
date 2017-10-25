@@ -10,7 +10,7 @@ variable "type" {
 }
 
 variable "internal" {
-  description = "Provision an internal ALB. Defaults to false."
+  description = "Provision an internal load balancer. Defaults to false."
   default     = "false"
 }
 
@@ -36,7 +36,7 @@ locals {
   name = "${var.prefix}-${var.type == "network" ? "nlb" : "alb"}"
 }
 
-resource "aws_alb" "main" {
+resource "aws_lb" "main" {
   name               = "${local.name}"
   load_balancer_type = "${var.type}"
   internal           = "${var.internal}"
@@ -67,24 +67,24 @@ resource "aws_security_group_rule" "egress" {
 # Output
 # ------------------------------------------------------------------------------
 output "arn" {
-  value = "${aws_alb.main.arn}"
+  value = "${aws_lb.main.arn}"
 }
 
 output "name" {
   // arn:aws:elasticloadbalancing:<region>:<account-id>:loadbalancer/app/<name>/<uuid>
-  value = "${element(split("/", aws_alb.main.name), 2)}"
+  value = "${element(split("/", aws_lb.main.name), 2)}"
 }
 
 output "dns_name" {
-  value = "${aws_alb.main.dns_name}"
+  value = "${aws_lb.main.dns_name}"
 }
 
 output "zone_id" {
-  value = "${aws_alb.main.zone_id}"
+  value = "${aws_lb.main.zone_id}"
 }
 
 output "origin_id" {
-  value = "${element(split(".", aws_alb.main.dns_name), 0)}"
+  value = "${element(split(".", aws_lb.main.dns_name), 0)}"
 }
 
 output "security_group_id" {
