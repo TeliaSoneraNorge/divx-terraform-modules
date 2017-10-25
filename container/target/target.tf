@@ -41,10 +41,19 @@ locals {
   health_path     = "${local.health_protocol != "TCP" ? "/${element(local.second_split, 1)}" : ""}"
 }
 
+// HACK: If we don't depend on this the target group is created and associated with the service before
+// the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
+resource "null_resource" "alb_exists" {
+  triggers {
+    alb_name = "${var.load_balancer_arn}"
+  }
+}
+
 resource "aws_lb_target_group" "main" {
-  vpc_id   = "${var.vpc_id}"
-  port     = "${var.target["port"]}"
-  protocol = "${var.target["protocol"]}"
+  depends_on = ["null_resource.alb_exists"]
+  vpc_id     = "${var.vpc_id}"
+  port       = "${var.target["port"]}"
+  protocol   = "${var.target["protocol"]}"
 
   health_check {
     path                = "${local.health_path}"
