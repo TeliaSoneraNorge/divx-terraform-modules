@@ -6,22 +6,11 @@ variable "prefix" {
 }
 
 variable "vpc_id" {
-  description = "Optional: ID of a VPC where the target group (optional) will be registered."
-  default     = ""
+  description = "ID of a VPC where the target group will be registered."
 }
 
 variable "load_balancer_arn" {
   description = "ARN of the load balancer (network or application)."
-  default     = ""
-}
-
-variable "load_balancer_sg" {
-  description = "Security group of the load balancer."
-  default     = ""
-}
-
-variable "cluster_sg" {
-  description = "Security group of the container cluster."
 }
 
 variable "target" {
