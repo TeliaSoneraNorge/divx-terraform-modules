@@ -81,7 +81,7 @@ module "cluster" {
 
 // Create a target group with listeners.
 module "target" {
-  source = "../../container/target"
+  source = "github.com/itsdalmo/tf-modules//container/target"
 
   prefix            = "${var.prefix}"
   vpc_id            = "${var.vpc_id}"
@@ -137,7 +137,7 @@ EOF
 
 // Finally, create the service with the given task definition and target group.
 module "service" {
-  source = "../../container/service"
+  source = "github.com/itsdalmo/tf-modules//container/service"
 
   prefix             = "${var.prefix}"
   cluster_id         = "${module.cluster.id}"
