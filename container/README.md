@@ -44,7 +44,7 @@ data "aws_region" "current" {
   current = "true"
 }
 
-// Set up the external ALB
+// Create the external ALB (or NLB)
 module "lb" {
   source = "github.com/itsdalmo/tf-modules//ec2/lb"
 
@@ -60,26 +60,7 @@ module "lb" {
   }
 }
 
-// Open ingress on the desired ports
-resource "aws_security_group_rule" "ingress_80" {
-  security_group_id = "${module.lb.security_group_id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "80"
-  to_port           = "80"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "ingress_8000" {
-  security_group_id = "${module.lb.security_group_id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "8000"
-  to_port           = "8000"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-// Create the cluster and specify that the LB can reach it on the dynamic port range
+// Create cluster and open ingress from the LB on the dynamic port range.
 module "cluster" {
   source = "github.com/itsdalmo/tf-modules//container/cluster"
 
@@ -87,11 +68,8 @@ module "cluster" {
   vpc_id           = "${var.vpc_id}"
   subnet_ids       = ["${var.subnets}"]
 
-  # Opening 80 and 8000 as an example
   ingress {
-       "0" = "${module.lb.security_group_id}"
-      "80" = "${module.lb.security_group_id}"
-    "8000" = "${module.lb.security_group_id}"
+    "0" = "${module.lb.security_group_id}"
   }
 
   tags {
@@ -100,7 +78,7 @@ module "cluster" {
   }
 }
 
-// Target
+// Create a target group with listeners.
 module "target" {
   source = "../../container/target"
 
@@ -114,16 +92,10 @@ module "target" {
     health          = "HTTP:traffic-port/"
   }
 
-  listeners = [
-    {
-      protocol = "HTTP"
-      port     = "80"
-    },
-    {
-      protocol = "HTTP"
-      port     = "8000"
-    },
-  ]
+  listeners = [{
+    protocol = "HTTP"
+    port     = "80"
+  }]
 
   tags {
     terraform   = "True"
@@ -131,7 +103,38 @@ module "target" {
   }
 }
 
-// Service
+// Create a task definition for the service.
+// NOTE: HostPort must be 0 to use dynamic port mapping.
+resource "aws_cloudwatch_log_group" "main" {
+  name = "${var.prefix}"
+}
+
+resource "aws_ecs_task_definition" "main" {
+  family = "${var.prefix}"
+
+  container_definitions = <<EOF
+[{
+    "name": "${var.prefix}",
+    "image": "crccheck/hello-world:latest",
+    "cpu": 256,
+    "memory": 512,
+    "essential": true,
+    "portMappings": [{
+      "HostPort": 0,
+      "ContainerPort": 8000
+    }],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "${aws_cloudwatch_log_group.main.name}",
+            "awslogs-region": "${data.aws_region.current.name}"
+        }
+    }
+}]
+EOF
+}
+
+// Finally, create the service with the given task definition and target group.
 module "service" {
   source = "../../container/service"
 
@@ -154,34 +157,13 @@ module "service" {
   }
 }
 
-// Task definition for the service
-resource "aws_cloudwatch_log_group" "main" {
-  name = "${var.prefix}"
-}
-
-resource "aws_ecs_task_definition" "main" {
-  family = "${var.prefix}"
-
-  // NOTE: HostPort has to be 0 when using a target group.
-  container_definitions = <<EOF
-[{
-    "name": "${var.prefix}",
-    "image": "crccheck/hello-world:latest",
-    "cpu": 256,
-    "memory": 512,
-    "essential": true,
-    "portMappings": [{
-      "HostPort": 0,
-      "ContainerPort": 8000
-    }],
-    "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-            "awslogs-group": "${aws_cloudwatch_log_group.main.name}",
-            "awslogs-region": "${data.aws_region.current.name}"
-        }
-    }
-}]
-EOF
+// SG rules for ingress to the LB is created manually.
+resource "aws_security_group_rule" "ingress_80" {
+  security_group_id = "${module.lb.security_group_id}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "80"
+  to_port           = "80"
+  cidr_blocks       = ["0.0.0.0/0"]
 }
 ```
