@@ -20,16 +20,7 @@ Resources:
             - GroupStandbyInstances
             - GroupTerminatingInstances
             - GroupTotalInstances
-      Tags:
-        - Key: Name
-          Value: "${prefix}"
-          PropagateAtLaunch: true
-        - Key: terraform
-          Value: true
-          PropagateAtLaunch: true
-        - Key: environment
-          Value: "${environment}"
-          PropagateAtLaunch: true
+      Tags: ${tags}
       TerminationPolicies:
         - OldestLaunchConfiguration
         - OldestInstance
@@ -41,6 +32,6 @@ Resources:
         MaxBatchSize: "2"
         PauseTime: PT0S
 Outputs:
-  AsgName:
-    Description: The name of the auto scaling group
+  AsgId:
+    Description: The id of the auto scaling group
     Value: !Ref AutoScalingGroup
