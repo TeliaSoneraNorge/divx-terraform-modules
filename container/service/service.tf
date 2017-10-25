@@ -33,7 +33,7 @@ variable "load_balancer" {
 }
 
 variable "load_balanced" {
-  description = "Optional: This exists purely to calculate count in Terraform. Set to false if you don't want a load balancer."
+  description = "HACK: This exists purely to calculate count in Terraform. Set to false if you don't want a load balancer."
   default     = "true"
 }
 

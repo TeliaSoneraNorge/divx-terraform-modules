@@ -67,6 +67,7 @@ module "cluster" {
   prefix           = "${var.prefix}"
   vpc_id           = "${var.vpc_id}"
   subnet_ids       = ["${var.subnets}"]
+  ingress_length   = 1
 
   ingress {
     "0" = "${module.lb.security_group_id}"

@@ -44,10 +44,15 @@ variable "ecs_log_level" {
   default     = "info"
 }
 
-// NOTE: This would just be a list of TF was able to calculate length on resources.
 variable "ingress" {
-  type = "map"
-  default = {}
+  description = "Map (port = source_security_group_id) which will be allowed to ingress the cluster."
+  type        = "map"
+  default     = {}
+}
+
+variable "ingress_length" {
+  description = "HACK: This exists purely to calculate count in Terraform. Should equal the length of your ingress map."
+  default     = 0
 }
 
 variable "tags" {
@@ -137,7 +142,7 @@ module "asg" {
 }
 
 resource "aws_security_group_rule" "ingress" {
-  count                    = "${length(keys(var.ingress))}"
+  count                    = "${var.ingress_length}"
   security_group_id        = "${module.asg.security_group_id}"
   type                     = "ingress"
   protocol                 = "tcp"
