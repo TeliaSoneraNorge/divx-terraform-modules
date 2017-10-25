@@ -5,7 +5,7 @@ Resources:
     Properties:
       Cooldown: 300
       HealthCheckType: EC2
-      HealthCheckGracePeriod: 0
+      HealthCheckGracePeriod: 300
       LaunchConfigurationName: "${launch_configuration}"
       MinSize: "${min_size}"
       MaxSize: "${max_size}"
@@ -20,16 +20,7 @@ Resources:
             - GroupStandbyInstances
             - GroupTerminatingInstances
             - GroupTotalInstances
-      Tags:
-        - Key: Name
-          Value: "${prefix}"
-          PropagateAtLaunch: true
-        - Key: terraform
-          Value: true
-          PropagateAtLaunch: true
-        - Key: environment
-          Value: "${environment}"
-          PropagateAtLaunch: true
+      Tags: ${tags}
       TerminationPolicies:
         - OldestLaunchConfiguration
         - OldestInstance
