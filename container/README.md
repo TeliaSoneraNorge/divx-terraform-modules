@@ -100,23 +100,18 @@ module "cluster" {
   }
 }
 
-// Service with dynamic target (enforced) and two tcp listeners (port 80 and 8000)
-module "service" {
-  source = "github.com/itsdalmo/tf-modules//container/service"
+// Target
+module "target" {
+  source = "../../container/target"
 
-  prefix             = "${var.prefix}"
-  vpc_id             = "${var.vpc_id}"
-  cluster_id         = "${module.cluster.id}"
-  cluster_role       = "${module.cluster.role_id}"
-  load_balancer_arn  = "${module.lb.arn}"
-  task_definition    = "${aws_ecs_task_definition.main.arn}"
-  task_log_group_arn = "${aws_cloudwatch_log_group.main.arn}"
-  container_count    = "2"
+  prefix            = "${var.prefix}"
+  vpc_id            = "${var.vpc_id}"
+  load_balancer_arn = "${module.lb.arn}"
 
   target {
     protocol        = "HTTP"
     port            = "8000"
-    health          = "HTTP/"
+    health          = "HTTP:traffic-port/"
   }
 
   listeners = [
@@ -129,6 +124,29 @@ module "service" {
       port     = "8000"
     },
   ]
+
+  tags {
+    terraform   = "True"
+    environment = "dev"
+  }
+}
+
+// Service
+module "service" {
+  source = "../../container/service"
+
+  prefix             = "${var.prefix}"
+  cluster_id         = "${module.cluster.id}"
+  cluster_role       = "${module.cluster.role_id}"
+  task_definition    = "${aws_ecs_task_definition.main.arn}"
+  task_log_group_arn = "${aws_cloudwatch_log_group.main.arn}"
+  container_count    = "2"
+
+  load_balancer {
+    target_group_arn = "${module.target.target_group_arn}"
+    container_name   = "${var.prefix}"
+    container_port   = "${module.target.container_port}"
+  }
 
   tags {
     terraform   = "True"

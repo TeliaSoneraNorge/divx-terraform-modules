@@ -10,7 +10,7 @@ variable "vpc_id" {
 }
 
 variable "load_balancer_arn" {
-  description = "ARN of the load balancer (network or application)."
+  description = "AN of the load balancer (network or application)."
 }
 
 variable "target" {
@@ -33,21 +33,22 @@ variable "tags" {
 # Resources
 # ------------------------------------------------------------------------------
 locals {
-  default         = "${lookup(var.target, "health", "${var.target["protocol"]}/")}"
-  parts           = "${split("/", local.default)}"
-  health_protocol = "${element(local.parts, 0)}"
-  health_path     = "${local.health_protocol != "TCP" ? "/${element(local.parts, 1)}" : ""}"
+  default         = "${lookup(var.target, "health", "${var.target["protocol"]}:traffic-port/")}"
+  splits          = "${split(":", local.default)}"
+  second_split    = "${split("/", element(local.splits, 1))}"
+  health_protocol = "${element(local.splits, 0)}"
+  health_port     = "${element(local.second_split, 0)}"
+  health_path     = "${local.health_protocol != "TCP" ? "/${element(local.second_split, 1)}" : ""}"
 }
 
 resource "aws_lb_target_group" "main" {
-  count    = "${lookup(var.target, "port", "") == "" ? 0 : 1}"
   vpc_id   = "${var.vpc_id}"
   port     = "${var.target["port"]}"
   protocol = "${var.target["protocol"]}"
 
   health_check {
-    // NOTE: Port is deliberately left out because dynamic ports are enforced.
     path                = "${local.health_path}"
+    port                = "${local.health_port}"
     protocol            = "${local.health_protocol}"
     interval            = "30"
     timeout             = "5"
@@ -70,7 +71,7 @@ resource "aws_lb_target_group" "main" {
 
 resource "aws_lb_listener" "main" {
   depends_on        = ["aws_lb_target_group.main"]
-  count             = "${lookup(var.target, "port", "") == "" ? 0 : length(var.listeners)}"
+  count             = "${length(var.listeners)}"
   load_balancer_arn = "${var.load_balancer_arn}"
   port              = "${lookup(var.listeners[count.index], "port")}"
   protocol          = "${lookup(var.listeners[count.index], "protocol")}"
@@ -98,5 +99,5 @@ output "target_group_arn" {
 }
 
 output "container_port" {
-  value = "${local.target["port"]}"
+  value = "${var.target["port"]}"
 }
