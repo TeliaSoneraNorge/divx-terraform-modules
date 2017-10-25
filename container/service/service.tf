@@ -42,7 +42,7 @@ variable "target" {
 }
 
 variable "listeners" {
-  description = "Configuration of listeners for the load balancer which are forwarded to the target group. (Protocol can be TCP, HTTP, HTTPS or HTTP/S)."
+  description = "Configuration of listeners for the load balancer which are forwarded to the target group. (Protocol can be TCP, HTTP or HTTPS)."
   default     = []
 }
 
