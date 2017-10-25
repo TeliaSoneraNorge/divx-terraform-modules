@@ -29,13 +29,8 @@ variable "target" {
   default     = {}
 }
 
-variable "health" {
-  description = "Configuration for the health check for the target group."
-  default     = {}
-}
-
 variable "listeners" {
-  description = "Configuration of listeners for the load balancer which are forwarded to the target group. (Protocol can be TCP, HTTP, HTTPS or HTTP/S)."
+  description = "Configuration of listeners for the load balancer which are forwarded to the target group. (Protocol can be TCP, HTTP or HTTPS)."
   default     = []
 }
 
@@ -48,15 +43,23 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
+locals {
+  default         = "${lookup(var.target, "health", "${var.target["protocol"]}/")}"
+  parts           = "${split("/", local.default)}"
+  health_protocol = "${element(local.parts, 0)}"
+  health_path     = "${local.health_protocol != "TCP" ? "/${element(local.parts, 1)}" : ""}"
+}
+
 resource "aws_lb_target_group" "main" {
-  vpc_id     = "${var.vpc_id}"
-  port       = "${var.target["port"]}"
-  protocol   = "${var.target["protocol"]}"
+  count    = "${lookup(var.target, "port", "") == "" ? 0 : 1}"
+  vpc_id   = "${var.vpc_id}"
+  port     = "${var.target["port"]}"
+  protocol = "${var.target["protocol"]}"
 
   health_check {
-    path                = "${lookup(var.health, "path", "/")}"
-    port                = "${lookup(var.health, "port", var.target["port"])}"
-    protocol            = "${lookup(var.health, "protocol", var.target["protocol"])}"
+    // NOTE: Port is deliberately left out because dynamic ports are enforced.
+    path                = "${local.health_path}"
+    protocol            = "${local.health_protocol}"
     interval            = "30"
     timeout             = "5"
     healthy_threshold   = "5"
@@ -76,25 +79,26 @@ resource "aws_lb_target_group" "main" {
   tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.target["port"]}"))}"
 }
 
-resource "aws_autoscaling_attachment" "main" {
-  count                  = "${lookup(var.target, "attachment", "") == "" ? 0 : 1}"
-  autoscaling_group_name = "${var.target["attachment"]}"
-  abl_target_group_arn   = "${aws_lb_target_group.main.arn}"
-}
-
 resource "aws_lb_listener" "main" {
   depends_on        = ["aws_lb_target_group.main"]
-  count             = "${length(var.listeners)}"
+  count             = "${lookup(var.target, "port", "") == "" ? 0 : length(var.listeners)}"
   load_balancer_arn = "${var.load_balancer_arn}"
   port              = "${lookup(var.listeners[count.index], "port")}"
   protocol          = "${lookup(var.listeners[count.index], "protocol")}"
-  ssl_policy        = "ELBSecurityPolicy-2015-05"
+  ssl_policy        = "${lookup(var.listeners[count.index], "protocol") == "HTTPS" ? "ELBSecurityPolicy-2015-05" : ""}"
   certificate_arn   = "${lookup(var.listeners[count.index], "certificate_arn", "")}"
 
   default_action {
     target_group_arn = "${aws_lb_target_group.main.arn}"
     type             = "forward"
   }
+
+}
+
+resource "aws_autoscaling_attachment" "main" {
+  count                  = "${lookup(var.target, "attachment", "") == "" ? 0 : 1}"
+  autoscaling_group_name = "${var.target["attachment"]}"
+  abl_target_group_arn   = "${aws_lb_target_group.main.arn}"
 }
 
 # ------------------------------------------------------------------------------
@@ -104,6 +108,6 @@ output "target_group_arn" {
   value = "${aws_lb_target_group.main.arn}"
 }
 
-output "target_port" {
+output "container_port" {
   value = "${local.target["port"]}"
 }
