@@ -31,7 +31,7 @@ output "vault_addr" {
 }
 ```
 
-### Manual steps
+### Vault init
 
 In order to get Vault up and running we also need to `init` and `unseal` the vault. This
 has to be done by SSH'ing to the instance and running the following commands:
@@ -54,9 +54,103 @@ export VAULT_ADDR=$(terraform output domain)
 vault auth <decrypted-root-token>
 ```
 
-### Concourse
+### AWS auth setup
 
-`policy.hcl`:
+Instead of using tokens to authenticate users, we want use AWS roles to give users access to manage
+their secrets. For example, by showing that I'm allowed to assume the `example-developer-role` I'm
+allowed to manage secrets under `concourse/example/*`.
+
+First we need to activate the AWS auth backend:
+
+```bash
+vault auth-enable aws
+```
+
+`example-policy.hcl`:
+
+```hcl
+path "concourse/example/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+```
+
+We then write the policy (above) which should be granted to users that are authenticated:
+
+```bash
+vault policy-write example-policy example-policy.hcl
+```
+
+We are now ready to create a role which grants a temporary token with the above policy,
+if users manage to authenticate themselves by assuming the specified role:
+
+```bash
+vault write auth/aws/role/example auth_type=iam bound_iam_principal_arn=arn:aws:iam::<account-id>:role/lab-admin-role policies=example-policy ttl=30s max_ttl=30m
+```
+
+After the above is set up, we can use vaulted to assume a role and then authenticate to Vault:
+
+```bash
+vaulted -n lab-admin -- vault auth -method=aws role=example
+```
+
+To check that we can read/write (remember that the token is only valid for 30s):
+
+```bash
+vault write concourse/example/test value=test
+vault read concourse/example/test
+```
+
+We can also write values from a file:
+
+```bash
+cat secret.pem | vault write concourse/example/github_deploy_key value=-
+```
+
+#### Note
+
+For roles deployed in a different account then Vault we also need to
+give Vault a role in the remote account that it can assume to authenticate users:
+
+```bash
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "iam:GetInstanceProfile",
+        "iam:GetUser",
+        "iam:GetRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+The policy above must be attached to the role in the remote account, and the
+root of the account where Vault is deployed must be a trusted entity (and Vaults
+instance profile must be allowed to assume the remote role). When all this is done,
+we have to instruct Vault to assume the role in question for a specific account id:
+
+```bash
+vault write /auth/aws/config/sts/<account-id> sts_role=<role-arn>
+```
+
+### Concourse setup
+
+Concourse needs a token (which it automatically renews) on deployment. The token will
+be used to read secrets from the `concourse/` secrets mount, but will restrict itself to
+`concourse/<team>/<pipeline>` (first) and `concourse/<team>` (second).
+
+First we mount a new secret backend:
+
+```bash
+vault mount -path=/concourse -description="Secrets for concourse pipelines" generic
+```
+
+`concourse-policy.hcl`:
 
 ```hcl
 path "concourse/*" {
@@ -65,16 +159,26 @@ path "concourse/*" {
 }
 ```
 
+Then we write the policy (above) and privileges for concourse:
+
 ```bash
-vault mount -path=/concourse -description="Secrets for concourse pipelines" generic
-vault policy-write policy-concourse policy.hcl
-vault token-create --policy=policy-concourse -period="600h" -format=json
+vault policy-write concourse-policy concourse-policy.hcl
+```
 
-# Write some value
-vault write concourse/main/repository value=ubuntu
-vault read -field=value concourse/main/repository
+Then we create a temporary token (which concourse renews automatically),
+this token is passed along as a variable to our concourse deployment:
 
-# Write value from file
-cat secret.pem | vault write concourse/main/github_deploy_key value=-
-vault read -field=value concourse/main/github_deploy_key
+```bash
+vault token-create --policy=concourse-policy -period="1h" -format=json
+```
+
+After deploying Concourse, it should now have access to read from Vault under `concourse/*`.
+But it will only lookup secrets under `concourse/example` if we deploy our pipeline under
+such a team, which we have to create:
+
+```bash
+fly set-team -n example \
+    --github-auth-client-id $CLIENT_ID \
+    --github-auth-client-secret $CLIENT_SECRET \
+    --github-auth-user itsdalmo,<user2>,<user3>
 ```

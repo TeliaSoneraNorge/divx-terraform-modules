@@ -109,6 +109,21 @@ data "aws_iam_policy_document" "permissions" {
       "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.prefix}-vault*"
     ]
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ec2:DescribeInstances",
+      "iam:GetInstanceProfile",
+      "iam:GetUser",
+      "iam:GetRole",
+    ]
+
+    resources = [
+      "*",
+    ]
+  }
 }
 
 data "template_file" "main" {
