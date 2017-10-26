@@ -9,7 +9,7 @@ provider "aws" {
 }
 
 module "drone" {
-  source = "../../drone"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//drone"
 
   prefix              = "drone-test"
   domain              = "drone.example.com"

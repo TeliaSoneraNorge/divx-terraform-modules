@@ -11,7 +11,7 @@ provider "aws" {
 }
 
 module "vault" {
-  source = "../../vault"
+  source      = "github.com/TeliaSoneraNorge/divx-terraform-modules//vault"
 
   prefix          = "my-project"
   vpc_id          = "vpc-12345678"
