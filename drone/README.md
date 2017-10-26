@@ -1,6 +1,6 @@
 ## Drone.io (work in progress)
 
-Template for provisioning a Drone.io cluster in an autoscaling group. Tracked in [#18](https://github.com/itsdalmo/tf-modules/issues/18).
+Template for provisioning a Drone.io cluster in an autoscaling group. Tracked in [#18](https://github.com/TeliaSoneraNorge/divx-terraform-modules/issues/18).
 
 ```hcl
 provider "aws" {
@@ -9,7 +9,7 @@ provider "aws" {
 }
 
 module "drone" {
-  source = "../../drone"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//drone"
 
   prefix              = "drone-test"
   domain              = "drone.example.com"

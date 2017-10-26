@@ -19,7 +19,7 @@ provider "aws" {
 }
 
 module "developer" {
-  source          = "github.com/itsdalmo/tf-modules//iam/role"
+  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//iam/role"
   prefix          = "example-project-developer"
   trusted_account = "<user-account>"
 

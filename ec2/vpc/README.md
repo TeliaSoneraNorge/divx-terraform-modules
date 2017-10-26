@@ -16,7 +16,7 @@ provider "aws" {
 }
 
 module "vpc" {
-  source          = "github.com/itsdalmo/tf-modules//ec2/vpc"
+  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
   prefix          = "your-project"
   cidr_block      = "10.8.0.0/16"
   private_subnets = "2"

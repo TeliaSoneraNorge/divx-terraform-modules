@@ -2,7 +2,7 @@
 
 This module makes it easier to set up CloudTrail logging for Cross-account roles and is based on the 
 [AWS blog post](https://aws.amazon.com/blogs/security/how-to-audit-cross-account-roles-using-aws-cloudtrail-and-amazon-cloudwatch-events/) 
-on the subject. However, after some trial and error (see https://github.com/itsdalmo/tf-modules/issues/23) it differs in some ways:
+on the subject. However, after some trial and error (see https://github.com/TeliaSoneraNorge/divx-terraform-modules/issues/23) it differs in some ways:
 
 - Sends all log events to the same DynamoDB table, not just events for an assumed role.
 - Sets a 90 day TTL on all items inserted into DynamoDB.
@@ -24,7 +24,7 @@ provider "aws" {
 }
 
 module "cloudtrail" {
-  source = "github.com/itsdalmo/tf-modules//cloudtrail"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//cloudtrail"
   
   prefix          = "company-cloudtrail"
   read_capacity   = "30"

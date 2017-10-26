@@ -30,7 +30,7 @@ resource "aws_api_gateway_resource" "world" {
 }
 
 module "hello_world" {
-  source      = "github.com/itsdalmo/tf-modules/apigateway/lambda"
+  source      = "github.com/TeliaSoneraNorge/divx-terraform-modules/apigateway/lambda"
 
   prefix      = "get-hello-world"
   api_id      = "${aws_api_gateway_rest_api.main.id}"

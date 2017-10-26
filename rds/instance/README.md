@@ -10,7 +10,7 @@ provider "aws" {
 }
 
 module "vpc" {
-  source        = "github.com/itsdalmo/tf-modules//ec2/vpc"
+  source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
   prefix        = "your-project"
   cidr_block    = "10.8.0.0/16"
   dns_hostnames = "true"
@@ -22,7 +22,7 @@ module "vpc" {
 }
 
 module "rds" {
-  source        = "github.com/itsdalmo/tf-modules//rds/instance"
+  source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//rds/instance"
 
   prefix        = "your-project"
   username      = "someuser"

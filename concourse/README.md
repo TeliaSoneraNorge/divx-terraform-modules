@@ -40,7 +40,7 @@ provider "aws" {
 }
 
 module "vpc" {
-  source        = "github.com/itsdalmo/tf-modules//ec2/vpc"
+  source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
 
   prefix        = "concourse-ci"
   cidr_block    = "10.0.0.0/16"
@@ -54,7 +54,7 @@ module "vpc" {
 }
 
 module "bastion" {
-  source      = "github.com/itsdalmo/tf-modules//bastion"
+  source      = "github.com/TeliaSoneraNorge/divx-terraform-modules//bastion"
 
   prefix      = "concourse-ci"
   vpc_id      = "${module.vpc.vpc_id}"
@@ -77,7 +77,7 @@ module "bastion" {
 }
 
 module "concourse" {
-  source = "github.com/itsdalmo/tf-modules//concourse/"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//concourse/"
 
   prefix               = "concourse-ci"
   domain               = "ci.example.com"
