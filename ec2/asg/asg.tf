@@ -47,10 +47,10 @@ variable "instance_policy" {
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "deny-all",
+            "Sid": "deny-nothing",
             "Effect": "Deny",
-            "Action": "*",
-            "Resource": "*"
+            "NotAction": "*",
+            "NotResource": "*"
         }
     ]
 }
