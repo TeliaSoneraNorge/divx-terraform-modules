@@ -39,9 +39,22 @@ variable "instance_key" {
   default     = ""
 }
 
+// HACK: Count issues, but we want this to be optional.
 variable "instance_policy" {
   description = "Optional: A policy document which is applied to the instance profile."
-  default     = ""
+  default     = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "deny-nothing",
+            "Effect": "Deny",
+            "NotAction": "*",
+            "NotResource": "*"
+        }
+    ]
+}
+EOF
 }
 
 variable "tags" {
@@ -76,7 +89,6 @@ resource "aws_iam_instance_profile" "main" {
 }
 
 resource "aws_iam_role_policy" "main" {
-  count  = "${var.instance_policy == "" ? 0 : 1}"
   name   = "${var.prefix}-permissions"
   role   = "${aws_iam_role.main.id}"
   policy = "${var.instance_policy}"
