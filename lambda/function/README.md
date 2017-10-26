@@ -11,7 +11,7 @@ provider "aws" {
 }
 
 module "lambda" {
-  source      = "github.com/itsdalmo/tf-modules//lambda/function"
+  source      = "github.com/TeliaSoneraNorge/divx-terraform-modules//lambda/function"
 
   prefix      = "example"
   policy      = "${data.aws_iam_policy_document.lambda.json}"

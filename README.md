@@ -10,15 +10,15 @@ To use a module, simply reference this repository as the source use `//<path>` t
 
 ```hcl
 module "something" {
-  source = "github.com/itsdalmo/tf-modules//bastion"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//bastion"
 }
 ```
 
-Because the repsitory and all modules are subject to changes, you'll want to reference a [release](https://github.com/itsdalmo/tf-modules/releases) in the source:
+Because the repsitory and all modules are subject to changes, you'll want to reference a [release](https://github.com/TeliaSoneraNorge/divx-terraform-modules/releases) in the source:
 
 ```hcl
 module "something" {
-  source = "github.com/itsdalmo/tf-modules//bastion?ref=0.1.0"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//bastion?ref=0.1.0"
 }
 ```
 

@@ -46,7 +46,7 @@ data "aws_region" "current" {
 
 // Create the external ALB (or NLB)
 module "lb" {
-  source = "github.com/itsdalmo/tf-modules//ec2/lb"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/lb"
 
   prefix     = "${var.prefix}"
   type       = "application"
@@ -62,7 +62,7 @@ module "lb" {
 
 // Create cluster and open ingress from the LB on the dynamic port range.
 module "cluster" {
-  source = "github.com/itsdalmo/tf-modules//container/cluster"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/cluster"
 
   prefix           = "${var.prefix}"
   vpc_id           = "${var.vpc_id}"
@@ -81,7 +81,7 @@ module "cluster" {
 
 // Create a target group with listeners.
 module "target" {
-  source = "github.com/itsdalmo/tf-modules//container/target"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/target"
 
   prefix            = "${var.prefix}"
   vpc_id            = "${var.vpc_id}"
@@ -137,7 +137,7 @@ EOF
 
 // Finally, create the service with the given task definition and target group.
 module "service" {
-  source = "github.com/itsdalmo/tf-modules//container/service"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/service"
 
   prefix             = "${var.prefix}"
   cluster_id         = "${module.cluster.id}"

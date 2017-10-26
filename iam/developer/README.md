@@ -16,7 +16,7 @@ provider "aws" {
 }
 
 module "developer" {
-  source          = "github.com/itsdalmo/tf-modules//iam/developer"
+  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//iam/developer"
   prefix          = "your-project"
   trusted_account = "<user-account>"
   
@@ -52,7 +52,7 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 module "developer" {
-  source          = "github.com/itsdalmo/tf-modules//iam/developer"
+  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//iam/developer"
   prefix          = "example-project"
   trusted_account = "<user-account>"
 
@@ -62,7 +62,7 @@ module "developer" {
 }
 
 module "policies" {
-  source        = "github.com/itsdalmo/tf-modules//iam/policies"
+  source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//iam/policies"
   prefix        = "example-project"
   region        = "eu-west-1"
   account_id    = "${data.aws_caller_identity.current.account_id}"
@@ -76,7 +76,7 @@ module "policies" {
 }
 
 module "terraform_state_policy" {
-  source        = "github.com/itsdalmo/tf-modules//terraform/policy"
+  source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//terraform/policy"
   prefix        = "example-project"
   state_bucket  = "some-state-bucket"
   region        = "eu-west-1"

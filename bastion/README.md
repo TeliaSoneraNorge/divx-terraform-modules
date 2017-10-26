@@ -16,7 +16,7 @@ provider "aws" {
 }
 
 module "bastion" {
-  source      = "github.com/itsdalmo/tf-modules//bastion"
+  source      = "github.com/TeliaSoneraNorge/divx-terraform-modules//bastion"
   prefix      = "example"
   pem_bucket  = "your-key-bucket"
   pem_path    = "example-key.pem"
