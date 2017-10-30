@@ -55,7 +55,8 @@ data "aws_iam_policy_document" "ecs" {
     condition = {
       test     = "ArnLike"
       variable = "ecs:cluster"
-      values   = [
+
+      values = [
         "arn:aws:ecs:${var.region}:${var.account_id}:cluster/${coalesce(var.resources, "${var.prefix}-*")}",
       ]
     }
@@ -76,7 +77,6 @@ data "aws_iam_policy_document" "ecs" {
     resources = [
       "*",
     ]
-
   }
 
   statement {
@@ -91,4 +91,3 @@ data "aws_iam_policy_document" "ecs" {
     ]
   }
 }
-
