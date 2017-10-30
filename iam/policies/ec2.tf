@@ -8,6 +8,13 @@ resource "aws_iam_role_policy" "ec2" {
   policy = "${data.aws_iam_policy_document.ec2.json}"
 }
 
+resource "aws_iam_user_policy" "ec2" {
+  count  = "${contains(var.services, "ec2") && var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-ec2-policy"
+  user   = "${var.iam_role_name}"
+  policy = "${data.aws_iam_policy_document.ec2.json}"
+}
+
 data "aws_iam_policy_document" "ec2" {
   # NOTE: The instance profiles which can be passed is limited to the prefix by `iam:PassRole`.
   statement {

@@ -8,6 +8,13 @@ resource "aws_iam_role_policy" "autoscaling" {
   policy = "${data.aws_iam_policy_document.autoscaling.json}"
 }
 
+resource "aws_iam_user_policy" "autoscaling" {
+  count  = "${contains(var.services, "autoscaling") && var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-autoscaling-policy"
+  user   = "${var.iam_user_name}"
+  policy = "${data.aws_iam_policy_document.autoscaling.json}"
+}
+
 data "aws_iam_policy_document" "autoscaling" {
   # NOTE: Describe* is granted via ViewOnlyAccess.
   statement {

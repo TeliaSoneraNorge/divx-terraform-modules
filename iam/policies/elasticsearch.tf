@@ -8,6 +8,13 @@ resource "aws_iam_role_policy" "elasticsearch" {
   policy = "${data.aws_iam_policy_document.elasticsearch.json}"
 }
 
+resource "aws_iam_user_policy" "elasticsearch" {
+  count  = "${contains(var.services, "elasticsearch") && var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-elasticsearch-policy"
+  user   = "${var.iam_role_name}"
+  policy = "${data.aws_iam_policy_document.elasticsearch.json}"
+}
+
 data "aws_iam_policy_document" "elasticsearch" {
   statement {
     effect = "Allow"

@@ -8,6 +8,13 @@ resource "aws_iam_role_policy" "ecs" {
   policy = "${data.aws_iam_policy_document.ecs.json}"
 }
 
+resource "aws_iam_user_policy" "ecs" {
+  count  = "${contains(var.services, "ecs") && var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-ecs-policy"
+  user   = "${var.iam_role_name}"
+  policy = "${data.aws_iam_policy_document.ecs.json}"
+}
+
 data "aws_iam_policy_document" "ecs" {
   statement {
     effect = "Allow"
