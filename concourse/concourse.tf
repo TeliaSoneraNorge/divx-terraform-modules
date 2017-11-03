@@ -69,7 +69,7 @@ variable "instance_key" {
 
 variable "instance_ami" {
   description = "CoreOS AMI ID for Concourse instances."
-  default     = "ami-38ef0041"
+  default     = "ami-bbaf0ac2"
 }
 
 variable "image_repository" {
@@ -79,7 +79,7 @@ variable "image_repository" {
 
 variable "image_version" {
   description = "Concourse image version."
-  default     = "3.5.0"
+  default     = "3.6.0"
 }
 
 variable "atc_count" {
@@ -355,16 +355,17 @@ data "aws_iam_policy_document" "worker" {
 module "worker" {
   source = "../ec2/asg"
 
-  prefix          = "${var.prefix}-worker"
-  user_data       = "${data.template_file.worker.rendered}"
-  vpc_id          = "${var.vpc_id}"
-  subnet_ids      = "${var.subnet_ids}"
-  instance_policy = "${data.aws_iam_policy_document.worker.json}"
-  instance_count  = "${var.worker_count}"
-  instance_type   = "${var.worker_type}"
-  instance_ami    = "${var.instance_ami}"
-  instance_key    = "${var.instance_key}"
-  tags            = "${var.tags}"
+  prefix               = "${var.prefix}-worker"
+  user_data            = "${data.template_file.worker.rendered}"
+  vpc_id               = "${var.vpc_id}"
+  subnet_ids           = "${var.subnet_ids}"
+  instance_policy      = "${data.aws_iam_policy_document.worker.json}"
+  instance_count       = "${var.worker_count}"
+  instance_type        = "${var.worker_type}"
+  instance_volume_size = "50"
+  instance_ami         = "${var.instance_ami}"
+  instance_key         = "${var.instance_key}"
+  tags                 = "${var.tags}"
 }
 
 resource "aws_security_group_rule" "worker_ingress_tsa" {

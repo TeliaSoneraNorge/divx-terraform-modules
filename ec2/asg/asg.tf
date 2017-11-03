@@ -24,6 +24,11 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
+variable "instance_volume_size" {
+  description = "Size of the root block device."
+  default     = "8"
+}
+
 variable "instance_count" {
   description = "Desired (and minimum) number of instances."
   default     = "1"
@@ -42,7 +47,8 @@ variable "instance_key" {
 // HACK: Count issues, but we want this to be optional.
 variable "instance_policy" {
   description = "Optional: A policy document which is applied to the instance profile."
-  default     = <<EOF
+
+  default = <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -119,6 +125,12 @@ resource "aws_launch_configuration" "main" {
   image_id             = "${var.instance_ami}"
   key_name             = "${var.instance_key}"
   user_data            = "${var.user_data}"
+
+  root_block_device {
+    volume_type           = "gp2"
+    volume_size           = "${var.instance_volume_size}"
+    delete_on_termination = true
+  }
 
   lifecycle {
     create_before_destroy = true
