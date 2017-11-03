@@ -6,7 +6,13 @@ variable "prefix" {
 }
 
 variable "iam_role_name" {
-  description = "Name of IAM role to attach the generated policy to."
+  description = "Optional: Name of IAM role to attach the generated policy to."
+  default     = ""
+}
+
+variable "iam_user_name" {
+  description = "Optional: Name of an IAM user which will be given the same privileges. Intended for CI/CD."
+  default     = ""
 }
 
 variable "resources" {
@@ -16,7 +22,7 @@ variable "resources" {
 
 variable "services" {
   description = "List of services which the role is granted access to."
-  type = "list"
+  type        = "list"
 }
 
 variable "account_id" {
@@ -31,6 +37,8 @@ variable "region" {
 # Resources
 # ------------------------------------------------------------------------------
 
+
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
+

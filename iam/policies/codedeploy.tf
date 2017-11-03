@@ -2,9 +2,16 @@
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "codedeploy" {
-  count  = "${contains(var.services, "codedeploy") == "true" ? 1 : 0}"
+  count  = "${contains(var.services, "codedeploy") && var.iam_role_name != "" ? 1 : 0}"
   name   = "${var.prefix}-codedeploy-policy"
   role   = "${var.iam_role_name}"
+  policy = "${data.aws_iam_policy_document.codedeploy.json}"
+}
+
+resource "aws_iam_user_policy" "codedeploy" {
+  count  = "${contains(var.services, "codedeploy") && var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-codedeploy-policy"
+  user   = "${var.iam_role_name}"
   policy = "${data.aws_iam_policy_document.codedeploy.json}"
 }
 
@@ -22,4 +29,3 @@ data "aws_iam_policy_document" "codedeploy" {
     ]
   }
 }
-

@@ -2,9 +2,16 @@
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "ecs" {
-  count  = "${contains(var.services, "ecs") == "true" ? 1 : 0}"
+  count  = "${contains(var.services, "ecs") && var.iam_role_name != "" ? 1 : 0}"
   name   = "${var.prefix}-ecs-policy"
   role   = "${var.iam_role_name}"
+  policy = "${data.aws_iam_policy_document.ecs.json}"
+}
+
+resource "aws_iam_user_policy" "ecs" {
+  count  = "${contains(var.services, "ecs") && var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-ecs-policy"
+  user   = "${var.iam_role_name}"
   policy = "${data.aws_iam_policy_document.ecs.json}"
 }
 
@@ -48,7 +55,8 @@ data "aws_iam_policy_document" "ecs" {
     condition = {
       test     = "ArnLike"
       variable = "ecs:cluster"
-      values   = [
+
+      values = [
         "arn:aws:ecs:${var.region}:${var.account_id}:cluster/${coalesce(var.resources, "${var.prefix}-*")}",
       ]
     }
@@ -69,7 +77,6 @@ data "aws_iam_policy_document" "ecs" {
     resources = [
       "*",
     ]
-
   }
 
   statement {
@@ -84,4 +91,3 @@ data "aws_iam_policy_document" "ecs" {
     ]
   }
 }
-

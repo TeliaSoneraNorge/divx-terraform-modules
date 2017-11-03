@@ -14,15 +14,29 @@ variable "region" {
 }
 
 variable "iam_role_name" {
-  description = "Name of IAM role to attach the generated policy to."
+  description = "Optional: Name of IAM role to attach the generated policy to."
+  default     = ""
+}
+
+variable "iam_user_name" {
+  description = "Optional: Name of an IAM user which will be given the same privileges. Intended for CI/CD."
+  default     = ""
 }
 
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "main" {
+  count  = "${var.iam_role_name != "" ? 1 : 0}"
   name   = "${var.prefix}-apigateway-policy"
   role   = "${var.iam_role_name}"
+  policy = "${data.aws_iam_policy_document.main.json}"
+}
+
+resource "aws_iam_user_policy" "main" {
+  count  = "${var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-apigateway-policy"
+  user   = "${var.iam_user_name}"
   policy = "${data.aws_iam_policy_document.main.json}"
 }
 

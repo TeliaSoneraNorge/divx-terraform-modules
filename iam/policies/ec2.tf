@@ -2,9 +2,16 @@
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "ec2" {
-  count  = "${contains(var.services, "ec2") == "true" ? 1 : 0}"
+  count  = "${contains(var.services, "ec2") && var.iam_role_name != "" ? 1 : 0}"
   name   = "${var.prefix}-ec2-policy"
   role   = "${var.iam_role_name}"
+  policy = "${data.aws_iam_policy_document.ec2.json}"
+}
+
+resource "aws_iam_user_policy" "ec2" {
+  count  = "${contains(var.services, "ec2") && var.iam_user_name != "" ? 1 : 0}"
+  name   = "${var.prefix}-ec2-policy"
+  user   = "${var.iam_role_name}"
   policy = "${data.aws_iam_policy_document.ec2.json}"
 }
 
@@ -171,11 +178,10 @@ data "aws_iam_policy_document" "ec2" {
     ]
 
     condition = {
-      test = "StringLike"
+      test     = "StringLike"
       variable = "ec2:ResourceTag/Name"
-      values = ["default-subnet-*", "${coalesce(var.resources, "${var.prefix}-*")}"]
+      values   = ["default-subnet-*", "${coalesce(var.resources, "${var.prefix}-*")}"]
     }
-
   }
 
   statement {
@@ -190,11 +196,10 @@ data "aws_iam_policy_document" "ec2" {
     ]
 
     condition = {
-      test = "StringLike"
+      test     = "StringLike"
       variable = "ec2:ResourceTag/Name"
-      values = ["${coalesce(var.resources, "${var.prefix}-*")}"]
+      values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
     }
-
   }
 
   statement {
@@ -205,17 +210,16 @@ data "aws_iam_policy_document" "ec2" {
     ]
 
     resources = [
-      "arn:aws:ec2:${var.region}::image/*",                                # Most images don't have a Name tag and don't support account_id.
-      "arn:aws:ec2:${var.region}:${var.account_id}:network-interface/*",   # All network interfaces created by AWS lack a Name tag.
-      "arn:aws:ec2:${var.region}:${var.account_id}:security-group/*",      # Security groups don't have a Name tag when created via Console.
+      "arn:aws:ec2:${var.region}::image/*",                              # Most images don't have a Name tag and don't support account_id.
+      "arn:aws:ec2:${var.region}:${var.account_id}:network-interface/*", # All network interfaces created by AWS lack a Name tag.
+      "arn:aws:ec2:${var.region}:${var.account_id}:security-group/*",    # Security groups don't have a Name tag when created via Console.
     ]
 
     condition = {
-      test = "StringLikeIfExists"
+      test     = "StringLikeIfExists"
       variable = "ec2:ResourceTag/Name"
-      values = ["${coalesce(var.resources, "${var.prefix}-*")}"]
+      values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
     }
-
   }
 
   statement {
