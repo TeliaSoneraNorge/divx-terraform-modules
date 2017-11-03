@@ -2,7 +2,7 @@
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "emr" {
-  count  = "${contains(var.services, "emr") == "true" ? 1 : 0}"
+  count  = "${contains(var.services, "emr") && var.iam_role_name != "" ? 1 : 0}"
   name   = "${var.prefix}-emr-policy"
   role   = "${var.iam_role_name}"
   policy = "${data.aws_iam_policy_document.emr.json}"

@@ -2,7 +2,7 @@
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "autoscaling" {
-  count  = "${contains(var.services, "autoscaling") == "true" ? 1 : 0}"
+  count  = "${contains(var.services, "autoscaling") && var.iam_role_name != "" ? 1 : 0}"
   name   = "${var.prefix}-autoscaling-policy"
   role   = "${var.iam_role_name}"
   policy = "${data.aws_iam_policy_document.autoscaling.json}"

@@ -49,11 +49,15 @@ provider "aws" {
   }
 }
 
+variable "prefix" {
+  default = "example-project"
+}
+
 data "aws_caller_identity" "current" {}
 
 module "developer" {
   source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//iam/developer"
-  prefix          = "example-project"
+  prefix          = "${var.prefix}"
   trusted_account = "<user-account>"
 
   users = [
@@ -63,10 +67,10 @@ module "developer" {
 
 module "policies" {
   source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//iam/policies"
-  prefix        = "example-project"
+  prefix        = "${var.prefix}"
   region        = "eu-west-1"
   account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
+  iam_role_name = "${var.prefix}-developer-role"
 
   services = [
     "ec2",
@@ -77,11 +81,11 @@ module "policies" {
 
 module "terraform_state_policy" {
   source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//terraform/policy"
-  prefix        = "example-project"
+  prefix        = "${var.prefix}"
   state_bucket  = "some-state-bucket"
   region        = "eu-west-1"
   account_id    = "${data.aws_caller_identity.current.account_id}"
-  iam_role_name = "${module.developer.name}"
+  iam_role_name = "${var.prefix}-developer-role"
 }
 
 output "arn" {

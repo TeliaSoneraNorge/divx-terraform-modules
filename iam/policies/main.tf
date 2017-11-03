@@ -6,11 +6,12 @@ variable "prefix" {
 }
 
 variable "iam_role_name" {
-  description = "Name of IAM role to attach the generated policy to."
+  description = "Optional: Name of IAM role to attach the generated policy to."
+  default     = ""
 }
 
 variable "iam_user_name" {
-  description = "Optional: Name of an IAM (CI/CD) user which the policy is also attached to."
+  description = "Optional: Name of an IAM user which will be given the same privileges. Intended for CI/CD."
   default     = ""
 }
 

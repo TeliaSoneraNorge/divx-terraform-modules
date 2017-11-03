@@ -2,7 +2,7 @@
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_role_policy" "cloudwatch" {
-  count  = "${contains(var.services, "cloudwatch") == "true" ? 1 : 0}"
+  count  = "${contains(var.services, "cloudwatch") && var.iam_role_name != "" ? 1 : 0}"
   name   = "${var.prefix}-cloudwatch-policy"
   role   = "${var.iam_role_name}"
   policy = "${data.aws_iam_policy_document.cloudwatch.json}"
