@@ -47,11 +47,11 @@ resource "aws_lb" "main" {
 }
 
 resource "aws_security_group" "main" {
-  name        = "${var.prefix}-sg"
+  name        = "${local.name}-sg"
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
+  tags = "${merge(var.tags, map("Name", "${local.name}-sg"))}"
 }
 
 resource "aws_security_group_rule" "egress" {
