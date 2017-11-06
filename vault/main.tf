@@ -164,7 +164,7 @@ resource "aws_elb" "main" {
 }
 
 resource "aws_security_group" "main" {
-  name        = "${var.prefix}-sg"
+  name        = "${var.prefix}-elb-sg"
   description = "Security group for the web-facing ELB for Vault."
   vpc_id      = "${var.vpc_id}"
 
