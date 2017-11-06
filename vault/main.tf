@@ -80,7 +80,7 @@ resource "aws_route53_record" "main" {
 
 module "asg" {
   source          = "../ec2/asg"
-  prefix          = "${var.prefix}-vault"
+  prefix          = "${var.prefix}"
   user_data       = "${data.template_file.main.rendered}"
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = "${var.subnet_ids}"
@@ -106,7 +106,7 @@ data "aws_iam_policy_document" "permissions" {
     ]
 
     resources = [
-      "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.prefix}-vault*"
+      "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.prefix}*"
     ]
   }
 }
@@ -126,14 +126,14 @@ data "template_file" "config" {
   template = "${file("${path.module}/config.hcl")}"
 
   vars {
-    table    = "${var.prefix}-vault"
+    table    = "${var.prefix}"
     region   = "${data.aws_region.current.name}"
     redirect = "http://${aws_elb.main.dns_name}:8200"
   }
 }
 
 resource "aws_elb" "main" {
-  name            = "${var.prefix}-vault-elb"
+  name            = "${var.prefix}-elb"
   subnets         = ["${var.subnet_ids}"]
   security_groups = ["${aws_security_group.main.id}"]
 
@@ -160,7 +160,7 @@ resource "aws_elb" "main" {
     interval            = 15
   }
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}-vault-elb"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-elb"))}"
 }
 
 resource "aws_security_group" "main" {
