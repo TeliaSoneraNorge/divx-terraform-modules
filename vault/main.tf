@@ -72,8 +72,8 @@ resource "aws_route53_record" "main" {
   type    = "A"
 
   alias {
-    name                   = "${aws_elb.main.dns_name}"
-    zone_id                = "${aws_elb.main.zone_id}"
+    name                   = "${module.lb.dns_name}"
+    zone_id                = "${module.lb.zone_id}"
     evaluate_target_health = false
   }
 }
@@ -93,8 +93,9 @@ module "asg" {
 }
 
 resource "aws_autoscaling_attachment" "main" {
+  depends_on             = ["aws_lb_target_group.main"]
   autoscaling_group_name = "${module.asg.id}"
-  elb                    = "${aws_elb.main.name}"
+  alb_target_group_arn   = "${aws_lb_target_group.main.arn}"
 }
 
 data "aws_iam_policy_document" "permissions" {
@@ -128,64 +129,66 @@ data "template_file" "config" {
   vars {
     table    = "${var.prefix}"
     region   = "${data.aws_region.current.name}"
-    redirect = "http://${aws_elb.main.dns_name}:8200"
+    redirect = "https://${module.lb.dns_name}"
   }
 }
 
-resource "aws_elb" "main" {
-  name            = "${var.prefix}-elb"
-  subnets         = ["${var.subnet_ids}"]
-  security_groups = ["${aws_security_group.main.id}"]
+module "lb" {
+  source = "../ec2/lb"
 
-  listener {
-    instance_port     = 8200
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
+  prefix     = "${var.prefix}"
+  type       = "application"
+  internal   = "false"
+  vpc_id     = "${var.vpc_id}"
+  subnet_ids = "${var.subnet_ids}"
+  tags       = "${var.tags}"
+}
 
-  listener {
-    instance_port      = 8200
-    instance_protocol  = "http"
-    lb_port            = 443
-    lb_protocol        = "https"
-    ssl_certificate_id = "${var.certificate_arn}"
-  }
+resource "aws_lb_target_group" "main" {
+  vpc_id     = "${var.vpc_id}"
+  port       = "8200"
+  protocol   = "HTTP"
 
   health_check {
-    target              = "HTTP:8200/v1/sys/health"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 3
-    interval            = 15
+    path                = "/v1/sys/seal-status"
+    port                = "8200"
+    protocol            = "HTTP"
+    interval            = "30"
+    timeout             = "5"
+    healthy_threshold   = "5"
+    unhealthy_threshold = "2"
+    matcher             = "200"
   }
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}-elb"))}"
-}
-
-resource "aws_security_group" "main" {
-  name        = "${var.prefix}-elb-sg"
-  description = "Security group for the web-facing ELB for Vault."
-  vpc_id      = "${var.vpc_id}"
-
+  /**
+  * NOTE: TF is unable to destroy a target group while a listener is attached,
+  * therefor we have to create a new one before destroying the old. This also means
+  * we have to let it have a random name, and then tag it with the desired name.
+  */
   lifecycle {
     create_before_destroy = true
   }
 
-  tags = "${merge(var.tags, map("Name", "${var.prefix}-sg"))}"
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-target"))}"
 }
 
-resource "aws_security_group_rule" "egress" {
-  security_group_id = "${aws_security_group.main.id}"
-  type              = "egress"
-  protocol          = "-1"
-  from_port         = 0
-  to_port           = 0
-  cidr_blocks       = ["0.0.0.0/0"]
+resource "aws_lb_listener" "main" {
+  depends_on        = ["aws_lb_target_group.main"]
+  load_balancer_arn = "${module.lb.arn}"
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2015-05"
+  certificate_arn   = "${var.certificate_arn}"
+
+  default_action {
+    target_group_arn = "${aws_lb_target_group.main.arn}"
+    type             = "forward"
+  }
+
 }
 
 resource "aws_security_group_rule" "https_ingress" {
-  security_group_id = "${aws_security_group.main.id}"
+  security_group_id = "${module.lb.security_group_id}"
   type              = "ingress"
   protocol          = "tcp"
   from_port         = "443"
@@ -193,22 +196,13 @@ resource "aws_security_group_rule" "https_ingress" {
   cidr_blocks       = ["${var.authorized_cidr}"]
 }
 
-resource "aws_security_group_rule" "http_ingress" {
-  security_group_id = "${aws_security_group.main.id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "80"
-  to_port           = "80"
-  cidr_blocks       = ["${var.authorized_cidr}"]
-}
-
-resource "aws_security_group_rule" "elb_ingress" {
+resource "aws_security_group_rule" "lb_ingress" {
   security_group_id        = "${module.asg.security_group_id}"
   type                     = "ingress"
   protocol                 = "tcp"
   from_port                = "8200"
   to_port                  = "8200"
-  source_security_group_id = "${aws_security_group.main.id}"
+  source_security_group_id = "${module.lb.security_group_id}"
 }
 
 # ------------------------------------------------------------------------------
@@ -222,14 +216,3 @@ output "vault_sg" {
   value = "${module.asg.security_group_id}"
 }
 
-output "elb_name" {
-  value = "${aws_elb.main.name}"
-}
-
-output "elb_sg" {
-  value = "${aws_security_group.main.id}"
-}
-
-output "elb_dns" {
-  value = "${aws_elb.main.dns_name}"
-}
