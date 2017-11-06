@@ -33,7 +33,7 @@ variable "authorized_cidr" {
 
 variable "instance_ami" {
   description = "ID of a Ubuntu AMI to use for Vault."
-  default     = "ami-eab74493"
+  default     = "ami-47d6723e"
 }
 
 variable "instance_key" {
