@@ -7,8 +7,18 @@ write_files:
   - path: "/usr/local/etc/vault-config.json"
     permissions: "0644"
     owner: "root"
-    encoding: base64
-    content: ${base64encode(config)}
+    content: |
+      storage "dynamodb" {
+        ha_enabled    = "false"
+        region        = "${region}"
+        table         = "${table}"
+        redirect_addr = "${address}"
+      }
+
+      listener "tcp" {
+        address     = "0.0.0.0:8200"
+        tls_disable = 1
+      }
   - path: "/etc/systemd/system/vault.service"
     permissions: "0644"
     owner: "root"

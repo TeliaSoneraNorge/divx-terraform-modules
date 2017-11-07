@@ -41,11 +41,6 @@ variable "instance_key" {
   default     = ""
 }
 
-variable "config" {
-  description = "Optional: Vault configuration in HCL or JSON format."
-  default     = ""
-}
-
 variable "extra_install" {
   description = "Optional: Extra install steps to take after installing Vault."
   default     = ""
@@ -113,23 +108,14 @@ data "aws_iam_policy_document" "permissions" {
 }
 
 data "template_file" "main" {
-  depends_on = ["data.template_file.config"]
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
     download_url  = "https://releases.hashicorp.com/vault/0.8.3/vault_0.8.3_linux_amd64.zip"
-    config        = "${var.config != "" ? var.config : data.template_file.config.rendered}"
     extra_install = "${var.extra_install}"
-  }
-}
-
-data "template_file" "config" {
-  template = "${file("${path.module}/config.hcl")}"
-
-  vars {
-    table    = "${var.prefix}"
-    region   = "${data.aws_region.current.name}"
-    redirect = "https://${module.lb.dns_name}"
+    address       = "https://${var.domain}"
+    region        = "${data.aws_region.current.name}"
+    table         = "${var.prefix}"
   }
 }
 
