@@ -3,8 +3,7 @@ repo_upgrade: security
 users:
   - name: forward
     lock_passwd: true
-    ssh-authorized-keys:
-      - ${authorized_keys}
+    ssh-authorized-keys: ${authorized_keys}
 write_files:
   - content: |
       #!/bin/bash

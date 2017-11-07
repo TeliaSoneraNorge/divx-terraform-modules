@@ -61,7 +61,7 @@ data "template_file" "main" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
-    authorized_keys = "${join("\n  - ", "${var.authorized_keys}")}"
+    authorized_keys = "${jsonencode(var.authorized_keys)}"
     aws_region      = "${data.aws_region.current.name}"
     elastic_ip      = "${aws_eip.main.public_ip}"
     pem_bucket      = "${var.pem_bucket}"
