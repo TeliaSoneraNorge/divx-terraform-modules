@@ -48,9 +48,9 @@ data "aws_iam_policy_document" "iam" {
     ]
 
     resources = [
-      "arn:aws:iam::${var.account_id}:role/${coalesce(var.resources, "${var.prefix}-*")}",
-      "arn:aws:iam::${var.account_id}:instance-profile/${coalesce(var.resources, "${var.prefix}-*")}",
-      "arn:aws:iam::${var.account_id}:policy/${coalesce(var.resources, "${var.prefix}-*")}",
+      "arn:aws:iam::${var.account_id}:role/${coalesce(var.resources, "${var.prefix}*")}",
+      "arn:aws:iam::${var.account_id}:instance-profile/${coalesce(var.resources, "${var.prefix}*")}",
+      "arn:aws:iam::${var.account_id}:policy/${coalesce(var.resources, "${var.prefix}*")}",
     ]
   }
 
@@ -63,7 +63,7 @@ data "aws_iam_policy_document" "iam" {
     ]
 
     resources = [
-      "arn:aws:iam::${var.account_id}:role/${coalesce(var.resources, "${var.prefix}-*")}",
+      "arn:aws:iam::${var.account_id}:role/${coalesce(var.resources, "${var.prefix}*")}",
     ]
   }
 }
