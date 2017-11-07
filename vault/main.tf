@@ -31,6 +31,11 @@ variable "authorized_cidr" {
   type        = "list"
 }
 
+variable "instance_count" {
+  description = "Desired (and minimum) number of instances."
+  default     = "2"
+}
+
 variable "instance_ami" {
   description = "ID of a Ubuntu AMI to use for Vault."
   default     = "ami-47d6723e"
@@ -80,7 +85,7 @@ module "asg" {
   vpc_id          = "${var.vpc_id}"
   subnet_ids      = "${var.subnet_ids}"
   instance_policy = "${data.aws_iam_policy_document.permissions.json}"
-  instance_count  = "1"
+  instance_count  = "${var.instance_count}"
   instance_type   = "m3.medium"
   instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
@@ -136,7 +141,7 @@ resource "aws_lb_target_group" "main" {
   protocol   = "HTTP"
 
   health_check {
-    path                = "/v1/sys/seal-status"
+    path                = "/v1/sys/health"
     port                = "8200"
     protocol            = "HTTP"
     interval            = "30"
