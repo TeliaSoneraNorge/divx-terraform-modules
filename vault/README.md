@@ -18,6 +18,7 @@ module "vault" {
   subnet_ids      = ["subnet-12345678","subnet-23456789","subnet-34567890"]
   bastion_sg      = "sg-12345678"
   authorized_cidr = ["0.0.0.0/0"]
+  instance_count  = "3"
   instance_key    = ""
 
   tags {
@@ -31,19 +32,33 @@ output "vault_addr" {
 }
 ```
 
+## Setup
+
+With Vault in HA mode, we have to use a healthcheck which only reports healthy for the
+leader and not the inactive nodes. This means that we can't init or unseal via the load balancer,
+so we have to use SSH.
+
 ### Vault init
 
-In order to get Vault up and running we also need to `init` and `unseal` the vault. This
-has to be done by SSH'ing to the instance and running the following commands:
+Vault init is only run once on any Vault node (note that we are setting VAULT_ADDR):
 
 ```bash
+export VAULT_ADDR=http://localhost:8200
 vault init \
-  -pgp-keys=keybase:itsdalmo \
+  -pgp-keys=keybase:itsdalmo,<user2>,<user3> \
   -root-token-pgp-key=keybase:itsdalmo \
-  -key-shares=1 \
-  -key-threshold=1
+  -key-shares=3 \
+  -key-threshold=2
+```
 
-vault unseal <decrypted-unseal-keys>
+### Vault unseal
+
+After initializing, we need to unseal each node in turn. This is also done locally on the instance via
+SSH:
+
+```bash
+export VAULT_ADDR=http://localhost:8200
+vault unseal <decrypted-key>
 ```
 
 At this point the instance will pass the health checks and be available from the outside, so
@@ -138,47 +153,8 @@ we have to instruct Vault to assume the role in question for a specific account 
 vault write /auth/aws/config/sts/<account-id> sts_role=<role-arn>
 ```
 
-### Concourse setup
+### Revoke root token
 
-Concourse needs a token (which it automatically renews) on deployment. The token will
-be used to read secrets from the `concourse/` secrets mount, but will restrict itself to
-`concourse/<team>/<pipeline>` (first) and `concourse/<team>` (second).
-
-First we mount a new secret backend:
-
-```bash
-vault mount -path=/concourse -description="Secrets for concourse pipelines" generic
-```
-
-`concourse-policy.hcl`:
-
-```hcl
-path "concourse/*" {
-  policy = "read"
-  capabilities =  ["read", "list"]
-}
-```
-
-Then we write the policy (above) and privileges for concourse:
-
-```bash
-vault policy-write concourse-policy concourse-policy.hcl
-```
-
-Then we create a temporary token (which concourse renews automatically),
-this token is passed along as a variable to our concourse deployment:
-
-```bash
-vault token-create --policy=concourse-policy -period="1h" -format=json
-```
-
-After deploying Concourse, it should now have access to read from Vault under `concourse/*`.
-But it will only lookup secrets under `concourse/example` if we deploy our pipeline under
-such a team, which we have to create:
-
-```bash
-fly set-team -n example \
-    --github-auth-client-id $CLIENT_ID \
-    --github-auth-client-secret $CLIENT_SECRET \
-    --github-auth-user itsdalmo,<user2>,<user3>
-```
+Once you have set up Vault, the root token should be revoked. A new one can be generated on
+demand using the unseal keys - which ensures that any one person cannot make changes or retrieve
+secrets that should not have access to.
