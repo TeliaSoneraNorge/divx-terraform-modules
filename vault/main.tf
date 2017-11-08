@@ -21,8 +21,13 @@ variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
 
-variable "subnet_ids" {
-  description = "ID of subnets for the ELB."
+variable "public_subnet_ids" {
+  description = "ID of subnets where Vault will deploy public resources."
+  type        = "list"
+}
+
+variable "private_subnet_ids" {
+  description = "ID of subnets where Vault will deploy private resources. (You can pass public subnets also)."
   type        = "list"
 }
 
@@ -83,7 +88,7 @@ module "asg" {
   prefix          = "${var.prefix}"
   user_data       = "${data.template_file.main.rendered}"
   vpc_id          = "${var.vpc_id}"
-  subnet_ids      = "${var.subnet_ids}"
+  subnet_ids      = "${var.private_subnet_ids}"
   instance_policy = "${data.aws_iam_policy_document.permissions.json}"
   instance_count  = "${var.instance_count}"
   instance_type   = "m3.medium"
@@ -158,7 +163,7 @@ module "lb" {
   type       = "application"
   internal   = "false"
   vpc_id     = "${var.vpc_id}"
-  subnet_ids = "${var.subnet_ids}"
+  subnet_ids = "${var.public_subnet_ids}"
   tags       = "${var.tags}"
 }
 
