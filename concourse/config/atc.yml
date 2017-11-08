@@ -89,6 +89,8 @@ coreos:
                                      --env=CONCOURSE_TSA_LOG_LEVEL=${log_level} \
                                      --env=CONCOURSE_VAULT_URL=${vault_url} \
                                      --env=CONCOURSE_VAULT_CLIENT_TOKEN=${vault_client_token} \
+                                     --env=CONCOURSE_ENCRYPTION_KEY=${encryption_key} \
+                                     --env=CONCOURSE_OLD_ENCRYPTION_KEY=${old_encryption_key} \
                                      --log-driver=awslogs \
                                      --log-opt awslogs-region=${log_group_region} \
                                      --log-opt awslogs-group=${log_group_name} \

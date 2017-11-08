@@ -73,6 +73,25 @@ provider "aws" {
   region  = "eu-west-1"
 }
 
+data "aws_kms_secret" "decrypted" {
+  secret {
+    name    = "postgres_password"
+    payload = "<secret>"
+  }
+  secret {
+    name    = "github_secret"
+    payload = "<secret>"
+  }
+  secret {
+    name    = "vault_token"
+    payload = "<secret>"
+  }
+  secret {
+    name    = "encryption_key"
+    payload = "<secret>"
+  }
+}
+
 module "vpc" {
   source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
 
@@ -121,12 +140,13 @@ module "concourse" {
   subnet_ids           = "${module.vpc.subnet_ids}"
   authorized_cidr      = ["0.0.0.0/0"]
   postgres_username    = "someuser"
-  postgres_password    = "<kms-encrypted-password>"
+  postgres_password    = "${data.aws_kms_secret.decrypted.postgres_password}"
   instance_key         = "<instance-key-pair>"
   github_client_id     = "<github-client-id>"
-  github_client_secret = "<kms-encrypted-github-client-secret>"
+  github_client_secret = "${data.aws_kms_secret.decrypted.github_secret}"
   vault_url            = "https://vault.example.com"
-  vault_client_token   = "<temporary-vault-token>"
+  vault_client_token   = "${data.aws_kms_secret.decrypted.vault_token}"
+  encryption_key       = "${data.aws_kms_secret.decrypted.encryption_key}"
 
   github_users = [
     "itsdalmo",
