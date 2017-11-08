@@ -185,19 +185,14 @@ module "internal_elb" {
 }
 
 module "postgres" {
-  source = "../rds/instance"
+  source = "../rds/cluster"
 
-  prefix        = "${var.prefix}-rds"
+  prefix        = "${var.prefix}-aurora"
   username      = "${var.postgres_username}"
   password      = "${var.postgres_password}"
   port          = "${var.postgres_port}"
   vpc_id        = "${var.vpc_id}"
   subnet_ids    = ["${var.private_subnet_ids}"]
-  engine        = "postgres"
-  instance_type = "db.m3.medium"
-  storage_size  = "50"
-  public_access = "false"
-  skip_snapshot = "true"
   tags          = "${var.tags}"
 }
 
