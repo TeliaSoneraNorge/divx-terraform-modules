@@ -21,8 +21,13 @@ variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
 
-variable "subnet_ids" {
-  description = "ID of subnets where Concourse will be deployed."
+variable "public_subnet_ids" {
+  description = "ID of subnets where Concourse will deploy public resources."
+  type        = "list"
+}
+
+variable "private_subnet_ids" {
+  description = "ID of subnets where Concourse will deploy private resources. (You can pass public subnets also)."
   type        = "list"
 }
 
@@ -162,7 +167,7 @@ module "external_elb" {
   zone_id         = "${var.zone_id}"
   certificate_arn = "${var.certificate_arn}"
   vpc_id          = "${var.vpc_id}"
-  subnet_ids      = ["${var.subnet_ids}"]
+  subnet_ids      = ["${var.public_subnet_ids}"]
   authorized_cidr = ["${var.authorized_cidr}"]
   web_port        = "${var.web_port}"
   atc_port        = "${var.atc_port}"
@@ -174,7 +179,7 @@ module "internal_elb" {
 
   prefix     = "${var.prefix}-internal-elb"
   vpc_id     = "${var.vpc_id}"
-  subnet_ids = ["${var.subnet_ids}"]
+  subnet_ids = ["${var.private_subnet_ids}"]
   tsa_port   = "${var.tsa_port}"
   tags       = "${var.tags}"
 }
@@ -187,7 +192,7 @@ module "postgres" {
   password      = "${var.postgres_password}"
   port          = "${var.postgres_port}"
   vpc_id        = "${var.vpc_id}"
-  subnet_ids    = ["${var.subnet_ids}"]
+  subnet_ids    = ["${var.private_subnet_ids}"]
   engine        = "postgres"
   instance_type = "db.m3.medium"
   storage_size  = "50"
@@ -270,7 +275,7 @@ module "atc" {
   prefix          = "${var.prefix}-atc"
   user_data       = "${data.template_file.atc.rendered}"
   vpc_id          = "${var.vpc_id}"
-  subnet_ids      = "${var.subnet_ids}"
+  subnet_ids      = "${var.private_subnet_ids}"
   instance_policy = "${data.aws_iam_policy_document.atc.json}"
   instance_count  = "${var.atc_count}"
   instance_type   = "${var.atc_type}"
@@ -362,7 +367,7 @@ module "worker" {
   prefix               = "${var.prefix}-worker"
   user_data            = "${data.template_file.worker.rendered}"
   vpc_id               = "${var.vpc_id}"
-  subnet_ids           = "${var.subnet_ids}"
+  subnet_ids           = "${var.private_subnet_ids}"
   instance_policy      = "${data.aws_iam_policy_document.worker.json}"
   instance_count       = "${var.worker_count}"
   instance_type        = "${var.worker_type}"
