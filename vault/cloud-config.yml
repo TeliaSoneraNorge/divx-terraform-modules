@@ -9,7 +9,7 @@ write_files:
     owner: "root"
     content: |
       storage "dynamodb" {
-        ha_enabled    = "false"
+        ha_enabled    = "true"
         region        = "${region}"
         table         = "${table}"
         redirect_addr = "${address}"
