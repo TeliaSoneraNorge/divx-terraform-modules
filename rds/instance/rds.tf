@@ -10,7 +10,7 @@ variable "username" {
 }
 
 variable "password" {
-  description = "Password (KMS Encrypted)."
+  description = "Password."
 }
 
 variable "port" {
@@ -66,18 +66,11 @@ variable "tags" {
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
-data "aws_kms_secret" "decrypted" {
-  secret {
-    name    = "password"
-    payload = "${var.password}"
-  }
-}
-
 resource "aws_db_instance" "main" {
   identifier             = "${var.prefix}-db"
   name                   = "main"
   username               = "${var.username}"
-  password               = "${data.aws_kms_secret.decrypted.password}"
+  password               = "${var.password}"
   port                   = "${var.port}"
   engine                 = "${var.engine}"
   instance_class         = "${var.instance_type}"
@@ -139,7 +132,7 @@ output "endpoint" {
 }
 
 output "connection_string" {
-  value = "postgres://${var.username}:${data.aws_kms_secret.decrypted.password}@${aws_db_instance.main.address}:${var.port}/main"
+  value = "postgres://${var.username}:${var.password}@${aws_db_instance.main.address}:${var.port}/main"
 }
 
 output "port" {

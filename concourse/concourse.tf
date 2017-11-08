@@ -40,7 +40,7 @@ variable "github_client_id" {
 }
 
 variable "github_client_secret" {
-  description = "Client secret for the Github Oauth application (KMS Encrypted)."
+  description = "Client secret for the Github Oauth application."
 }
 
 variable "github_users" {
@@ -132,6 +132,15 @@ variable "vault_client_token" {
   default     = ""
 }
 
+variable "encryption_key" {
+  description = "Optional: Key used for encrypting database entries."
+}
+
+variable "old_encryption_key" {
+  description = "Optional: When changing the encryption key you must use this variable to set the old encryption key."
+  default     = ""
+}
+
 variable "tags" {
   description = "A map of tags (key-value pairs) passed to resources."
   type        = "map"
@@ -197,13 +206,6 @@ resource "aws_security_group_rule" "atc_ingress_postgres" {
 }
 
 # Atc ---------------------------------------------------------------------------
-data "aws_kms_secret" "decrypted" {
-  secret {
-    name    = "github_secret"
-    payload = "${var.github_client_secret}"
-  }
-}
-
 resource "aws_cloudwatch_log_group" "atc" {
   name = "${var.prefix}-atc"
 }
@@ -215,7 +217,7 @@ data "template_file" "atc" {
     image_version             = "${var.image_version}"
     image_repository          = "${var.image_repository}"
     github_client_id          = "${var.github_client_id}"
-    github_client_secret      = "${data.aws_kms_secret.decrypted.github_secret}"
+    github_client_secret      = "${var.github_client_secret}"
     github_users              = "${join(",", "${var.github_users}")}"
     concourse_web_host        = "https://${var.domain}:${var.web_port}"
     concourse_postgres_source = "${module.postgres.connection_string}"
@@ -229,6 +231,8 @@ data "template_file" "atc" {
     tsa_port                  = "${var.tsa_port}"
     vault_url                 = "${var.vault_url}"
     vault_client_token        = "${var.vault_client_token}"
+    encryption_key            = "${var.encryption_key}"
+    old_encryption_key        = "${var.old_encryption_key}"
   }
 }
 
