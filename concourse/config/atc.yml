@@ -19,25 +19,42 @@ write_files:
     owner: "root"
     encoding: base64
     content: ${base64encode(authorized_worker_keys)}
-  - path: "/usr/local/etc/systemd-cloudwatch-config"
+  - path: "/etc/rsyslog.d/concourse.conf"
+    permissions: "0644"
     owner: "root"
     content: |
-      aws_region   = "${log_group_region}"
-      log_group    = "${log_group_name}"
-  - path: "/etc/systemd/system/systemd-cloudwatch.service"
+      if $programname == 'concourse' then /var/log/concourse.log
+      if $programname == 'concourse' then ~
+  - path: "/var/awslogs/config/template.conf"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [general]
+      state_file = /var/awslogs/state/agent-state
+
+      [/var/log/concourse.log]
+      file = /var/log/concourse.log
+      log_group_name = ${log_group_name}
+      log_stream_name = {instance_id}
+      datetime_format = %b %d %H:%M:%S
+  - path: "/etc/systemd/system/awslogs.service"
     permissions: "0644"
     owner: "root"
     content: |
       [Unit]
-      Description=Service for systemd-cloudwatch
-      Wants=basic.target
-      After=basic.target network.target
+      Description=Service for CloudWatch Logs agent
+      After=rc-local.service
 
       [Service]
+      Type=simple
       Restart=always
-      RestartSec=30s
       KillMode=process
-      ExecStart=/usr/local/bin/systemd-cloudwatch /usr/local/etc/systemd-cloudwatch-config
+      TimeoutSec=infinity
+      PIDFile=/var/awslogs/state/awslogs.pid
+      ExecStart=/var/awslogs/bin/awslogs-agent-launcher.sh --start --background --pidfile $PIDFILE --user awslogs --chuid awslogs &amp;
+
+      [Install]
+      WantedBy=multi-user.target
   - path: "/etc/systemd/system/concourse.service"
     permissions: "0644"
     owner: "root"
@@ -51,6 +68,10 @@ write_files:
       Restart=always
       RestartSec=30s
       TimeoutStartSec=5m
+      StandardOutput=syslog
+      StandardError=syslog
+      SyslogIdentifier=concourse
+
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id}"
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret}"
       Environment="CONCOURSE_GITHUB_AUTH_USER=${github_users}"
@@ -72,13 +93,13 @@ write_files:
       WantedBy=multi-user.target
 runcmd:
   - |
-    curl -L "${systemd_cloudwatch_download_url}" > /usr/local/bin/systemd-cloudwatch
-    chmod 0755 /usr/local/bin/systemd-cloudwatch
-    chown root:root /usr/local/bin/systemd-cloudwatch
+    curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -O
+    chmod +x awslogs-agent-setup.py
+    ./awslogs-agent-setup.py --non-interactive --region ${log_group_region} --configfile=/var/awslogs/config/template.conf
   - |
     curl -L "${concourse_download_url}" > /usr/local/bin/concourse
     chmod 0755 /usr/local/bin/concourse
     chown root:root /usr/local/bin/concourse
   - |
-    systemctl enable systemd-cloudwatch.service --now
+    systemctl enable awslogs.service --now
     systemctl enable concourse.service --now

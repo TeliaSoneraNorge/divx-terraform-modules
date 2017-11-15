@@ -73,23 +73,13 @@ variable "instance_key" {
 }
 
 variable "concourse_version" {
-  description = "CoreOS AMI ID for Concourse instances."
+  description = "Version of Concourse to download/run."
   default     = "3.6.0"
 }
 
 variable "instance_ami" {
-  description = "CoreOS AMI ID for Concourse instances."
-  default     = "ami-bbaf0ac2"
-}
-
-variable "image_repository" {
-  description = "Concourse image repository."
-  default     = "concourse/concourse"
-}
-
-variable "image_version" {
-  description = "Concourse image version."
-  default     = "3.6.0"
+  description = "Ubuntu AMI ID for Concourse instances."
+  default     = "ami-add175d4"
 }
 
 variable "atc_count" {
@@ -219,23 +209,22 @@ data "template_file" "atc" {
   template = "${file("${path.module}/config/atc.yml")}"
 
   vars {
-    concourse_download_url          = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
-    systemd_cloudwatch_download_url = "https://github.com/advantageous/systemd-cloud-watch/releases/download/v0.2.1/systemd-cloud-watch_linux"
-    github_client_id                = "${var.github_client_id}"
-    github_client_secret            = "${var.github_client_secret}"
-    github_users                    = "${join(",", "${var.github_users}")}"
-    concourse_web_host              = "https://${var.domain}:${var.web_port}"
-    concourse_postgres_source       = "${module.postgres.connection_string}"
-    log_group_name                  = "${aws_cloudwatch_log_group.atc.name}"
-    log_group_region                = "${data.aws_region.current.name}"
-    log_level                       = "${var.log_level}"
-    tsa_host_key                    = "${file("${var.concourse_keys}/tsa_host_key")}"
-    session_signing_key             = "${file("${var.concourse_keys}/session_signing_key")}"
-    authorized_worker_keys          = "${file("${var.concourse_keys}/authorized_worker_keys")}"
-    vault_url                       = "${var.vault_url}"
-    vault_client_token              = "${var.vault_client_token}"
-    encryption_key                  = "${var.encryption_key}"
-    old_encryption_key              = "${var.old_encryption_key}"
+    concourse_download_url    = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
+    github_client_id          = "${var.github_client_id}"
+    github_client_secret      = "${var.github_client_secret}"
+    github_users              = "${join(",", "${var.github_users}")}"
+    concourse_web_host        = "https://${var.domain}:${var.web_port}"
+    concourse_postgres_source = "${module.postgres.connection_string}"
+    log_group_name            = "${aws_cloudwatch_log_group.atc.name}"
+    log_group_region          = "${data.aws_region.current.name}"
+    log_level                 = "${var.log_level}"
+    tsa_host_key              = "${file("${var.concourse_keys}/tsa_host_key")}"
+    session_signing_key       = "${file("${var.concourse_keys}/session_signing_key")}"
+    authorized_worker_keys    = "${file("${var.concourse_keys}/authorized_worker_keys")}"
+    vault_url                 = "${var.vault_url}"
+    vault_client_token        = "${var.vault_client_token}"
+    encryption_key            = "${var.encryption_key}"
+    old_encryption_key        = "${var.old_encryption_key}"
   }
 }
 
@@ -249,6 +238,7 @@ data "aws_iam_policy_document" "atc" {
 
     actions = [
       "logs:CreateLogStream",
+      "logs:CreateLogGroup",
       "logs:PutLogEvents",
     ]
   }
@@ -277,7 +267,7 @@ module "atc" {
   instance_policy = "${data.aws_iam_policy_document.atc.json}"
   instance_count  = "${var.atc_count}"
   instance_type   = "${var.atc_type}"
-  instance_ami    = "ami-add175d4"
+  instance_ami    = "${var.instance_ami}"
   instance_key    = "${var.instance_key}"
   tags            = "${var.tags}"
 }
@@ -319,15 +309,14 @@ data "template_file" "worker" {
   template = "${file("${path.module}/config/worker.yml")}"
 
   vars {
-    image_version      = "${var.image_version}"
-    image_repository   = "${var.image_repository}"
-    concourse_tsa_host = "${module.internal_elb.dns_name}"
-    log_group_name     = "${aws_cloudwatch_log_group.worker.name}"
-    log_group_region   = "${data.aws_region.current.name}"
-    log_level          = "${var.log_level}"
-    worker_key         = "${file("${var.concourse_keys}/worker_key")}"
-    pub_worker_key     = "${file("${var.concourse_keys}/worker_key.pub")}"
-    pub_tsa_host_key   = "${file("${var.concourse_keys}/tsa_host_key.pub")}"
+    concourse_download_url = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
+    concourse_tsa_host     = "${module.internal_elb.dns_name}"
+    log_group_name         = "${aws_cloudwatch_log_group.worker.name}"
+    log_group_region       = "${data.aws_region.current.name}"
+    log_level              = "${var.log_level}"
+    worker_key             = "${file("${var.concourse_keys}/worker_key")}"
+    pub_worker_key         = "${file("${var.concourse_keys}/worker_key.pub")}"
+    pub_tsa_host_key       = "${file("${var.concourse_keys}/tsa_host_key.pub")}"
   }
 }
 
@@ -341,6 +330,7 @@ data "aws_iam_policy_document" "worker" {
 
     actions = [
       "logs:CreateLogStream",
+      "logs:CreateLogGroup",
       "logs:PutLogEvents",
     ]
   }
