@@ -1,4 +1,8 @@
 #cloud-config
+package_update: true
+packages:
+  - curl
+  - python
 write_files:
   - path: "/concourse/keys/web/tsa_host_key"
     permissions: "0644"
@@ -15,84 +19,66 @@ write_files:
     owner: "root"
     encoding: base64
     content: ${base64encode(authorized_worker_keys)}
-coreos:
-  update:
-    reboot-strategy: "reboot"
-  locksmith:
-    window-start: 02:00
-    window-length: 6h
-  units:
-   - name: cloudwatch-monitor.service
-     command: start
-     runtime: true
-     content: |
-       [Unit]
-       Description=Cloudwatch monitoring.
-       Documentation=https://github.com/a3linux/go-aws-mon/
-       Requires=docker.socket
-       After=docker.socket
-       [Service]
-       Type=oneshot
-       SyslogIdentifier=cloudwatch-monitor
-       ExecStartPre=-/usr/bin/docker kill cloudwatch-monitor
-       ExecStartPre=-/usr/bin/docker rm cloudwatch-monitor
-       ExecStartPre=/usr/bin/docker pull a3linux/go-aws-mon:latest
-       ExecStart=/usr/bin/docker run --name cloudwatch-monitor \
-                                     --volume=/etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/certificates.crt \
-                                     --volume=/var/log:/var/log \
-                                     a3linux/go-aws-mon /usr/bin/go-aws-mon \
-                                     --mem-used \
-                                     --mem-avail \
-                                     --disk-space-used \
-                                     --disk-space-avail \
-                                     --disk-inode-util \
-                                     --disk-path=/,/var/lib
-   - name: cloudwatch-monitor.timer
-     enable: true
-     command: start
-     content: |
+  - path: "/usr/local/etc/systemd-cloudwatch-config"
+    owner: "root"
+    content: |
+      aws_region   = "${log_group_region}"
+      log_group    = "${log_group_name}"
+  - path: "/etc/systemd/system/systemd-cloudwatch.service"
+    permissions: "0644"
+    owner: "root"
+    content: |
       [Unit]
-      Description=Cloudwatch logging every minute.
-      [Timer]
-      OnBootSec=0m
-      OnCalendar=minutely
-   - name: concourse-web.service
-     command: start
-     runtime: true
-     content: |
-       [Unit]
-       Description=Concourse
-       Documentation=https://hub.docker.com/r/concourse/concourse/
-       Requires=docker.socket
-       After=docker.socket
-       [Service]
-       EnvironmentFile=/etc/environment
-       Restart=always
-       RestartSec=30s
-       TimeoutStartSec=5m
-       SyslogIdentifier=concourse-web
-       ExecStartPre=-/usr/bin/docker kill concourse-web
-       ExecStartPre=-/usr/bin/docker rm concourse-web
-       ExecStartPre=/usr/bin/docker pull ${image_repository}:${image_version}
-       ExecStart=/usr/bin/docker run --name concourse-web \
-                                     --volume=/var/run/docker.sock:/var/run/docker.sock \
-                                     --volume=/concourse/keys/web:/concourse-keys \
-                                     --publish=${atc_port}:8080 \
-                                     --publish=${tsa_port}:2222 \
-                                     --env=CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id} \
-                                     --env=CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret} \
-                                     --env=CONCOURSE_GITHUB_AUTH_USER=${github_users} \
-                                     --env=CONCOURSE_POSTGRES_DATA_SOURCE=${concourse_postgres_source} \
-                                     --env=CONCOURSE_EXTERNAL_URL=${concourse_web_host} \
-                                     --env=CONCOURSE_PEER_URL=http://$${COREOS_PRIVATE_IPV4}:8080 \
-                                     --env=CONCOURSE_LOG_LEVEL=${log_level} \
-                                     --env=CONCOURSE_TSA_LOG_LEVEL=${log_level} \
-                                     --env=CONCOURSE_VAULT_URL=${vault_url} \
-                                     --env=CONCOURSE_VAULT_CLIENT_TOKEN=${vault_client_token} \
-                                     --env=CONCOURSE_ENCRYPTION_KEY=${encryption_key} \
-                                     --env=CONCOURSE_OLD_ENCRYPTION_KEY=${old_encryption_key} \
-                                     --log-driver=awslogs \
-                                     --log-opt awslogs-region=${log_group_region} \
-                                     --log-opt awslogs-group=${log_group_name} \
-                                     ${image_repository}:${image_version} \
-                                     web
+      Description=Service for systemd-cloudwatch
+      Wants=basic.target
+      After=basic.target network.target
+
+      [Service]
+      Restart=always
+      RestartSec=30s
+      KillMode=process
+      ExecStart=/usr/local/bin/systemd-cloudwatch /usr/local/etc/systemd-cloudwatch-config
+  - path: "/etc/systemd/system/concourse.service"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [Unit]
+      Description=Service for Concourse ATC/TSA
+      Requires=network-online.target
+      After=network-online.target
+
+      [Service]
+      Restart=always
+      RestartSec=30s
+      TimeoutStartSec=5m
+      Environment="CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id}"
+      Environment="CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret}"
+      Environment="CONCOURSE_GITHUB_AUTH_USER=${github_users}"
+      Environment="CONCOURSE_POSTGRES_DATA_SOURCE=${concourse_postgres_source}"
+      Environment="CONCOURSE_EXTERNAL_URL=${concourse_web_host}"
+      Environment="CONCOURSE_LOG_LEVEL=${log_level}"
+      Environment="CONCOURSE_TSA_LOG_LEVEL=${log_level}"
+      Environment="CONCOURSE_VAULT_URL=${vault_url}"
+      Environment="CONCOURSE_VAULT_CLIENT_TOKEN=${vault_client_token}"
+      Environment="CONCOURSE_TSA_HOST_KEY=/concourse/keys/web/tsa_host_key"
+      Environment="CONCOURSE_TSA_AUTHORIZED_KEYS=/concourse/keys/web/authorized_worker_keys"
+      Environment="CONCOURSE_SESSION_SIGNING_KEY=/concourse/keys/web/session_signing_key"
+      Environment="CONCOURSE_ENCRYPTION_KEY=${encryption_key}"
+      Environment="CONCOURSE_OLD_ENCRYPTION_KEY=${old_encryption_key}"
+      ExecStartPre=/bin/bash -c "/bin/systemctl set-environment CONCOURSE_PEER_URL=http://$(curl -L http://169.254.169.254/latest/meta-data/local-ipv4):8080"
+      ExecStart=/usr/local/bin/concourse web
+
+      [Install]
+      WantedBy=multi-user.target
+runcmd:
+  - |
+    curl -L "${systemd_cloudwatch_download_url}" > /usr/local/bin/systemd-cloudwatch
+    chmod 0755 /usr/local/bin/systemd-cloudwatch
+    chown root:root /usr/local/bin/systemd-cloudwatch
+  - |
+    curl -L "${concourse_download_url}" > /usr/local/bin/concourse
+    chmod 0755 /usr/local/bin/concourse
+    chown root:root /usr/local/bin/concourse
+  - |
+    systemctl enable systemd-cloudwatch.service --now
+    systemctl enable concourse.service --now
