@@ -60,7 +60,7 @@ write_files:
     owner: "root"
     content: |
       [Unit]
-      Description=Service for Concourse ATC/TSA
+      Description=Service for Concourse Worker
       Requires=network-online.target
       After=network-online.target
 
