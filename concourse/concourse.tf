@@ -260,16 +260,18 @@ data "aws_iam_policy_document" "atc" {
 module "atc" {
   source = "../ec2/asg"
 
-  prefix          = "${var.prefix}-atc"
-  user_data       = "${data.template_file.atc.rendered}"
-  vpc_id          = "${var.vpc_id}"
-  subnet_ids      = "${var.private_subnet_ids}"
-  instance_policy = "${data.aws_iam_policy_document.atc.json}"
-  instance_count  = "${var.atc_count}"
-  instance_type   = "${var.atc_type}"
-  instance_ami    = "${var.instance_ami}"
-  instance_key    = "${var.instance_key}"
-  tags            = "${var.tags}"
+  prefix            = "${var.prefix}-atc"
+  user_data         = "${data.template_file.atc.rendered}"
+  vpc_id            = "${var.vpc_id}"
+  subnet_ids        = "${var.private_subnet_ids}"
+  pause_time        = "PT5M"
+  health_check_type = "ELB"
+  instance_policy   = "${data.aws_iam_policy_document.atc.json}"
+  instance_count    = "${var.atc_count}"
+  instance_type     = "${var.atc_type}"
+  instance_ami      = "${var.instance_ami}"
+  instance_key      = "${var.instance_key}"
+  tags              = "${var.tags}"
 }
 
 resource "aws_autoscaling_attachment" "atc_internal" {
@@ -356,6 +358,8 @@ module "worker" {
   user_data            = "${data.template_file.worker.rendered}"
   vpc_id               = "${var.vpc_id}"
   subnet_ids           = "${var.private_subnet_ids}"
+  pause_time           = "PT5M"
+  health_check_type    = "EC2"
   instance_policy      = "${data.aws_iam_policy_document.worker.json}"
   instance_count       = "${var.worker_count}"
   instance_type        = "${var.worker_type}"
