@@ -10,6 +10,16 @@ variable "user_data" {
   default     = ""
 }
 
+variable "health_check_type" {
+  description = "Optional: Type of health check to use - either ELB or EC2."
+  default     = "EC2"
+}
+
+variable "pause_time" {
+  description = "Pause time for the autoscaling rolling update policy."
+  default     = "PT5M"
+}
+
 variable "vpc_id" {
   description = "ID of the VPC for the subnets."
 }
@@ -163,6 +173,8 @@ data "template_file" "main" {
   vars {
     prefix               = "${var.prefix}"
     launch_configuration = "${aws_launch_configuration.main.name}"
+    health_check_type    = "${var.health_check_type}"
+    pause_time           = "${var.pause_time}"
     min_size             = "${var.instance_count}"
     max_size             = "${var.instance_count + 2}"
     subnets              = "${jsonencode(var.subnet_ids)}"

@@ -4,7 +4,7 @@ Resources:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
       Cooldown: 300
-      HealthCheckType: EC2
+      HealthCheckType: "${health_check_type}"
       HealthCheckGracePeriod: 300
       LaunchConfigurationName: "${launch_configuration}"
       MinSize: "${min_size}"
@@ -30,7 +30,13 @@ Resources:
       AutoScalingRollingUpdate:
         MinInstancesInService: "${min_size}"
         MaxBatchSize: "2"
-        PauseTime: PT0S
+        PauseTime: "${pause_time}"
+        SuspendProcesses:
+          - HealthCheck
+          - ReplaceUnhealthy
+          - AZRebalance
+          - AlarmNotification
+          - ScheduledActions
 Outputs:
   AsgName:
     Description: The name of the auto scaling group
