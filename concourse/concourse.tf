@@ -218,7 +218,7 @@ data "template_file" "atc" {
     github_client_id          = "${var.github_client_id}"
     github_client_secret      = "${var.github_client_secret}"
     github_users              = "${join(",", "${var.github_users}")}"
-    github_users              = "${join(",", "${var.github_teams}")}"
+    github_teams              = "${join(",", "${var.github_teams}")}"
     concourse_web_host        = "https://${var.domain}:${var.web_port}"
     concourse_postgres_source = "${module.postgres.connection_string}"
     log_group_name            = "${aws_cloudwatch_log_group.atc.name}"
