@@ -38,10 +38,10 @@ resource "aws_iam_user_policy" "machine-user-policy" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
-output "${var.prefix}_access_key_id" {
+output "access_key_id" {
   value = "${aws_iam_access_key.machine-user-key.id}"
 }
 
-output "${var.prefix}_secret_access_key" {
+output "secret_access_key" {
   value = "${aws_iam_access_key.machine-user-key.encrypted_secret}"
 }
