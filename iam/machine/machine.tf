@@ -1,12 +1,12 @@
 # ------------------------------------------------------------------------------
 # Variables
 # ------------------------------------------------------------------------------
-variable "name" {
+variable "prefix" {
   description = "username of machine user"
 }
 
-variable "pgp_key" {
-  description = "pgp key of user that can unencrypy the encrypted secret_access_key from the logs"
+variable "keybase" {
+  description = "Keybase username of user that can unencrypy the encrypted secret_access_key from the logs"
 }
 
 variable "policy" {
@@ -18,17 +18,17 @@ variable "policy" {
 # Resources
 # ------------------------------------------------------------------------------
 resource "aws_iam_user" "machine-user" {
-  name          = "${var.name}"
+  name          = "${var.prefix}"
   force_destroy = "true"
 }
 
 resource "aws_iam_access_key" "machine-user-key" {
   user    = "${aws_iam_user.machine-user.name}"
-  pgp_key = "${var.pgp_key}"
+  pgp_key = "keybase:${var.keybase}"
 }
 
 resource "aws_iam_user_policy" "machine-user-policy" {
-  name = "${var.name}-user-policy"
+  name = "${var.prefix}-user-policy"
   user = "${aws_iam_user.machine-user.name}"
   policy = "${var.policy}"
 }
@@ -38,10 +38,10 @@ resource "aws_iam_user_policy" "machine-user-policy" {
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
-output "${var.name}_access_key_id" {
+output "${var.prefix}_access_key_id" {
   value = "${aws_iam_access_key.machine-user-key.id}"
 }
 
-output "${var.name}_secret_access_key" {
+output "${var.prefix}_secret_access_key" {
   value = "${aws_iam_access_key.machine-user-key.encrypted_secret}"
 }

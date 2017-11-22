@@ -3,9 +3,9 @@ Module for creating a machine user
 
 ```hcl
 module "machine_user" {
-  source  = "./machine-user.tf"
-  name    = "xqb-machine-user"
-  pgp_key = "keybase:colincoleman"
+  source  = "github.com/TeliaSoneraNorge/divx-terraform-modules//iam/machine"
+  prefix    = "xqb-machine-user"
+  keybase = "colincoleman"
   policy  = <<EOF
 {
     "Version": "2012-10-17",
