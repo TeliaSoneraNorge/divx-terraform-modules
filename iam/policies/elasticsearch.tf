@@ -27,4 +27,22 @@ data "aws_iam_policy_document" "elasticsearch" {
       "arn:aws:es:${var.region}:${var.account_id}:domain/${coalesce(var.resources, "${var.prefix}-*")}",
     ]
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "es:AddTags",
+    ]
+
+    resources = [
+      "arn:aws:es:${var.region}:${var.account_id}:domain/*",
+    ]
+
+    condition = {
+      test     = "StringLikeIfExists"
+      variable = "aws:RequestTag/Name"
+      values   = ["${coalesce(var.resources, "${var.prefix}-*")}"]
+    }
+  }
 }
