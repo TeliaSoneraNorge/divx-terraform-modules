@@ -99,5 +99,5 @@ output "function_arn" {
 }
 
 output "function_name" {
-  value = "${aws_lambda_function.main.name}"
+  value = "${var.prefix}-function"
 }
