@@ -130,7 +130,7 @@ output "port" {
 }
 
 output "database" {
-  value = "${aws_rds_cluster.main.name}"
+  value = "${aws_rds_cluster.main.database_name}"
 }
 
 output "security_group_id" {
