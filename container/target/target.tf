@@ -41,8 +41,8 @@ locals {
   health_path     = "${local.health_protocol != "TCP" ? "/${element(local.second_split, 1)}" : ""}"
 }
 
-// HACK: If we don't depend on this the target group is created and associated with the service before
-// the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
+# HACK: If we don't depend on this the target group is created and associated with the service before
+# the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
 resource "null_resource" "alb_exists" {
   triggers {
     alb_name = "${var.load_balancer_arn}"
@@ -66,11 +66,9 @@ resource "aws_lb_target_group" "main" {
     matcher             = "200"
   }
 
-  /**
-  * NOTE: TF is unable to destroy a target group while a listener is attached,
-  * therefor we have to create a new one before destroying the old. This also means
-  * we have to let it have a random name, and then tag it with the desired name.
-  */
+  # NOTE: TF is unable to destroy a target group while a listener is attached,
+  # therefor we have to create a new one before destroying the old. This also means
+  # we have to let it have a random name, and then tag it with the desired name.
   lifecycle {
     create_before_destroy = true
   }
@@ -91,7 +89,6 @@ resource "aws_lb_listener" "main" {
     target_group_arn = "${aws_lb_target_group.main.arn}"
     type             = "forward"
   }
-
 }
 
 resource "aws_autoscaling_attachment" "main" {

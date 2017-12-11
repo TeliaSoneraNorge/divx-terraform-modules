@@ -112,7 +112,7 @@ data "aws_iam_policy_document" "permissions" {
     ]
 
     resources = [
-      "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.prefix}*"
+      "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/${var.prefix}*",
     ]
   }
 
@@ -168,9 +168,9 @@ module "lb" {
 }
 
 resource "aws_lb_target_group" "main" {
-  vpc_id     = "${var.vpc_id}"
-  port       = "8200"
-  protocol   = "HTTP"
+  vpc_id   = "${var.vpc_id}"
+  port     = "8200"
+  protocol = "HTTP"
 
   health_check {
     path                = "/v1/sys/health"
@@ -183,11 +183,9 @@ resource "aws_lb_target_group" "main" {
     matcher             = "200"
   }
 
-  /**
-  * NOTE: TF is unable to destroy a target group while a listener is attached,
-  * therefor we have to create a new one before destroying the old. This also means
-  * we have to let it have a random name, and then tag it with the desired name.
-  */
+  # NOTE: TF is unable to destroy a target group while a listener is attached,
+  # therefor we have to create a new one before destroying the old. This also means
+  # we have to let it have a random name, and then tag it with the desired name.
   lifecycle {
     create_before_destroy = true
   }
@@ -207,7 +205,6 @@ resource "aws_lb_listener" "main" {
     target_group_arn = "${aws_lb_target_group.main.arn}"
     type             = "forward"
   }
-
 }
 
 resource "aws_security_group_rule" "https_ingress" {
@@ -238,4 +235,3 @@ output "vault_role_arn" {
 output "vault_sg" {
   value = "${module.asg.security_group_id}"
 }
-

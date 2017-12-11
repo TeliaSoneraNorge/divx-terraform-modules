@@ -1,5 +1,6 @@
 example/*
-**/node_modules/*
+**/.terraform
+**/node_modules
 **/package-lock.json
 
 # IntelliJ file
