@@ -126,15 +126,13 @@ data "aws_iam_policy_document" "ec2" {
     }
   }
 
-  /*
-  NOTE: ec2:RunInstances has differing levels of resource control:
-  1. RequestTag: Instance/volume is tagged at launch.
-  2. ARN: key-pair is the only resource that can be limited by resource name.
-  3. ResourceTag (including default): Special case for Subnet, in case users want to launch in the default vpc.
-  4. ResourceTag: Only for snapshot, as users should not be allowed to launch a snapshot that is not guaranteed to be their own.
-  5. ResourceTag (if exists): Certain resources don't have a Name tag when created by AWS or launched in the console.
-  6. No restriction: Some resources cannot be constrained.
-  */
+  # NOTE: ec2:RunInstances has differing levels of resource control:
+  # 1. RequestTag: Instance/volume is tagged at launch.
+  # 2. ARN: key-pair is the only resource that can be limited by resource name.
+  # 3. ResourceTag (including default): Special case for Subnet, in case users want to launch in the default vpc.
+  # 4. ResourceTag: Only for snapshot, as users should not be allowed to launch a snapshot that is not guaranteed to be their own.
+  # 5. ResourceTag (if exists): Certain resources don't have a Name tag when created by AWS or launched in the console.
+  # 6. No restriction: Some resources cannot be constrained.
   statement {
     effect = "Allow"
 

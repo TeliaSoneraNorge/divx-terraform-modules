@@ -1,0 +1,279 @@
+---
+meta:
+  concourse:
+  - config: &test-config
+      timeout: 10m
+      file: common-tasks/terraform/0.11.1.yml
+      input_mapping: { source: master-branch }
+  - config: &test-pr-config
+      timeout: 10m
+      file: common-tasks/terraform/0.11.1.yml
+      input_mapping: { source: pull-request }
+      on_failure:
+        put: pull-request
+        params: {path: pull-request, status: failure}
+  - module-params: &test-pr-params
+      command: test-module
+      cache: true
+  - params: &test-params
+      command: test
+      cache: true
+
+groups:
+  - name: All
+    jobs:
+    - test-examples
+    - test-it
+  - name: Master
+    jobs:
+    - test-examples
+  - name: PR
+    jobs:
+    - test-it
+
+jobs:
+  - name: test-it
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: pull-request
+        trigger: true
+        version: every
+        params: {fetch_merge: true}
+      - get: pull-request-write
+        resource: pull-request
+    - put: pull-request
+      params: {path: pull-request-write, status: pending}
+    - aggregate:
+      - task: apigateway
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            apigateway/lambda
+            apigateway/policy
+
+      - task: bastion
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            bastion
+
+      - task: cloudtrail
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            cloudtrail
+
+      - task: concourse
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            concourse
+
+      - task: container
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            container/cluster
+            container/service
+            container/target
+
+      - task: drone
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            drone
+
+      - task: ec2
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            ec2/asg
+            ec2/emr
+            ec2/lb
+            ec2/vpc
+
+      - task: iam
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            iam/admin
+            iam/developer
+            iam/machine
+            iam/policies
+            iam/role
+            iam/user
+
+      - task: lambda
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            lambda/function
+
+      - task: rds
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            rds/cluster
+            rds/instance
+
+      - task: terraform
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            terraform/init
+            terraform/policy
+
+      - task: vault
+        <<: *test-pr-config
+        params:
+          <<: *test-pr-params
+          directories: |
+            vault
+    - put: pull-request
+      params: {path: pull-request-write, status: success}
+
+  - name: test-examples
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - aggregate:
+      - task: apigateway
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            apigateway/lambda/example
+
+      - task: bastion
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            bastion/example
+
+      - task: cloudtrail
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            cloudtrail/example
+
+      - task: concourse
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            concourse/example
+
+      - task: container
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            container/example
+
+      - task: drone
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            drone/example
+
+      - task: ec2
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            ec2/asg/example
+            ec2/emr/example
+            ec2/vpc/example
+
+      - task: iam
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            iam/admin/example
+            iam/developer/example
+            iam/machine/example
+            iam/policies/example
+            iam/role/example
+            iam/user/example
+
+      - task: lambda
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            lambda/function/example
+
+      - task: rds
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            rds/instance/example
+            rds/cluster/example
+
+      - task: terraform 
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            terraform/init/example
+
+      - task: vault 
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            vault/example
+
+resource_types:
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: jtarchie/pr
+
+resources:
+  - name: common-tasks
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-concourse-tasks.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+
+  - name: pull-request
+    type: pull-request
+    check_every: 30s
+    source:
+      repo: TeliaSoneraNorge/divx-terraform-modules
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      ignore_paths: [ .ci ]
+      access_token: ((divx-github-access-token))
+      private_key: ((divx-terraform-modules-deploy-key))
+      every: true
+
+  - name: master-branch
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      ignore_paths: [ .ci ]

@@ -53,7 +53,7 @@ data "aws_region" "current" {
 }
 
 resource "aws_ecs_service" "lb" {
-  count = "${var.load_balanced == "true" ? 1 : 0}"
+  count           = "${var.load_balanced == "true" ? 1 : 0}"
   depends_on      = ["aws_iam_role.service"]
   name            = "${var.prefix}"
   cluster         = "${var.cluster_id}"
@@ -79,7 +79,7 @@ resource "aws_ecs_service" "lb" {
 }
 
 resource "aws_ecs_service" "no_lb" {
-  count = "${var.load_balanced == "true" ? 0 : 1}"
+  count           = "${var.load_balanced == "true" ? 0 : 1}"
   name            = "${var.prefix}"
   cluster         = "${var.cluster_id}"
   task_definition = "${var.task_definition}"
@@ -95,13 +95,13 @@ resource "aws_ecs_service" "no_lb" {
 }
 
 resource "aws_iam_role" "service" {
-  count = "${var.load_balanced == "true" ? 1 : 0}"
+  count              = "${var.load_balanced == "true" ? 1 : 0}"
   name               = "${var.prefix}-service-role"
   assume_role_policy = "${data.aws_iam_policy_document.service_assume.json}"
 }
 
 resource "aws_iam_role_policy" "service_permissions" {
-  count = "${var.load_balanced == "true" ? 1 : 0}"
+  count  = "${var.load_balanced == "true" ? 1 : 0}"
   name   = "${var.prefix}-service-permissions"
   role   = "${aws_iam_role.service.id}"
   policy = "${data.aws_iam_policy_document.service_permissions.json}"

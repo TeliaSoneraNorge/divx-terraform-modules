@@ -13,7 +13,6 @@ variable "policy" {
   description = "policy that will be assigned to the machine user"
 }
 
-
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -28,12 +27,10 @@ resource "aws_iam_access_key" "machine-user-key" {
 }
 
 resource "aws_iam_user_policy" "machine-user-policy" {
-  name = "${var.prefix}-user-policy"
-  user = "${aws_iam_user.machine-user.name}"
+  name   = "${var.prefix}-user-policy"
+  user   = "${aws_iam_user.machine-user.name}"
   policy = "${var.policy}"
 }
-
-
 
 # ------------------------------------------------------------------------------
 # Output

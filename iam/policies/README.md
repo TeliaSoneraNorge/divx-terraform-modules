@@ -10,7 +10,5 @@ it's not possible to use calculated variables. Meaning that you'll have to 'hard
 use variables) the name of the role and/or user.
 
 
-## Usage
-
-See example in [iam/developer](../developer/README.md).
+See example.
 
