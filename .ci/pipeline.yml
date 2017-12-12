@@ -153,12 +153,97 @@ jobs:
       - get: master-branch
         trigger: true
     - aggregate:
+      - task: apigateway
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            apigateway/lambda/example
+
       - task: bastion
         <<: *test-config
         params:
           <<: *test-params
           directories: |
-            bastion/examples/base
+            bastion/example
+
+      - task: cloudtrail
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            cloudtrail/example
+
+      - task: concourse
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            concourse/example
+
+      - task: container
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            container/example
+
+      - task: drone
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            drone/example
+
+      - task: ec2
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            ec2/asg/example
+            ec2/emr/example
+            ec2/vpc/example
+
+      - task: iam
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            iam/admin/example
+            iam/developer/example
+            iam/machine/example
+            iam/policies/example
+            iam/role/example
+            iam/user/example
+
+      - task: lambda
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            lambda/function/example
+
+      - task: rds
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            rds/instance/example
+            rds/cluster/example
+
+      - task: terraform 
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            terraform/init/example
+
+      - task: vault 
+        <<: *test-config
+        params:
+          <<: *test-params
+          directories: |
+            vault/example
 
 resource_types:
   - name: pull-request
