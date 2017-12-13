@@ -1,32 +1,68 @@
 ---
 meta:
   concourse:
-  - config: &test-config
+  - general-config: &general-config
       timeout: 10m
       file: common-tasks/terraform/0.11.1.yml
       input_mapping: { source: master-branch }
-  - config: &test-pr-config
+  - test-module-config: &test-module-config
       timeout: 10m
       file: common-tasks/terraform/0.11.1.yml
       input_mapping: { source: pull-request }
       on_failure:
         put: pull-request
         params: {path: pull-request, status: failure}
-  - module-params: &test-pr-params
+  - test-module-params: &test-module-params
       command: test-module
       cache: true
-  - params: &test-params
+  - test-params: &test-params
       command: test
       cache: true
+  - plan-params: &plan-params
+      command: plan
+      cache: true
+      access_key: ((teliasonera-no-lab-aws-access-key))
+      secret_key: ((teliasonera-no-lab-aws-secret-key))
 
 groups:
-  - name: All
-    jobs:
-    - test-examples
-    - test-it
   - name: Master
     jobs:
-    - test-examples
+    - apigateway-test
+    - apigateway-example-test
+    - apigateway-example-run
+    - bastion-test
+    - bastion-example-test
+    - bastion-example-run
+    - cloudtrail-test
+    - cloudtrail-example-test
+    - cloudtrail-example-run
+    - concourse-test
+    - concourse-example-test
+    - concourse-example-run
+    - container-test
+    - container-example-test
+    - container-example-run
+    - drone-test
+    - drone-example-test
+    - drone-example-run
+    - ec2-test
+    - ec2-example-test
+    - ec2-example-run
+    - iam-test
+    - iam-example-test
+    - iam-example-run
+    - lambda-test
+    - lambda-example-test
+    - lambda-example-run
+    - rds-test
+    - rds-example-test
+    - rds-example-run
+    - terraform-test
+    - terraform-example-test
+    - terraform-example-run
+    - vault-test
+    - vault-example-test
+    - vault-example-run
   - name: PR
     jobs:
     - test-it
@@ -47,54 +83,54 @@ jobs:
       params: {path: pull-request-write, status: pending}
     - aggregate:
       - task: apigateway
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             apigateway/lambda
             apigateway/policy
 
       - task: bastion
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             bastion
 
       - task: cloudtrail
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             cloudtrail
 
       - task: concourse
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             concourse
 
       - task: container
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             container/cluster
             container/service
             container/target
 
       - task: drone
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             drone
 
       - task: ec2
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             ec2/asg
             ec2/emr
@@ -102,9 +138,9 @@ jobs:
             ec2/vpc
 
       - task: iam
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             iam/admin
             iam/developer
@@ -114,136 +150,603 @@ jobs:
             iam/user
 
       - task: lambda
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             lambda/function
 
       - task: rds
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             rds/cluster
             rds/instance
 
       - task: terraform
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             terraform/init
             terraform/policy
 
       - task: vault
-        <<: *test-pr-config
+        <<: *test-module-config
         params:
-          <<: *test-pr-params
+          <<: *test-module-params
           directories: |
             vault
     - put: pull-request
       params: {path: pull-request-write, status: success}
 
-  - name: test-examples
+  - name: apigateway-test
     plan:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
       - get: master-branch
         trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          apigateway/lambda
+  - name: apigateway-example-test
+    plan:
     - aggregate:
-      - task: apigateway
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            apigateway/lambda/example
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ apigateway-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          apigateway/lambda/example
+  - name: apigateway-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ apigateway-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          apigateway/lambda/example
 
-      - task: bastion
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            bastion/example
+  - name: bastion-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          bastion
+  - name: bastion-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ bastion-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          bastion/example
+  - name: bastion-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ bastion-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          bastion/example
 
-      - task: cloudtrail
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            cloudtrail/example
+  - name: cloudtrail-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          cloudtrail
+  - name: cloudtrail-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ cloudtrail-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          cloudtrail/example
+  - name: cloudtrail-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ cloudtrail-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          cloudtrail/example
 
-      - task: concourse
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            concourse/example
+  - name: concourse-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          concourse
+  - name: concourse-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ concourse-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          concourse/example
+  - name: concourse-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ concourse-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          concourse/example
 
-      - task: container
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            container/example
+  - name: container-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          container/cluster
+          container/target
+          container/service
+  - name: container-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ container-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          container/example
+  - name: container-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ container-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          container/example
 
-      - task: drone
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            drone/example
+  - name: drone-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          drone
+  - name: drone-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ drone-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          drone/example
+  - name: drone-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ drone-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          drone/example
 
-      - task: ec2
-        <<: *test-config
+  - name: ec2-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          ec2/asg
+          ec2/emr
+          ec2/vpc
+  - name: ec2-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ ec2-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          ec2/asg/example
+          ec2/emr/example
+          ec2/vpc/example
+  - name: ec2-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ ec2-example-test ]
+        trigger: true
+    - aggregate:
+      - task: asg
+        <<: *general-config
         params:
-          <<: *test-params
+          <<: *plan-params
           directories: |
             ec2/asg/example
+      - task: emr
+        <<: *general-config
+        params:
+          <<: *plan-params
+          directories: |
             ec2/emr/example
+      - task: vpc
+        <<: *general-config
+        params:
+          <<: *plan-params
+          directories: |
             ec2/vpc/example
 
-      - task: iam
-        <<: *test-config
+  - name: iam-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          iam/admin
+          iam/developer
+          iam/machine
+          iam/policies
+          iam/role
+          iam/user
+  - name: iam-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ iam-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          iam/admin/example
+          iam/developer/example
+          iam/machine/example
+          iam/policies/example
+          iam/role/example
+          iam/user/example
+  - name: iam-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ iam-example-test ]
+        trigger: true
+    - aggregate:
+      - task: admin
+        <<: *general-config
         params:
-          <<: *test-params
+          <<: *plan-params
           directories: |
             iam/admin/example
+      - task: developer
+        <<: *general-config
+        params:
+          <<: *plan-params
+          directories: |
             iam/developer/example
+      - task: machine
+        <<: *general-config
+        params:
+          <<: *plan-params
+          directories: |
             iam/machine/example
+      - task: policies
+        <<: *general-config
+        params:
+          <<: *plan-params
+          directories: |
             iam/policies/example
+      - task: role
+        <<: *general-config
+        params:
+          <<: *plan-params
+          directories: |
             iam/role/example
+      - task: user
+        <<: *general-config
+        params:
+          <<: *plan-params
+          directories: |
             iam/user/example
 
-      - task: lambda
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            lambda/function/example
+  - name: lambda-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          lambda/function
+  - name: lambda-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ lambda-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          lambda/function/example
+  - name: lambda-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ lambda-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          lambda/function/example
 
-      - task: rds
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            rds/instance/example
-            rds/cluster/example
+  - name: rds-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          rds/instance
+          rds/cluster
+  - name: rds-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ rds-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          rds/instance/example
+          rds/cluster/example
+  - name: rds-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ rds-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          rds/instance/example
+          rds/cluster/example
 
-      - task: terraform 
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            terraform/init/example
+  - name: terraform-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          terraform/init
+  - name: terraform-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ terraform-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          terraform/init/example
+  - name: terraform-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ terraform-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          terraform/init/example
 
-      - task: vault 
-        <<: *test-config
-        params:
-          <<: *test-params
-          directories: |
-            vault/example
+  - name: vault-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          vault
+  - name: vault-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ vault-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          vault/example
+  - name: vault-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: master-branch
+        passed: [ vault-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          vault/example
 
 resource_types:
   - name: pull-request
