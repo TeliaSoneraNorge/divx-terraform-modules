@@ -22,7 +22,7 @@ module "rds" {
   password   = "<kms-encrypted-password>"
   port       = "5000"
   vpc_id     = "${module.vpc.vpc_id}"
-  subnet_ids = "${module.vpc.public_subnet_ids}"
+  subnet_ids = "${module.vpc.private_subnet_ids}"
 
   tags {
     environment = "prod"
