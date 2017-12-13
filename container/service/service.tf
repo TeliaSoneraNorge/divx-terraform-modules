@@ -117,13 +117,13 @@ resource "aws_iam_role_policy" "log_agent" {
 # Output
 # ------------------------------------------------------------------------------
 output "arn" {
-  value = "${lookup(var.load_balancer, "container_name", "") == "" ? aws_ecs_service.no_lb.arn : aws_ecs_service.lb.arn}"
+  value = "${element(concat(aws_ecs_service.lb.*.id, aws_ecs_service.no_lb.*.id), 0)}"
 }
 
 output "role_arn" {
-  value = "${aws_iam_role.service.arn}"
+  value = "${element(concat(aws_iam_role.service.*.arn, list("")), 0)}"
 }
 
 output "role_id" {
-  value = "${aws_iam_role.service.id}"
+  value = "${element(concat(aws_iam_role.service.*.id, list("")), 0)}"
 }
