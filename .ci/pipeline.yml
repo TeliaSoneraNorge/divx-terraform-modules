@@ -710,10 +710,10 @@ jobs:
     plan:
     - aggregate:
       - get: common-tasks
-        params: { submodules: [ vault ] }
+        params: { submodules: [ terraform ] }
       - get: master-branch
         trigger: true
-    - task: vault-tests
+    - task: terraform-tests
       <<: *general-config
       params:
         <<: *test-module-params
@@ -723,11 +723,11 @@ jobs:
     plan:
     - aggregate:
       - get: common-tasks
-        params: { submodules: [ vault ] }
+        params: { submodules: [ terraform ] }
       - get: master-branch
         passed: [ vault-test ]
         trigger: true
-    - task: vault-tests
+    - task: terraform-tests
       <<: *general-config
       params:
         <<: *test-params
@@ -737,11 +737,11 @@ jobs:
     plan:
     - aggregate:
       - get: common-tasks
-        params: { submodules: [ vault ] }
+        params: { submodules: [ terraform ] }
       - get: master-branch
         passed: [ vault-example-test ]
         trigger: true
-    - task: vault-tests
+    - task: terraform-tests
       <<: *general-config
       params:
         <<: *plan-params
