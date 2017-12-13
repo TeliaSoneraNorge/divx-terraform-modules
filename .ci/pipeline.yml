@@ -4,7 +4,7 @@ meta:
   - general-config: &general-config
       timeout: 10m
       file: common-tasks/terraform/0.11.1.yml
-      input_mapping: { source: master-branch }
+      input_mapping: { source: git }
   - test-module-config: &test-module-config
       timeout: 10m
       file: common-tasks/terraform/0.11.1.yml
@@ -186,7 +186,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: apigateway-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -199,7 +200,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: apigateway-module
         passed: [ apigateway-test ]
         trigger: true
     - task: terraform-tests
@@ -213,7 +215,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: apigateway-module
         passed: [ apigateway-example-test ]
         trigger: true
     - task: terraform-tests
@@ -228,7 +231,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: bastion-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -241,7 +245,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: bastion-module
         passed: [ bastion-test ]
         trigger: true
     - task: terraform-tests
@@ -255,7 +260,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: bastion-module
         passed: [ bastion-example-test ]
         trigger: true
     - task: terraform-tests
@@ -270,7 +276,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: cloudtrail-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -283,7 +290,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: cloudtrail-module
         passed: [ cloudtrail-test ]
         trigger: true
     - task: terraform-tests
@@ -297,7 +305,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: cloudtrail-module
         passed: [ cloudtrail-example-test ]
         trigger: true
     - task: terraform-tests
@@ -312,7 +321,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: concourse-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -325,7 +335,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: concourse-module
         passed: [ concourse-test ]
         trigger: true
     - task: terraform-tests
@@ -339,7 +350,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: concourse-module
         passed: [ concourse-example-test ]
         trigger: true
     - task: terraform-tests
@@ -354,7 +366,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: container-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -369,7 +382,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: container-module
         passed: [ container-test ]
         trigger: true
     - task: terraform-tests
@@ -383,7 +397,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: container-module
         passed: [ container-example-test ]
         trigger: true
     - task: terraform-tests
@@ -398,7 +413,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: drone-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -411,7 +427,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: drone-module
         passed: [ drone-test ]
         trigger: true
     - task: terraform-tests
@@ -425,7 +442,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: drone-module
         passed: [ drone-example-test ]
         trigger: true
     - task: terraform-tests
@@ -440,7 +458,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: ec2-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -455,7 +474,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: ec2-module
         passed: [ ec2-test ]
         trigger: true
     - task: terraform-tests
@@ -471,7 +491,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: ec2-module
         passed: [ ec2-example-test ]
         trigger: true
     - aggregate:
@@ -499,7 +520,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: iam-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -517,7 +539,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: iam-module
         passed: [ iam-test ]
         trigger: true
     - task: terraform-tests
@@ -536,7 +559,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: iam-module
         passed: [ iam-example-test ]
         trigger: true
     - aggregate:
@@ -582,7 +606,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: lambda-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -595,7 +620,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: lambda-module
         passed: [ lambda-test ]
         trigger: true
     - task: terraform-tests
@@ -609,7 +635,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: lambda-module
         passed: [ lambda-example-test ]
         trigger: true
     - task: terraform-tests
@@ -624,7 +651,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: rds-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -638,7 +666,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: rds-module
         passed: [ rds-test ]
         trigger: true
     - task: terraform-tests
@@ -653,7 +682,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: rds-module
         passed: [ rds-example-test ]
         trigger: true
     - task: terraform-tests
@@ -669,7 +699,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: terraform-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -682,7 +713,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: terraform-module
         passed: [ terraform-test ]
         trigger: true
     - task: terraform-tests
@@ -696,7 +728,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: terraform-module
         passed: [ terraform-example-test ]
         trigger: true
     - task: terraform-tests
@@ -711,7 +744,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: vault-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
@@ -724,7 +758,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: vault-module
         passed: [ vault-test ]
         trigger: true
     - task: terraform-tests
@@ -738,7 +773,8 @@ jobs:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
-      - get: master-branch
+      - get: git
+        resource: vault-module
         passed: [ vault-example-test ]
         trigger: true
     - task: terraform-tests
@@ -773,10 +809,110 @@ resources:
       private_key: ((divx-terraform-modules-deploy-key))
       every: true
 
-  - name: master-branch
+  - name: apigateway-module
     type: git
     source:
       uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
       branch: master
       private_key: ((divx-terraform-modules-deploy-key))
-      ignore_paths: [ .ci ]
+      paths:
+        - apigateway/*
+
+  - name: bastion-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - bastion/*
+
+  - name: cloudtrail-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - cloudtrail/*
+
+  - name: concourse-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - concourse/*
+
+  - name: container-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - container/*
+
+  - name: drone-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - drone/*
+
+  - name: ec2-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - ec2/*
+
+  - name: iam-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - iam/*
+
+  - name: lambda-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - lambda/*
+
+  - name: rds-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - rds/*
+
+  - name: terraform-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - terraform/*
+
+  - name: vault-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - vault/*
