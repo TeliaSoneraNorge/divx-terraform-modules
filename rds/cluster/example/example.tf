@@ -3,10 +3,11 @@ provider "aws" {
 }
 
 module "vpc" {
-  source        = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
-  prefix        = "your-project"
-  cidr_block    = "10.8.0.0/16"
-  dns_hostnames = "true"
+  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
+  prefix          = "your-project"
+  cidr_block      = "10.8.0.0/16"
+  private_subnets = "2"
+  dns_hostnames   = "true"
 
   tags {
     environment = "prod"
@@ -22,7 +23,7 @@ module "rds" {
   password   = "<kms-encrypted-password>"
   port       = "5000"
   vpc_id     = "${module.vpc.vpc_id}"
-  subnet_ids = "${module.vpc.public_subnet_ids}"
+  subnet_ids = "${module.vpc.private_subnet_ids}"
 
   tags {
     environment = "prod"
