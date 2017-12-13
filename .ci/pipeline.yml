@@ -42,9 +42,6 @@ groups:
     - container-test
     - container-example-test
     - container-example-run
-    - drone-test
-    - drone-example-test
-    - drone-example-run
     - ec2-test
     - ec2-example-test
     - ec2-example-run
@@ -119,13 +116,6 @@ jobs:
             container/cluster
             container/service
             container/target
-
-      - task: drone
-        <<: *test-module-config
-        params:
-          <<: *test-module-params
-          directories: |
-            drone
 
       - task: ec2
         <<: *test-module-config
@@ -407,51 +397,6 @@ jobs:
         <<: *plan-params
         directories: |
           container/example
-
-  - name: drone-test
-    plan:
-    - aggregate:
-      - get: common-tasks
-        params: { submodules: [ terraform ] }
-      - get: git
-        resource: drone-module
-        trigger: true
-    - task: terraform-tests
-      <<: *general-config
-      params:
-        <<: *test-module-params
-        directories: |
-          drone
-  - name: drone-example-test
-    plan:
-    - aggregate:
-      - get: common-tasks
-        params: { submodules: [ terraform ] }
-      - get: git
-        resource: drone-module
-        passed: [ drone-test ]
-        trigger: true
-    - task: terraform-tests
-      <<: *general-config
-      params:
-        <<: *test-params
-        directories: |
-          drone/example
-  - name: drone-example-run
-    plan:
-    - aggregate:
-      - get: common-tasks
-        params: { submodules: [ terraform ] }
-      - get: git
-        resource: drone-module
-        passed: [ drone-example-test ]
-        trigger: true
-    - task: terraform-tests
-      <<: *general-config
-      params:
-        <<: *plan-params
-        directories: |
-          drone/example
 
   - name: ec2-test
     plan:
@@ -853,15 +798,6 @@ resources:
       private_key: ((divx-terraform-modules-deploy-key))
       paths:
         - container/*
-
-  - name: drone-module
-    type: git
-    source:
-      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
-      branch: master
-      private_key: ((divx-terraform-modules-deploy-key))
-      paths:
-        - drone/*
 
   - name: ec2-module
     type: git
