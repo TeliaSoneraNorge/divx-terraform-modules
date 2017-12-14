@@ -111,15 +111,3 @@ data "aws_iam_policy_document" "atc" {
     ]
   }
 }
-
-# resource "aws_autoscaling_attachment" "atc_internal" {
-#   autoscaling_group_name = "${module.atc.id}"
-#   elb                    = "${module.internal_elb.name}"
-# }
-
-
-# resource "aws_autoscaling_attachment" "atc_external" {
-#   autoscaling_group_name = "${module.atc.id}"
-#   elb                    = "${module.external_elb.name}"
-# }
-
