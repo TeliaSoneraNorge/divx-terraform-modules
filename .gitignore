@@ -1,5 +1,6 @@
 example/*
 **/.terraform
+**/*.tfstate*
 **/node_modules
 **/package-lock.json
 
