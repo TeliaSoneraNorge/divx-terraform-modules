@@ -10,24 +10,6 @@ resource "aws_security_group_rule" "ingress" {
   cidr_blocks       = ["${var.authorized_cidr}"]
 }
 
-resource "aws_security_group_rule" "worker_ingress_tsa" {
-  security_group_id        = "${module.internal_lb.security_group_id}"
-  type                     = "ingress"
-  protocol                 = "tcp"
-  from_port                = "${var.tsa_port}"
-  to_port                  = "${var.tsa_port}"
-  source_security_group_id = "${module.worker.security_group_id}"
-}
-
-# resource "aws_security_group_rule" "worker_ingress_web" {
-#   security_group_id        = "${module.internal_lb.security_group_id}"
-#   type                     = "ingress"
-#   protocol                 = "tcp"
-#   from_port                = "80"
-#   to_port                  = "80"
-#   source_security_group_id = "${module.worker.security_group_id}"
-# }
-
 resource "aws_route53_record" "main" {
   zone_id = "${var.zone_id}"
   name    = "${var.domain}"
@@ -66,7 +48,7 @@ module "external_target" {
   source            = "../container/target"
   prefix            = "${var.prefix}"
   vpc_id            = "${var.vpc_id}"
-  load_balancer_arn = "${module.internal_lb.arn}"
+  load_balancer_arn = "${module.external_lb.arn}"
   tags              = "${var.tags}"
 
   target {

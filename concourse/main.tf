@@ -79,7 +79,7 @@ variable "instance_key" {
 
 variable "concourse_version" {
   description = "Version of Concourse to download/run."
-  default     = "3.6.0"
+  default     = "3.8.0"
 }
 
 variable "instance_ami" {
@@ -157,6 +157,10 @@ variable "tags" {
 # -------------------------------------------------------------------------------
 data "aws_region" "current" {
   current = true
+}
+
+data "aws_vpc" "concourse" {
+  id = "${var.vpc_id}"
 }
 
 # -------------------------------------------------------------------------------

@@ -61,7 +61,7 @@ resource "aws_lb_target_group" "main" {
     protocol            = "${local.health_protocol}"
     interval            = "30"
     timeout             = "5"
-    healthy_threshold   = "5"
+    healthy_threshold   = "2"
     unhealthy_threshold = "2"
     matcher             = "200"
   }
