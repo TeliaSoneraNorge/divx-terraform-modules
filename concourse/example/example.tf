@@ -2,27 +2,28 @@ provider "aws" {
   region = "eu-west-1"
 }
 
-data "aws_kms_secret" "decrypted" {
-  secret {
-    name    = "postgres_password"
-    payload = "<secret>"
-  }
+# NOTE: This is the recommended way of passing secrets (marked as SECRET).
+# data "aws_kms_secret" "decrypted" {
+#   secret {
+#     name    = "postgres_password"
+#     payload = "<secret>"
+#   }
 
-  secret {
-    name    = "github_secret"
-    payload = "<secret>"
-  }
+#   secret {
+#     name    = "github_secret"
+#     payload = "<secret>"
+#   }
 
-  secret {
-    name    = "vault_token"
-    payload = "<secret>"
-  }
+#   secret {
+#     name    = "vault_token"
+#     payload = "<secret>"
+#   }
 
-  secret {
-    name    = "encryption_key"
-    payload = "<secret>"
-  }
-}
+#   secret {
+#     name    = "encryption_key"
+#     payload = "<secret>"
+#   }
+# }
 
 module "vpc" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
@@ -62,7 +63,7 @@ module "bastion" {
 }
 
 module "concourse" {
-  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//concourse/"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//concourse"
 
   prefix               = "concourse-ci"
   domain               = "ci.example.com"
@@ -73,14 +74,14 @@ module "concourse" {
   public_subnet_ids    = "${module.vpc.public_subnet_ids}"
   private_subnet_ids   = "${module.vpc.private_subnet_ids}"
   authorized_cidr      = ["0.0.0.0/0"]
-  postgres_username    = "someuser"
-  postgres_password    = "${data.aws_kms_secret.decrypted.postgres_password}"
-  instance_key         = "<instance-key-pair>"
-  github_client_id     = "<github-client-id>"
-  github_client_secret = "${data.aws_kms_secret.decrypted.github_secret}"
+  postgres_username    = "superuser"
+  postgres_password    = "SECRET"
+  instance_key         = "VARIABLE"
+  github_client_id     = "VARIABLE"
+  github_client_secret = "SECRET"
   vault_url            = "https://vault.example.com"
-  vault_client_token   = "${data.aws_kms_secret.decrypted.vault_token}"
-  encryption_key       = "${data.aws_kms_secret.decrypted.encryption_key}"
+  vault_client_token   = "SECRET"
+  encryption_key       = "SECRET"
 
   github_users = [
     "itsdalmo",

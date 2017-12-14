@@ -41,12 +41,13 @@ resource "aws_lb" "main" {
   load_balancer_type = "${var.type}"
   internal           = "${var.internal}"
   subnets            = ["${var.subnet_ids}"]
-  security_groups    = ["${aws_security_group.main.id}"]
+  security_groups    = ["${aws_security_group.main.*.id}"]
 
   tags = "${merge(var.tags, map("Name", "${local.name}"))}"
 }
 
 resource "aws_security_group" "main" {
+  count       = "${var.type == "network" ? 0 : 1}"
   name        = "${local.name}-sg"
   description = "Terraformed security group."
   vpc_id      = "${var.vpc_id}"
@@ -55,6 +56,7 @@ resource "aws_security_group" "main" {
 }
 
 resource "aws_security_group_rule" "egress" {
+  count             = "${var.type == "network" ? 0 : 1}"
   security_group_id = "${aws_security_group.main.id}"
   type              = "egress"
   protocol          = "-1"
@@ -88,5 +90,5 @@ output "origin_id" {
 }
 
 output "security_group_id" {
-  value = "${aws_security_group.main.id}"
+  value = "${element(concat(aws_security_group.main.*.id, list("")), 0)}"
 }

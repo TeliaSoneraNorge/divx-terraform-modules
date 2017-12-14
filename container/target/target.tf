@@ -61,7 +61,7 @@ resource "aws_lb_target_group" "main" {
     protocol            = "${local.health_protocol}"
     interval            = "30"
     timeout             = "5"
-    healthy_threshold   = "5"
+    healthy_threshold   = "2"
     unhealthy_threshold = "2"
     matcher             = "200"
   }
@@ -89,12 +89,6 @@ resource "aws_lb_listener" "main" {
     target_group_arn = "${aws_lb_target_group.main.arn}"
     type             = "forward"
   }
-}
-
-resource "aws_autoscaling_attachment" "main" {
-  count                  = "${lookup(var.target, "attachment", "") == "" ? 0 : 1}"
-  autoscaling_group_name = "${var.target["attachment"]}"
-  abl_target_group_arn   = "${aws_lb_target_group.main.arn}"
 }
 
 # ------------------------------------------------------------------------------
