@@ -91,12 +91,6 @@ resource "aws_lb_listener" "main" {
   }
 }
 
-resource "aws_autoscaling_attachment" "main" {
-  count                  = "${lookup(var.target, "attachment", "") == "" ? 0 : 1}"
-  autoscaling_group_name = "${var.target["attachment"]}"
-  abl_target_group_arn   = "${aws_lb_target_group.main.arn}"
-}
-
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
