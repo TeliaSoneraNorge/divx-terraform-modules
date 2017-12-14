@@ -126,3 +126,14 @@ authenticate to Vault, a user using vaulted (not to be confused with Vault) then
 ```bash
 vaulted -n demo-team-developer -- vault auth -method=aws role=demo
 ```
+
+### Example
+
+In addition to the deployment example, you'll also find a sample `pipeline.yml` for testing the installation.
+It can be added to concourse by running:
+
+```bash
+fly -t ci-test login -n main -c <url>
+fly -t ci-test set-pipeline -p ci-test -c pipeline.yml
+fly -t ci-test unpause-pipeline -p ci-test
+```
