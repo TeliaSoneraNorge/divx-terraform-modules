@@ -63,7 +63,7 @@ module "bastion" {
 }
 
 module "concourse" {
-  source = "../"
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//concourse"
 
   prefix               = "concourse-ci"
   domain               = "ci.example.com"
