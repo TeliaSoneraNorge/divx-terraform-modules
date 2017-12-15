@@ -14,8 +14,15 @@ Set up an ECS cluster and register services with ease. The modules set up the fo
 
 - Can be used with or without a load balancer.
 - Usable with either an ALB or a NLB.
-- Creates target group and listeners when used with a load balancer (for dynamic port mapping).
 - Sets up and enables logging for the service.
 - Creates IAM roles for the ECS service.
 
 Note that task definitions have to be created manually (cannot be abstracted) because of `volume` blocks.
+
+#### container/target
+
+NOTE: Should probably be moved to `ec2` as it is not specific to ECS.
+
+- Creates a target group and a variable number of listeners (based on a list of maps).
+- Removes a lot of boilerplate.
+- Usable with either an ALB or a NLB.
