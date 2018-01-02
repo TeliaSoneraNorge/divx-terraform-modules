@@ -68,6 +68,7 @@ write_files:
       Restart=always
       RestartSec=30s
       TimeoutStartSec=5m
+      TimeoutStopSec=1h
       StandardOutput=syslog
       StandardError=syslog
       SyslogIdentifier=concourse
@@ -81,6 +82,9 @@ write_files:
       Environment="CONCOURSE_TSA_WORKER_PRIVATE_KEY=/concourse/keys/worker/worker_key"
       ExecStartPre=/bin/bash -c "/bin/systemctl set-environment CONCOURSE_PEER_IP=$(curl -L http://169.254.169.254/latest/meta-data/local-ipv4)"
       ExecStart=/usr/local/bin/concourse worker
+      ExecStop=/bin/bash -c "/usr/local/bin/concourse retire-worker --name=%H"
+      ExecStop=/bin/bash -c "while pgrep -u root -f '^/concourse/.*/assets/bin/runc' > /dev/null; do sleep 1; done"
+      ExecStop=/bin/kill -15 $MAINPID
 
       [Install]
       WantedBy=multi-user.target
