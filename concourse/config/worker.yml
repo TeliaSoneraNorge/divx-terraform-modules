@@ -1,8 +1,7 @@
 #cloud-config
 package_update: true
 packages:
-  - curl
-  - python
+  - awslogs
 write_files:
   - path: "/concourse/keys/worker/tsa_host_key.pub"
     permissions: "0644"
@@ -19,42 +18,25 @@ write_files:
     owner: "root"
     encoding: base64
     content: ${base64encode(pub_worker_key)}
-  - path: "/etc/rsyslog.d/concourse.conf"
+  - path: "/etc/awslogs/awscli.template"
     permissions: "0644"
     owner: "root"
     content: |
-      if $programname == 'concourse' then /var/log/concourse.log
-      if $programname == 'concourse' then ~
-  - path: "/var/awslogs/config/template.conf"
+      [plugins]
+      cwlogs = cwlogs
+      [default]
+      region = ${log_group_region}
+  - path: "/etc/awslogs/awslogs.template"
     permissions: "0644"
     owner: "root"
     content: |
       [general]
-      state_file = /var/awslogs/state/agent-state
+      state_file = /var/lib/awslogs/agent-state
 
       [/var/log/concourse.log]
       file = /var/log/concourse.log
       log_group_name = ${log_group_name}
       log_stream_name = {instance_id}
-      datetime_format = %b %d %H:%M:%S
-  - path: "/etc/systemd/system/awslogs.service"
-    permissions: "0644"
-    owner: "root"
-    content: |
-      [Unit]
-      Description=Service for CloudWatch Logs agent
-      After=rc-local.service
-
-      [Service]
-      Type=simple
-      Restart=always
-      KillMode=process
-      TimeoutSec=infinity
-      PIDFile=/var/awslogs/state/awslogs.pid
-      ExecStart=/var/awslogs/bin/awslogs-agent-launcher.sh --start --background --pidfile $PIDFILE --user awslogs --chuid awslogs &amp;
-
-      [Install]
-      WantedBy=multi-user.target
   - path: "/etc/systemd/system/concourse.service"
     permissions: "0644"
     owner: "root"
@@ -80,23 +62,46 @@ write_files:
       Environment="CONCOURSE_BAGGAGECLAIM_LOG_LEVEL=${log_level}"
       Environment="CONCOURSE_TSA_PUBLIC_KEY=/concourse/keys/worker/tsa_host_key.pub"
       Environment="CONCOURSE_TSA_WORKER_PRIVATE_KEY=/concourse/keys/worker/worker_key"
+
+      ExecStartPre=/bin/bash -c "/bin/systemctl set-environment CONCOURSE_NAME=$(curl -L http://169.254.169.254/latest/meta-data/instance-id)"
       ExecStartPre=/bin/bash -c "/bin/systemctl set-environment CONCOURSE_PEER_IP=$(curl -L http://169.254.169.254/latest/meta-data/local-ipv4)"
       ExecStart=/usr/local/bin/concourse worker
-      ExecStop=/bin/bash -c "/usr/local/bin/concourse retire-worker --name=%H"
+
+      ExecStop=/usr/local/bin/concourse retire-worker
       ExecStop=/bin/bash -c "while pgrep -u root -f '^/concourse/.*/assets/bin/runc' > /dev/null; do sleep 1; done"
       ExecStop=/bin/kill -15 $MAINPID
 
       [Install]
       WantedBy=multi-user.target
+  - path: "/etc/systemd/system/concourse-logging.service"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [Unit]
+      Description=Service for Concourse logging
+      After=rc-local.service
+
+      [Service]
+      Type=simple
+      Restart=always
+      TimeoutSec=infinity
+      SyslogIdentifier=concourse
+
+      ExecStart=/bin/bash -c '/usr/bin/journalctl -u concourse --no-tail -f -o cat > /var/log/concourse.log'
+
+      [Install]
+      WantedBy=multi-user.target
 runcmd:
   - |
-    curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -O
-    chmod +x awslogs-agent-setup.py
-    ./awslogs-agent-setup.py --non-interactive --region eu-west-1 --configfile=/var/awslogs/config/template.conf
+    systemctl disable amazon-ssm-agent.service
   - |
     curl -L "${concourse_download_url}" > /usr/local/bin/concourse
     chmod 0755 /usr/local/bin/concourse
     chown root:root /usr/local/bin/concourse
   - |
-    systemctl enable awslogs.service --now
+    cp /etc/awslogs/awscli.template /etc/awslogs/awscli.conf
+    cp /etc/awslogs/awslogs.template /etc/awslogs/awslogs.conf
+  - |
+    systemctl enable concourse-logging.service --now
+    systemctl enable awslogsd.service --now
     systemctl enable concourse.service --now

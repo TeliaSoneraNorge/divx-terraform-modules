@@ -81,6 +81,7 @@ data "aws_iam_policy_document" "worker" {
       "cloudwatch:GetMetricStatistics",
       "cloudwatch:ListMetrics",
       "ec2:DescribeTags",
+      "ec2:DescribeInstances",
     ]
   }
 }
