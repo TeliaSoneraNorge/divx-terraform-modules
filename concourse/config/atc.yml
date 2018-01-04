@@ -1,8 +1,8 @@
 #cloud-config
 package_update: true
 packages:
-  - curl
-  - python
+  - awslogs
+  - aws-cfn-bootstrap
 write_files:
   - path: "/concourse/keys/web/tsa_host_key"
     permissions: "0644"
@@ -19,42 +19,25 @@ write_files:
     owner: "root"
     encoding: base64
     content: ${base64encode(authorized_worker_keys)}
-  - path: "/etc/rsyslog.d/concourse.conf"
+  - path: "/etc/awslogs/awscli.template"
     permissions: "0644"
     owner: "root"
     content: |
-      if $programname == 'concourse' then /var/log/concourse.log
-      if $programname == 'concourse' then ~
-  - path: "/var/awslogs/config/template.conf"
+      [plugins]
+      cwlogs = cwlogs
+      [default]
+      region = ${region}
+  - path: "/etc/awslogs/awslogs.template"
     permissions: "0644"
     owner: "root"
     content: |
       [general]
-      state_file = /var/awslogs/state/agent-state
+      state_file = /var/lib/awslogs/agent-state
 
       [/var/log/concourse.log]
       file = /var/log/concourse.log
       log_group_name = ${log_group_name}
       log_stream_name = {instance_id}
-      datetime_format = %b %d %H:%M:%S
-  - path: "/etc/systemd/system/awslogs.service"
-    permissions: "0644"
-    owner: "root"
-    content: |
-      [Unit]
-      Description=Service for CloudWatch Logs agent
-      After=rc-local.service
-
-      [Service]
-      Type=simple
-      Restart=always
-      KillMode=process
-      TimeoutSec=infinity
-      PIDFile=/var/awslogs/state/awslogs.pid
-      ExecStart=/var/awslogs/bin/awslogs-agent-launcher.sh --start --background --pidfile $PIDFILE --user awslogs --chuid awslogs &amp;
-
-      [Install]
-      WantedBy=multi-user.target
   - path: "/etc/systemd/system/concourse.service"
     permissions: "0644"
     owner: "root"
@@ -87,20 +70,63 @@ write_files:
       Environment="CONCOURSE_SESSION_SIGNING_KEY=/concourse/keys/web/session_signing_key"
       Environment="CONCOURSE_ENCRYPTION_KEY=${encryption_key}"
       Environment="CONCOURSE_OLD_ENCRYPTION_KEY=${old_encryption_key}"
+
       ExecStartPre=/bin/bash -c "/bin/systemctl set-environment CONCOURSE_PEER_URL=http://$(curl -L http://169.254.169.254/latest/meta-data/local-ipv4):8080"
       ExecStart=/usr/local/bin/concourse web
 
       [Install]
       WantedBy=multi-user.target
+  - path: "/etc/systemd/system/concourse-logging.service"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [Unit]
+      Description=Service for Concourse logging
+      After=rc-local.service
+
+      [Service]
+      Type=simple
+      Restart=always
+      TimeoutSec=infinity
+      SyslogIdentifier=concourse
+
+      ExecStart=/bin/bash -c '/usr/bin/journalctl -u concourse --no-tail -f -o cat > /var/log/concourse.log'
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: "/var/tmp/concourse-signal.sh"
+    permissions: "0744"
+    owner: "root"
+    content: |
+      #! /usr/bin/bash
+
+      set -euo pipefail
+
+      state=""
+      INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+      until [ "$state" == "\"healthy\"" ]; do
+          sleep 10
+          state=$(aws --region ${region} elbv2 describe-target-health \
+              --targets Id=$${INSTANCE_ID},Port=2222 \
+              --target-group-arn ${target_group} \
+              --query TargetHealthDescriptions[0].TargetHealth.State)
+          echo "State is $${state}"
+      done
 runcmd:
   - |
-    curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -O
-    chmod +x awslogs-agent-setup.py
-    ./awslogs-agent-setup.py --non-interactive --region ${log_group_region} --configfile=/var/awslogs/config/template.conf
+    systemctl disable amazon-ssm-agent.service
   - |
     curl -L "${concourse_download_url}" > /usr/local/bin/concourse
     chmod 0755 /usr/local/bin/concourse
     chown root:root /usr/local/bin/concourse
   - |
-    systemctl enable awslogs.service --now
+    cp /etc/awslogs/awscli.template /etc/awslogs/awscli.conf
+    cp /etc/awslogs/awslogs.template /etc/awslogs/awslogs.conf
+  - |
+    systemctl enable concourse-logging.service --now
+    systemctl enable awslogsd.service --now
     systemctl enable concourse.service --now
+  - |
+    /var/tmp/concourse-signal.sh
+    /opt/aws/bin/cfn-signal -e $? --stack ${stack_name} --resource AutoScalingGroup --region ${region}

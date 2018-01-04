@@ -83,8 +83,8 @@ variable "concourse_version" {
 }
 
 variable "instance_ami" {
-  description = "Ubuntu AMI ID for Concourse instances."
-  default     = "ami-add175d4"
+  description = "Amazon AMI 2 (id) for Concourse instances."
+  default     = "ami-b09e1ac9"
 }
 
 variable "atc_count" {

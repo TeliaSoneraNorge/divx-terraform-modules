@@ -30,6 +30,7 @@ Resources:
       AutoScalingRollingUpdate:
         MinInstancesInService: "${min_size}"
         MaxBatchSize: "2"
+        WaitOnResourceSignals: "${await_signal}"
         PauseTime: "${pause_time}"
         SuspendProcesses:
           - HealthCheck

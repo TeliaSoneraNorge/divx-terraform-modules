@@ -52,10 +52,9 @@ module "external_target" {
   tags              = "${var.tags}"
 
   target {
-    attachment = "${module.atc.id}"
-    protocol   = "HTTP"
-    port       = "${var.atc_port}"
-    health     = "HTTP:traffic-port/"
+    protocol = "HTTP"
+    port     = "${var.atc_port}"
+    health   = "HTTP:traffic-port/"
   }
 
   listeners = [{
@@ -73,10 +72,9 @@ module "internal_target" {
   tags              = "${var.tags}"
 
   target {
-    attachment = "${module.atc.id}"
-    protocol   = "TCP"
-    port       = "${var.tsa_port}"
-    health     = "TCP:${var.tsa_port}"
+    protocol = "TCP"
+    port     = "${var.tsa_port}"
+    health   = "TCP:${var.tsa_port}"
   }
 
   listeners = [

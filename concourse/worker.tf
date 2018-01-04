@@ -26,6 +26,7 @@ module "worker" {
   user_data            = "${data.template_file.worker.rendered}"
   vpc_id               = "${var.vpc_id}"
   subnet_ids           = "${var.private_subnet_ids}"
+  await_signal         = "true"
   pause_time           = "PT5M"
   health_check_type    = "EC2"
   instance_policy      = "${data.aws_iam_policy_document.worker.json}"
@@ -41,10 +42,11 @@ data "template_file" "worker" {
   template = "${file("${path.module}/config/worker.yml")}"
 
   vars {
+    stack_name             = "${var.prefix}-worker-asg"
+    region                 = "${data.aws_region.current.name}"
     concourse_download_url = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
     concourse_tsa_host     = "${module.internal_lb.dns_name}"
     log_group_name         = "${aws_cloudwatch_log_group.worker.name}"
-    log_group_region       = "${data.aws_region.current.name}"
     log_level              = "${var.log_level}"
     worker_key             = "${file("${var.concourse_keys}/worker_key")}"
     pub_worker_key         = "${file("${var.concourse_keys}/worker_key.pub")}"
