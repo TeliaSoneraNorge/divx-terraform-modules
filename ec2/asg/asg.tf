@@ -15,6 +15,11 @@ variable "health_check_type" {
   default     = "EC2"
 }
 
+variable "await_signal" {
+  description = "Await signals (WaitOnResourceSignals) for the autoscaling rolling update policy."
+  default     = "false"
+}
+
 variable "pause_time" {
   description = "Pause time for the autoscaling rolling update policy."
   default     = "PT5M"
@@ -174,6 +179,7 @@ data "template_file" "main" {
     prefix               = "${var.prefix}"
     launch_configuration = "${aws_launch_configuration.main.name}"
     health_check_type    = "${var.health_check_type}"
+    await_signal         = "${var.await_signal}"
     pause_time           = "${var.pause_time}"
     min_size             = "${var.instance_count}"
     max_size             = "${var.instance_count + 2}"

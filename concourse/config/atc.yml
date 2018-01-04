@@ -2,6 +2,7 @@
 package_update: true
 packages:
   - awslogs
+  - aws-cfn-bootstrap
 write_files:
   - path: "/concourse/keys/web/tsa_host_key"
     permissions: "0644"
@@ -25,7 +26,7 @@ write_files:
       [plugins]
       cwlogs = cwlogs
       [default]
-      region = ${log_group_region}
+      region = ${region}
   - path: "/etc/awslogs/awslogs.template"
     permissions: "0644"
     owner: "root"
@@ -93,6 +94,25 @@ write_files:
 
       [Install]
       WantedBy=multi-user.target
+  - path: "/var/tmp/concourse-signal.sh"
+    permissions: "0744"
+    owner: "root"
+    content: |
+      #! /usr/bin/bash
+
+      set -euo pipefail
+
+      state=""
+      INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+      until [ "$state" == "\"healthy\"" ]; do
+          sleep 10
+          state=$(aws --region ${region} elbv2 describe-target-health \
+              --targets Id=$${INSTANCE_ID},Port=2222 \
+              --target-group-arn ${target_group} \
+              --query TargetHealthDescriptions[0].TargetHealth.State)
+          echo "State is $${state}"
+      done
 runcmd:
   - |
     systemctl disable amazon-ssm-agent.service
@@ -107,3 +127,6 @@ runcmd:
     systemctl enable concourse-logging.service --now
     systemctl enable awslogsd.service --now
     systemctl enable concourse.service --now
+  - |
+    /var/tmp/concourse-signal.sh
+    /opt/aws/bin/cfn-signal -e $? --stack ${stack_name} --resource AutoScalingGroup --region ${region}
