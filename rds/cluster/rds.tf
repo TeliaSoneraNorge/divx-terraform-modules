@@ -65,7 +65,6 @@ resource "aws_rds_cluster" "main" {
   preferred_maintenance_window = "wed:04:00-wed:04:30"
   skip_final_snapshot          = "true"
   vpc_security_group_ids       = ["${aws_security_group.main.id}"]
-  availability_zones           = ["${data.aws_availability_zones.available.names}"]
 
   # NOTE: This is duplicated because subnet_group does not return the name.
   db_subnet_group_name = "${var.prefix}-subnet-group"

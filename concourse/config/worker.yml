@@ -48,13 +48,12 @@ write_files:
       After=network-online.target
 
       [Service]
+      Type=simple
       Restart=always
       RestartSec=30s
       TimeoutStartSec=5m
       TimeoutStopSec=1h
-      StandardOutput=syslog
-      StandardError=syslog
-      SyslogIdentifier=concourse
+      PIDFile=/run/concourse.pid
 
       Environment="CONCOURSE_BIND_IP=0.0.0.0"
       Environment="CONCOURSE_WORK_DIR=/concourse"
@@ -69,8 +68,8 @@ write_files:
       ExecStart=/usr/local/bin/concourse worker
 
       ExecStop=/usr/local/bin/concourse retire-worker
-      ExecStop=/bin/bash -c "while pgrep -u root -f '^/concourse/.*/assets/bin/runc' > /dev/null; do sleep 1; done"
-      ExecStop=/bin/kill -15 $MAINPID
+      ExecStop=/bin/bash -c "while ! /usr/local/bin/concourse retire-worker | grep worker-not-found > /dev/null; do sleep 5; done"
+      ExecStop=/bin/kill -s TERM $MAINPID
 
       [Install]
       WantedBy=multi-user.target
@@ -86,13 +85,31 @@ write_files:
       Type=simple
       Restart=always
       TimeoutSec=infinity
-      SyslogIdentifier=concourse
 
       ExecStart=/bin/bash -c '/usr/bin/journalctl -u concourse --no-tail -f -o cat > /var/log/concourse.log'
 
       [Install]
       WantedBy=multi-user.target
-  - path: "/var/tmp/concourse-signal.sh"
+  - path: "/etc/systemd/system/lifecycled.service"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [Unit]
+      Description=Service for Autoscaling lifecycle
+      Requires=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      Restart=always
+      TimeoutSec=infinity
+
+      Environment="AWS_REGION=${region}"
+      ExecStart=/usr/local/bin/lifecycled --sns-topic=${lifecycle_topic} --handler=/usr/local/scripts/lifecycle-handler.sh
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: "/usr/local/scripts/cloudformation-signal.sh"
     permissions: "0744"
     owner: "root"
     content: |
@@ -100,23 +117,44 @@ write_files:
 
       set -euo pipefail
 
-      while ! systemctl is-active concourse.service > /dev/null; do
-          sleep 1
-      done
+      function await_unit() {
+        echo -n "Waiting for $1..."
+        while ! systemctl is-active $1 > /dev/null; do
+            sleep 1
+        done
+        echo "Done!"
+      }
+
+      await_unit lifecycled.service
+      await_unit concourse.service
+  - path: "/usr/local/scripts/lifecycle-handler.sh"
+    permissions: "0744"
+    owner: "root"
+    content: |
+      #! /usr/bin/bash
+
+      set -euo pipefail
+
+      systemctl stop concourse.service
 runcmd:
   - |
-    systemctl disable amazon-ssm-agent.service
+    systemctl stop amazon-ssm-agent.service
   - |
     curl -L "${concourse_download_url}" > /usr/local/bin/concourse
     chmod 0755 /usr/local/bin/concourse
     chown root:root /usr/local/bin/concourse
   - |
+    curl -L "${lifecycled_download_url}" > /usr/local/bin/lifecycled
+    chmod 0755 /usr/local/bin/lifecycled
+    chown root:root /usr/local/bin/lifecycled
+  - |
     cp /etc/awslogs/awscli.template /etc/awslogs/awscli.conf
     cp /etc/awslogs/awslogs.template /etc/awslogs/awslogs.conf
   - |
+    systemctl enable lifecycled.service --now
     systemctl enable concourse-logging.service --now
     systemctl enable awslogsd.service --now
     systemctl enable concourse.service --now
   - |
-    /var/tmp/concourse-signal.sh
+    /usr/local/scripts/cloudformation-signal.sh
     /opt/aws/bin/cfn-signal -e $? --stack ${stack_name} --resource AutoScalingGroup --region ${region}

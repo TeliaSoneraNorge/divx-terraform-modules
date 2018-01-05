@@ -48,12 +48,12 @@ write_files:
       After=network-online.target
 
       [Service]
+      Type=simple
       Restart=always
       RestartSec=30s
       TimeoutStartSec=5m
-      StandardOutput=syslog
-      StandardError=syslog
-      SyslogIdentifier=concourse
+      TimeoutStopSec=1h
+      PIDFile=/run/concourse.pid
 
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id}"
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret}"
@@ -88,13 +88,12 @@ write_files:
       Type=simple
       Restart=always
       TimeoutSec=infinity
-      SyslogIdentifier=concourse
 
       ExecStart=/bin/bash -c '/usr/bin/journalctl -u concourse --no-tail -f -o cat > /var/log/concourse.log'
 
       [Install]
       WantedBy=multi-user.target
-  - path: "/var/tmp/concourse-signal.sh"
+  - path: "/usr/local/scripts/cloudformation-signal.sh"
     permissions: "0744"
     owner: "root"
     content: |
@@ -115,7 +114,7 @@ write_files:
       done
 runcmd:
   - |
-    systemctl disable amazon-ssm-agent.service
+    systemctl stop amazon-ssm-agent.service
   - |
     curl -L "${concourse_download_url}" > /usr/local/bin/concourse
     chmod 0755 /usr/local/bin/concourse
@@ -128,5 +127,5 @@ runcmd:
     systemctl enable awslogsd.service --now
     systemctl enable concourse.service --now
   - |
-    /var/tmp/concourse-signal.sh
+    /usr/local/scripts/cloudformation-signal.sh
     /opt/aws/bin/cfn-signal -e $? --stack ${stack_name} --resource AutoScalingGroup --region ${region}
