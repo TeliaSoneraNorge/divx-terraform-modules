@@ -32,14 +32,6 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-locals {
-  default         = "${lookup(var.target, "health", "${var.target["protocol"]}:traffic-port/")}"
-  splits          = "${split(":", local.default)}"
-  second_split    = "${split("/", element(local.splits, 1))}"
-  health_protocol = "${element(local.splits, 0)}"
-  health_port     = "${element(local.second_split, 0)}"
-  health_path     = "${local.health_protocol != "TCP" ? "/${element(local.second_split, 1)}" : ""}"
-}
 
 # HACK: If we don't depend on this the target group is created and associated with the service before
 # the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
@@ -56,9 +48,9 @@ resource "aws_lb_target_group" "main" {
   protocol   = "${var.target["protocol"]}"
 
   health_check {
-    path                = "${local.health_path}"
-    port                = "${local.health_port}"
-    protocol            = "${local.health_protocol}"
+    path                = "${var.target["health_protocol"] != "TCP" ? "/${var.target["health_path"]}" : ""}"
+    port                = "${var.target["health_port"]}"
+    protocol            = "${var.target["health_protocol"]}"
     interval            = "30"
     timeout             = "5"
     healthy_threshold   = "2"

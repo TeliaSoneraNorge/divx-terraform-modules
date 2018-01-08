@@ -62,9 +62,11 @@ module "target" {
   load_balancer_arn = "${module.lb.arn}"
 
   target {
-    protocol = "HTTP"
-    port     = "8000"
-    health   = "HTTP:traffic-port/"
+    protocol        = "HTTP"
+    port            = "8000"
+    health_protocol = "HTTP"
+    health_port     = "traffic-port"
+    health_path     = "/"
   }
 
   listeners = [{
