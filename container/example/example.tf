@@ -80,7 +80,7 @@ module "targetHTTP" {
   target {
     protocol = "HTTP"
     port     = "8000"
-    health   = "HTTP:traffic-port/test/health"
+    health   = "HTTP:traffic-port/"
   }
 
   listeners = [{
