@@ -12,25 +12,25 @@ data "aws_region" "current" {
 
 variable "tags" {
   type = "map"
+
   default = {
     terraform   = "true"
     environment = "dev"
-    test = "true"
+    test        = "true"
   }
 }
 
 # Create a VPC in which to place this example / test
 module "vpc" {
-  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
-  prefix     = "${var.prefix}"
-  cidr_block = "10.0.0.0/16"
-  tags = "${var.tags}"
+  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules///ec2/vpc"
+  prefix          = "${var.prefix}"
+  cidr_block      = "10.0.0.0/16"
+  tags            = "${var.tags}"
   private_subnets = "0"
 }
 
-
-# Create the external ALB (or NLB)
-module "lb" {
+# Create the external ALB
+module "alb" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/lb"
 
   prefix     = "${var.prefix}"
@@ -38,7 +38,19 @@ module "lb" {
   internal   = "false"
   vpc_id     = "${module.vpc.vpc_id}"
   subnet_ids = ["${module.vpc.public_subnet_ids}"]
-  tags = "${var.tags}"
+  tags       = "${var.tags}"
+}
+
+# Create the external NLB
+module "nlb" {
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/lb"
+
+  prefix     = "${var.prefix}"
+  type       = "network"
+  internal   = "false"
+  vpc_id     = "${module.vpc.vpc_id}"
+  subnet_ids = ["${module.vpc.public_subnet_ids}"]
+  tags       = "${var.tags}"
 }
 
 # Create cluster and open ingress from the LB on the dynamic port range.
@@ -51,8 +63,9 @@ module "cluster" {
   ingress_length = 1
 
   ingress {
-    "0" = "${module.lb.security_group_id}"
+    "0" = "${module.alb.security_group_id}"
   }
+
   tags = "${var.tags}"
 }
 
@@ -62,14 +75,12 @@ module "targetHTTP" {
 
   prefix            = "${var.prefix}"
   vpc_id            = "${module.vpc.vpc_id}"
-  load_balancer_arn = "${module.lb.arn}"
+  load_balancer_arn = "${module.alb.arn}"
 
   target {
-    protocol        = "HTTP"
-    port            = "8000"
-    health_protocol = "HTTP"
-    health_port     = "traffic-port"
-    health_path     = "/"
+    protocol = "HTTP"
+    port     = "8000"
+    health   = "HTTP:traffic-port/test/health"
   }
 
   listeners = [{
@@ -80,8 +91,28 @@ module "targetHTTP" {
   tags = "${var.tags}"
 }
 
-# Create a target group with TCP listeners.
-# NOTE - this doesn't work with TCP listeners
+# Create a target group with listeners.
+module "targetTCP" {
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/target"
+
+  prefix            = "${var.prefix}"
+  vpc_id            = "${module.vpc.vpc_id}"
+  load_balancer_arn = "${module.nlb.arn}"
+
+  target {
+    protocol        = "TCP"
+    port            = "9000"
+    health_protocol = "TCP"
+    health_port     = "traffic-port"
+  }
+
+  listeners = [{
+    protocol = "TCP"
+    port     = "9001"
+  }]
+
+  tags = "${var.tags}"
+}
 
 # Create a task definition for the service.
 # NOTE: HostPort must be 0 to use dynamic port mapping.
@@ -136,7 +167,7 @@ module "service" {
 
 # SG rules for ingress to the LB is created manually.
 resource "aws_security_group_rule" "ingress_80" {
-  security_group_id = "${module.lb.security_group_id}"
+  security_group_id = "${module.alb.security_group_id}"
   type              = "ingress"
   protocol          = "tcp"
   from_port         = "80"
