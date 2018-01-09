@@ -64,7 +64,7 @@ resource "aws_lb_target_group" "HTTP" {
     timeout             = "5"
     healthy_threshold   = "2"
     unhealthy_threshold = "2"
-    matcher             = "${local.health_protocol != "TCP" ? "200" : ""}"
+    matcher             = "200"
   }
 
   # NOTE: TF is unable to destroy a target group while a listener is attached,
@@ -78,7 +78,7 @@ resource "aws_lb_target_group" "HTTP" {
 }
 
 resource "aws_lb_target_group" "TCP" {
-  count      = "${var.target["protocol"] != "HTTP" ? "1" : "0"}"
+  count      = "${var.target["protocol"] == "TCP" ? "0" : "1"}"
   depends_on = ["null_resource.alb_exists"]
   vpc_id     = "${var.vpc_id}"
   port       = "${var.target["port"]}"
