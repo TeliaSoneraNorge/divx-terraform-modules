@@ -2,14 +2,6 @@ variable "prefix" {
   default = "ecs-test"
 }
 
-variable "vpc_id" {
-  default = "vpc-12345678"
-}
-
-variable "subnets" {
-  default = ["subnet-12345678", "subnet-23456789"]
-}
-
 provider "aws" {
   region = "eu-west-1"
 }
@@ -18,6 +10,25 @@ data "aws_region" "current" {
   current = "true"
 }
 
+variable "tags" {
+  type = "map"
+  default = {
+    terraform   = "true"
+    environment = "dev"
+    test = "true"
+  }
+}
+
+# Create a VPC in which to place this example / test
+module "vpc" {
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
+  prefix     = "${var.prefix}"
+  cidr_block = "10.0.0.0/16"
+  tags = "${var.tags}"
+  private_subnets = "0"
+}
+
+
 # Create the external ALB (or NLB)
 module "lb" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/lb"
@@ -25,13 +36,9 @@ module "lb" {
   prefix     = "${var.prefix}"
   type       = "application"
   internal   = "false"
-  vpc_id     = "${var.vpc_id}"
-  subnet_ids = ["${var.subnets}"]
-
-  tags {
-    terraform   = "True"
-    environment = "dev"
-  }
+  vpc_id     = "${module.vpc.vpc_id}"
+  subnet_ids = ["${module.vpc.public_subnet_ids}"]
+  tags = "${var.tags}"
 }
 
 # Create cluster and open ingress from the LB on the dynamic port range.
@@ -39,26 +46,22 @@ module "cluster" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/cluster"
 
   prefix         = "${var.prefix}"
-  vpc_id         = "${var.vpc_id}"
-  subnet_ids     = ["${var.subnets}"]
+  vpc_id         = "${module.vpc.vpc_id}"
+  subnet_ids     = ["${module.vpc.public_subnet_ids}"]
   ingress_length = 1
 
   ingress {
     "0" = "${module.lb.security_group_id}"
   }
-
-  tags {
-    terraform   = "True"
-    environment = "dev"
-  }
+  tags = "${var.tags}"
 }
 
 # Create a target group with listeners.
-module "target" {
+module "targetHTTP" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/target"
 
   prefix            = "${var.prefix}"
-  vpc_id            = "${var.vpc_id}"
+  vpc_id            = "${module.vpc.vpc_id}"
   load_balancer_arn = "${module.lb.arn}"
 
   target {
@@ -74,11 +77,11 @@ module "target" {
     port     = "80"
   }]
 
-  tags {
-    terraform   = "True"
-    environment = "dev"
-  }
+  tags = "${var.tags}"
 }
+
+# Create a target group with TCP listeners.
+# NOTE - this doesn't work with TCP listeners
 
 # Create a task definition for the service.
 # NOTE: HostPort must be 0 to use dynamic port mapping.
@@ -123,15 +126,12 @@ module "service" {
   container_count    = "2"
 
   load_balancer {
-    target_group_arn = "${module.target.target_group_arn}"
+    target_group_arn = "${module.targetHTTP.target_group_arn}"
     container_name   = "${var.prefix}"
-    container_port   = "${module.target.container_port}"
+    container_port   = "${module.targetHTTP.container_port}"
   }
 
-  tags {
-    terraform   = "True"
-    environment = "dev"
-  }
+  tags = "${var.tags}"
 }
 
 # SG rules for ingress to the LB is created manually.

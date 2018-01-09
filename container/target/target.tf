@@ -23,6 +23,11 @@ variable "listeners" {
   default     = []
 }
 
+variable "tcp_listenter" {
+  description = "Set this value to true if you wish to have a TCP listener."
+  default = false
+}
+
 variable "tags" {
   description = "A map of tags (key-value pairs) passed to resources."
   type        = "map"
@@ -42,6 +47,7 @@ resource "null_resource" "alb_exists" {
 }
 
 resource "aws_lb_target_group" "main" {
+  count = "$var."
   depends_on = ["null_resource.alb_exists"]
   vpc_id     = "${var.vpc_id}"
   port       = "${var.target["port"]}"
@@ -55,7 +61,7 @@ resource "aws_lb_target_group" "main" {
     timeout             = "5"
     healthy_threshold   = "2"
     unhealthy_threshold = "2"
-    matcher             = "200"
+    matcher             = "${var.target["health_protocol"] != "TCP" ? "200" : ""}"
   }
 
   # NOTE: TF is unable to destroy a target group while a listener is attached,
@@ -67,6 +73,7 @@ resource "aws_lb_target_group" "main" {
 
   tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.target["port"]}"))}"
 }
+
 
 resource "aws_lb_listener" "main" {
   depends_on        = ["aws_lb_target_group.main"]
