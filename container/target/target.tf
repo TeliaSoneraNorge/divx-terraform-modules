@@ -38,7 +38,7 @@ locals {
   second_split    = "${split("/", element(local.splits, 1))}"
   health_protocol = "${element(local.splits, 0)}"
   health_port     = "${element(local.second_split, 0)}"
-  health_path     = "${local.health_protocol != "TCP" ? "/${element(local.second_split, 1)}" : ""}"
+  health_path     = "/${join("/", slice(local.second_split, 1, length(local.second_split)))}"
 }
 
 # HACK: If we don't depend on this the target group is created and associated with the service before
@@ -49,7 +49,8 @@ resource "null_resource" "alb_exists" {
   }
 }
 
-resource "aws_lb_target_group" "main" {
+resource "aws_lb_target_group" "HTTP" {
+  count      = "${var.target["protocol"] != "TCP" ? "1" : "0"}"
   depends_on = ["null_resource.alb_exists"]
   vpc_id     = "${var.vpc_id}"
   port       = "${var.target["port"]}"
@@ -76,8 +77,32 @@ resource "aws_lb_target_group" "main" {
   tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.target["port"]}"))}"
 }
 
+resource "aws_lb_target_group" "TCP" {
+  count      = "${var.target["protocol"] == "TCP" ? "0" : "1"}"
+  depends_on = ["null_resource.alb_exists"]
+  vpc_id     = "${var.vpc_id}"
+  port       = "${var.target["port"]}"
+  protocol   = "${var.target["protocol"]}"
+
+  health_check {
+    port                = "${local.health_port}"
+    protocol            = "TCP"
+    interval            = "30"
+    healthy_threshold   = "2"
+    unhealthy_threshold = "2"
+  }
+
+  # NOTE: TF is unable to destroy a target group while a listener is attached,
+  # therefor we have to create a new one before destroying the old. This also means
+  # we have to let it have a random name, and then tag it with the desired name.
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.target["port"]}"))}"
+}
+
 resource "aws_lb_listener" "main" {
-  depends_on        = ["aws_lb_target_group.main"]
   count             = "${length(var.listeners)}"
   load_balancer_arn = "${var.load_balancer_arn}"
   port              = "${lookup(var.listeners[count.index], "port")}"
@@ -86,7 +111,7 @@ resource "aws_lb_listener" "main" {
   certificate_arn   = "${lookup(var.listeners[count.index], "certificate_arn", "")}"
 
   default_action {
-    target_group_arn = "${aws_lb_target_group.main.arn}"
+    target_group_arn = "${element(concat(aws_lb_target_group.HTTP.*.arn, aws_lb_target_group.TCP.*.arn),0)}"
     type             = "forward"
   }
 }
@@ -95,7 +120,7 @@ resource "aws_lb_listener" "main" {
 # Output
 # ------------------------------------------------------------------------------
 output "target_group_arn" {
-  value = "${aws_lb_target_group.main.arn}"
+  value = "${element(concat(aws_lb_target_group.HTTP.*.arn, aws_lb_target_group.TCP.*.arn),0)}"
 }
 
 output "container_port" {
