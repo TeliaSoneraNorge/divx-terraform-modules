@@ -41,18 +41,6 @@ module "alb" {
   tags       = "${var.tags}"
 }
 
-# Create the external NLB
-module "nlb" {
-  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/lb"
-
-  prefix     = "${var.prefix}"
-  type       = "network"
-  internal   = "false"
-  vpc_id     = "${module.vpc.vpc_id}"
-  subnet_ids = ["${module.vpc.public_subnet_ids}"]
-  tags       = "${var.tags}"
-}
-
 # Create cluster and open ingress from the LB on the dynamic port range.
 module "cluster" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/cluster"
@@ -86,29 +74,6 @@ module "targetHTTP" {
   listeners = [{
     protocol = "HTTP"
     port     = "80"
-  }]
-
-  tags = "${var.tags}"
-}
-
-# Create a target group with listeners.
-module "targetTCP" {
-  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/target"
-
-  prefix            = "${var.prefix}"
-  vpc_id            = "${module.vpc.vpc_id}"
-  load_balancer_arn = "${module.nlb.arn}"
-
-  target {
-    protocol        = "TCP"
-    port            = "9000"
-    health_protocol = "TCP"
-    health_port     = "traffic-port"
-  }
-
-  listeners = [{
-    protocol = "TCP"
-    port     = "9001"
   }]
 
   tags = "${var.tags}"
