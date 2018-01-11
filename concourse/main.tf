@@ -84,7 +84,7 @@ variable "concourse_version" {
 
 variable "instance_ami" {
   description = "Amazon AMI 2 (id) for Concourse instances."
-  default     = "ami-b09e1ac9"
+  default     = "ami-db51c2a2"
 }
 
 variable "atc_count" {

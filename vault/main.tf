@@ -43,7 +43,7 @@ variable "instance_count" {
 
 variable "instance_ami" {
   description = "ID of a Ubuntu AMI to use for Vault."
-  default     = "ami-add175d4"
+  default     = "ami-4d46d534"
 }
 
 variable "instance_key" {

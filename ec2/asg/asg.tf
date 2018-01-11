@@ -51,7 +51,7 @@ variable "instance_count" {
 
 variable "instance_ami" {
   description = "AMI id for the launch configuration."
-  default     = "ami-b09e1ac9"
+  default     = "ami-db51c2a2"
 }
 
 variable "instance_key" {
