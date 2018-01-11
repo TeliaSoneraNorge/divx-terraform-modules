@@ -33,8 +33,8 @@ variable "pem_path" {
 }
 
 variable "instance_ami" {
-  description = "ID of an Amazon Linux AMI."
-  default     = "ami-b09e1ac9"
+  description = "ID of an Amazon Linux 2 AMI."
+  default     = "ami-db51c2a2"
 }
 
 variable "instance_type" {
