@@ -29,3 +29,7 @@ coreos=$(latest_ami CoreOS-stable* 595879546273)
 echo "Latest CoreOS:"
 echo ${coreos}
 
+ubuntu=$(latest_ami *ubuntu-xenial-16.04* 099720109477)
+echo "Latest Ubuntu:"
+echo ${ubuntu}
+
