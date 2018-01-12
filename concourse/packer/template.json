@@ -1,0 +1,36 @@
+{
+    "builders": [{
+        "type": "amazon-ebs",
+        "region": "eu-west-1",
+        "source_ami_filter": {
+            "filters": {
+                "name": "amzn2-ami*ebs",
+                "architecture": "x86_64",
+                "virtualization-type": "hvm",
+                "root-device-type": "ebs"
+            },
+            "owners": ["137112412989"],
+            "most_recent": true
+        },
+        "instance_type": "m3.medium",
+        "ssh_username": "ec2-user",
+        "ami_name": "concourse-3.8.0-{{timestamp}}"
+    }],
+    "provisioners": [{
+        "type": "shell",
+        "inline": [
+            "sleep 30",
+            "sudo yum update -y",
+            "sudo yum install -y awslogs aws-cfn-bootstrap",
+            "sudo systemctl stop amazon-ssm-agent.service",
+            "curl -L https://github.com/concourse/concourse/releases/download/v3.8.0/concourse_linux_amd64 -o concourse",
+            "sudo chmod +x concourse",
+            "sudo chown root:root concourse",
+            "sudo mv concourse /usr/local/bin/concourse",
+            "curl -L https://github.com/lox/lifecycled/releases/download/v2.0.0-rc2/lifecycled-linux-amd64 -o lifecycled",
+            "sudo chmod +x lifecycled",
+            "sudo chown root:root lifecycled",
+            "sudo mv lifecycled /usr/local/bin/lifecycled"
+        ]
+    }]
+}

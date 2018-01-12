@@ -44,9 +44,7 @@ data "template_file" "worker" {
   vars {
     stack_name              = "${var.prefix}-worker-asg"
     region                  = "${data.aws_region.current.name}"
-    lifecycled_download_url = "https://github.com/lox/lifecycled/releases/download/v2.0.0-rc2/lifecycled-linux-amd64"
     lifecycle_topic         = "${aws_sns_topic.worker.arn}"
-    concourse_download_url  = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
     concourse_tsa_host      = "${module.internal_lb.dns_name}"
     log_group_name          = "${aws_cloudwatch_log_group.worker.name}"
     log_level               = "${var.log_level}"
