@@ -1,17 +1,11 @@
 {
+    "variables": {
+        "source_ami": ""
+    },
     "builders": [{
         "type": "amazon-ebs",
         "region": "eu-west-1",
-        "source_ami_filter": {
-            "filters": {
-                "name": "amzn2-ami*ebs",
-                "architecture": "x86_64",
-                "virtualization-type": "hvm",
-                "root-device-type": "ebs"
-            },
-            "owners": ["137112412989"],
-            "most_recent": true
-        },
+        "source_ami": "{{user `source_ami`}}",
         "instance_type": "m3.medium",
         "ssh_username": "ec2-user",
         "ami_name": "concourse-3.8.0-{{timestamp}}"

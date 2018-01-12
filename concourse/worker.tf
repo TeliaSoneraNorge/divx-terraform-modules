@@ -42,15 +42,15 @@ data "template_file" "worker" {
   template = "${file("${path.module}/config/worker.yml")}"
 
   vars {
-    stack_name              = "${var.prefix}-worker-asg"
-    region                  = "${data.aws_region.current.name}"
-    lifecycle_topic         = "${aws_sns_topic.worker.arn}"
-    concourse_tsa_host      = "${module.internal_lb.dns_name}"
-    log_group_name          = "${aws_cloudwatch_log_group.worker.name}"
-    log_level               = "${var.log_level}"
-    worker_key              = "${file("${var.concourse_keys}/worker_key")}"
-    pub_worker_key          = "${file("${var.concourse_keys}/worker_key.pub")}"
-    pub_tsa_host_key        = "${file("${var.concourse_keys}/tsa_host_key.pub")}"
+    stack_name         = "${var.prefix}-worker-asg"
+    region             = "${data.aws_region.current.name}"
+    lifecycle_topic    = "${aws_sns_topic.worker.arn}"
+    concourse_tsa_host = "${module.internal_lb.dns_name}"
+    log_group_name     = "${aws_cloudwatch_log_group.worker.name}"
+    log_level          = "${var.log_level}"
+    worker_key         = "${file("${var.concourse_keys}/worker_key")}"
+    pub_worker_key     = "${file("${var.concourse_keys}/worker_key.pub")}"
+    pub_tsa_host_key   = "${file("${var.concourse_keys}/tsa_host_key.pub")}"
   }
 }
 
