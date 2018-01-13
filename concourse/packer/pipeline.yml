@@ -1,0 +1,124 @@
+resource_types:
+  - name: ami
+    type: docker-image
+    source:
+      repository: jdub/ami-resource
+
+  - name: packer
+    type: docker-image
+    source:
+      repository: jdub/packer-resource
+
+resources:
+  - name: amazon-linux-2
+    type: ami
+    check_every: 1h
+    source:
+      aws_access_key_id: ((aws-access-key))
+      aws_secret_access_key: ((aws-secret-key))
+      region: eu-west-1
+      filters:
+        name: "amzn2-ami*ebs"
+        owner-id: "137112412989"
+        architecture: "x86_64"
+        virtualization-type: "hvm"
+        root-device-type: "ebs"
+
+  - name: concourse-release
+    type: github-release
+    source:
+      owner: concourse
+      repository: concourse
+      access_token: ((github-access-token))
+
+  - name: packer-template
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: packer_concourse
+      private_key: ((github-deploy-key))
+      paths:
+        - concourse/packer/template.json
+
+  - name: ami
+    type: packer
+    source:
+      aws_access_key_id: ((aws-access-key))
+      aws_secret_access_key: ((aws-secret-key)) 
+      region: eu-west-1
+
+
+jobs:
+  - name: concourse-3.7.0-ami
+    serial: true
+    plan:
+    - aggregate:
+      - get: amazon-linux-2
+        trigger: true
+      - get: packer-template
+        params: { submodules: [ concourse/packer ] }
+        trigger: true
+    - task: versioning
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: { repository: alpine, tag: '3.5' }
+        inputs:
+          - name: packer-template
+        outputs:
+          - name: version
+        run:
+          path: /bin/sh
+          args:
+            - -xce
+            - |
+              template_version=$(cat packer-template/.git/ref)
+              echo "{\"template_version\": \"${template_version:0:7}\"}" > version/template.json
+    - put: ami
+      params:
+        concourse_version: v3.7.0
+        template: packer-template/concourse/packer/template.json
+        var_file:
+          - amazon-linux-2/packer.json
+          - version/template.json
+
+  - name: concourse-latest-ami
+    serial: true
+    plan:
+    - aggregate:
+      - get: amazon-linux-2
+        trigger: true
+      - get: concourse-release
+        params: { globs: [ nothing ] }
+        trigger: true
+      - get: packer-template
+        params: { submodules: [ concourse/packer ] }
+        trigger: true
+    - task: versioning
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: { repository: alpine, tag: '3.5' }
+        inputs:
+          - name: packer-template
+          - name: concourse-release
+        outputs:
+          - name: version
+        run:
+          path: /bin/sh
+          args:
+            - -xce
+            - |
+              template_version=$(cat packer-template/.git/ref)
+              echo "{\"template_version\": \"${template_version:0:7}\"}" > version/template.json
+              concourse_version=$(cat concourse-release/version)
+              echo "{\"concourse_version\": \"v${concourse_version}\"}" > version/concourse.json
+    - put: ami
+      params:
+        template: packer-template/concourse/packer/template.json
+        var_file:
+          - amazon-linux-2/packer.json
+          - version/template.json
+          - version/concourse.json
