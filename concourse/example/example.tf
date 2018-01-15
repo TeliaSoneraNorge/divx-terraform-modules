@@ -62,6 +62,27 @@ module "bastion" {
   }
 }
 
+resource "aws_security_group_rule" "atc_ingress_postgres" {
+  security_group_id        = "${module.postgres.security_group_id}"
+  type                     = "ingress"
+  protocol                 = "tcp"
+  from_port                = "${module.postgres.port}"
+  to_port                  = "${module.postgres.port}"
+  source_security_group_id = "${module.concourse.atc_sg}"
+}
+
+module "postgres" {
+  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//rds/cluster"
+
+  prefix     = "concourse-ci-aurora"
+  username   = "superuser"
+  password   = "SECRET"
+  port       = "${var.postgres_port}"
+  vpc_id     = "${module.vpc.vpc_id}"
+  subnet_ids = ["${module.vpc.private_subnet_ids}"]
+  tags       = "${var.tags}"
+}
+
 module "concourse" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//concourse"
 
@@ -74,8 +95,7 @@ module "concourse" {
   public_subnet_ids    = "${module.vpc.public_subnet_ids}"
   private_subnet_ids   = "${module.vpc.private_subnet_ids}"
   authorized_cidr      = ["0.0.0.0/0"]
-  postgres_username    = "superuser"
-  postgres_password    = "SECRET"
+  postgres_connection  = "${module.postgres.connection_string}"
   instance_key         = "VARIABLE"
   github_client_id     = "VARIABLE"
   github_client_secret = "SECRET"

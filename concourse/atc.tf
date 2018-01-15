@@ -62,7 +62,7 @@ data "template_file" "atc" {
     github_users              = "${join(",", "${var.github_users}")}"
     github_teams              = "${join(",", "${var.github_teams}")}"
     concourse_web_host        = "https://${module.external_lb.dns_name}:${var.web_port}"
-    concourse_postgres_source = "${module.postgres.connection_string}"
+    concourse_postgres_source = "${var.postgres_connection}"
     log_group_name            = "${aws_cloudwatch_log_group.atc.name}"
     log_level                 = "${var.log_level}"
     tsa_host_key              = "${file("${var.concourse_keys}/tsa_host_key")}"

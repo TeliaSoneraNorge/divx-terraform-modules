@@ -38,6 +38,10 @@ variable "concourse_keys" {
   description = "Path to a directory containing the Concourse SSH keys. (See README.md)."
 }
 
+variable "postgres_connection" {
+  description = "A connection string for the Postgresql database. Format: postgres://<username>:<password>@<address>:<port>/<database>"
+}
+
 variable "authorized_cidr" {
   description = "List of authorized CIDR blocks which can reach the Concourse web interface."
   type        = "list"
@@ -69,20 +73,6 @@ variable "github_users" {
 variable "github_teams" {
   description = "List of Github teams that can log into the main Concourse team."
   type        = "list"
-}
-
-variable "postgres_username" {
-  description = "Username for Postgres."
-  default     = "superuser"
-}
-
-variable "postgres_password" {
-  description = "Password for Postgres (KMS Encrypted)."
-}
-
-variable "postgres_port" {
-  description = "Port specification for Postgres."
-  default     = "5439"
 }
 
 variable "instance_key" {
@@ -211,14 +201,7 @@ output "internal_elb_sg" {
   value = "${module.internal_lb.security_group_id}"
 }
 
-output "postgres_sg" {
-  value = "${module.postgres.security_group_id}"
-}
-
-output "postgres_port" {
-  value = "${module.postgres.port}"
-}
-
+# TODO: Figure out how to fix http/https.
 output "endpoint" {
-  value = "https://${var.domain}:${var.web_port}"
+  value = "https://${var.domain == "" ? module.external_lb.dns : var.domain}:${var.web_port}"
 }
