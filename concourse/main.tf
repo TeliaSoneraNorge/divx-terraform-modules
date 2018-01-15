@@ -6,15 +6,18 @@ variable "prefix" {
 }
 
 variable "domain" {
-  description = "The domain name to associate with the Concourse ELB. (Must have an ACM certificate)."
+  description = "Optional: The domain name to associate with the Concourse ELB. (Must have an ACM certificate)."
+  default     = ""
 }
 
 variable "zone_id" {
-  description = "Zone ID for the domains route53 alias record."
+  description = "Optional: Zone ID for the domains route53 alias record."
+  default     = ""
 }
 
 variable "certificate_arn" {
-  description = "ACM certificate ARN for the domain."
+  description = "Optional: ACM certificate ARN for the domain."
+  default     = ""
 }
 
 variable "vpc_id" {

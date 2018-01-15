@@ -11,6 +11,7 @@ resource "aws_security_group_rule" "ingress" {
 }
 
 resource "aws_route53_record" "main" {
+  count   = "${var.domain == "" ? 0 : 1}"
   zone_id = "${var.zone_id}"
   name    = "${var.domain}"
   type    = "A"
@@ -58,7 +59,8 @@ module "external_target" {
   }
 
   listeners = [{
-    protocol        = "HTTPS"
+    # NOTE: target module only looks up the certificate if protocol is HTTPS
+    protocol        = "${var.certificate_arn == "" ? "HTTP" : "HTTPS"}"
     port            = "${var.web_port}"
     certificate_arn = "${var.certificate_arn}"
   }]
