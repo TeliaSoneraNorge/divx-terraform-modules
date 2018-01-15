@@ -4,20 +4,7 @@ A Terraform module for deploying Concourse CI.
 
 ## Prerequisites
 
-1. Route53 hosted zone, domain and ACM certificate.
-
-2. Github Oauth application, with an encrypted password:
-
-```bash
-aws kms encrypt \
-  --key-id <aws-kms-key-id> \
-  --plaintext <github-client-secret> \
-  --output text \
-  --query CiphertextBlob \
-  --profile default
-```
-
-3. You must generate the necessary keys for Concourse:
+You must generate the necessary keys for Concourse:
 
 ```bash
 # Create folder
@@ -31,7 +18,11 @@ ssh-keygen -t rsa -f ./keys/session_signing_key -N ''
 cp ./keys/worker_key.pub ./keys/authorized_worker_keys
 ```
 
-4. Set up Vault for Concourse:
+### Required for HTTPS
+
+Route53 hosted zone, domain and ACM certificate.
+
+### Required for Vault backend
 
 Concourse needs a token (which it automatically renews) on deployment. The token will
 be used to read secrets from the `concourse/` secrets mount, but will restrict itself to
@@ -62,7 +53,23 @@ Then we create a temporary token (which concourse renews automatically),
 this token is passed along as a variable to our concourse deployment:
 
 ```bash
-vault token-create --policy=concourse-policy -period="1h" -format=json
+vault token-create --policy=concourse-policy -period="1h" -format=json -orphan
+```
+
+NOTE: We use `-orphan` so we can revoke the root token without revoking
+concourses token in the process.
+
+### Required for Github authentication 
+
+Github Oauth application, with an encrypted password:
+
+```bash
+aws kms encrypt \
+  --key-id <aws-kms-key-id> \
+  --plaintext <github-client-secret> \
+  --output text \
+  --query CiphertextBlob \
+  --profile default
 ```
 
 ## New teams

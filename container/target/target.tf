@@ -78,7 +78,7 @@ resource "aws_lb_target_group" "HTTP" {
 }
 
 resource "aws_lb_target_group" "TCP" {
-  count      = "${var.target["protocol"] == "TCP" ? "0" : "1"}"
+  count      = "${var.target["protocol"] == "TCP" ? "1" : "0"}"
   depends_on = ["null_resource.alb_exists"]
   vpc_id     = "${var.vpc_id}"
   port       = "${var.target["port"]}"

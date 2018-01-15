@@ -106,7 +106,8 @@ jobs:
         params:
           <<: *test-module-params
           directories: |
-            concourse
+            concourse/atc
+            concourse/worker
 
       - task: container
         <<: *test-module-config
@@ -319,7 +320,8 @@ jobs:
       params:
         <<: *test-module-params
         directories: |
-          concourse
+          concourse/atc
+          concourse/worker
   - name: concourse-example-test
     plan:
     - aggregate:

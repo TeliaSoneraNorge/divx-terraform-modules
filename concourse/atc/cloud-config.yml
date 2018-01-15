@@ -52,10 +52,12 @@ write_files:
       TimeoutStopSec=1h
       PIDFile=/run/concourse.pid
 
+      ${github_users}
+      ${github_teams}
+      Environment="CONCOURSE_BASIC_AUTH_USERNAME=${basic_auth_username}"
+      Environment="CONCOURSE_BASIC_AUTH_PASSWORD=${basic_auth_password}"
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id}"
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret}"
-      Environment="CONCOURSE_GITHUB_AUTH_USER=${github_users}"
-      Environment="CONCOURSE_GITHUB_AUTH_TEAM=${github_teams}"
       Environment="CONCOURSE_POSTGRES_DATA_SOURCE=${concourse_postgres_source}"
       Environment="CONCOURSE_EXTERNAL_URL=${concourse_web_host}"
       Environment="CONCOURSE_LOG_LEVEL=${log_level}"
@@ -68,7 +70,7 @@ write_files:
       Environment="CONCOURSE_ENCRYPTION_KEY=${encryption_key}"
       Environment="CONCOURSE_OLD_ENCRYPTION_KEY=${old_encryption_key}"
 
-      ExecStartPre=/bin/bash -c "/bin/systemctl set-environment CONCOURSE_PEER_URL=http://$(curl -L http://169.254.169.254/latest/meta-data/local-ipv4):8080"
+      ExecStartPre=/bin/bash -c "/bin/systemctl set-environment CONCOURSE_PEER_URL=http://$(curl -L http://169.254.169.254/latest/meta-data/local-ipv4):${atc_port}"
       ExecStart=/usr/local/bin/concourse web
 
       [Install]
@@ -104,7 +106,7 @@ write_files:
       until [ "$state" == "\"healthy\"" ]; do
           sleep 10
           state=$(aws --region ${region} elbv2 describe-target-health \
-              --targets Id=$${INSTANCE_ID},Port=2222 \
+              --targets Id=$${INSTANCE_ID},Port=${tsa_port} \
               --target-group-arn ${target_group} \
               --query TargetHealthDescriptions[0].TargetHealth.State)
           echo "State is $${state}"
