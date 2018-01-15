@@ -62,8 +62,11 @@ Then we create a temporary token (which concourse renews automatically),
 this token is passed along as a variable to our concourse deployment:
 
 ```bash
-vault token-create --policy=concourse-policy -period="1h" -format=json
+vault token-create --policy=concourse-policy -period="1h" -format=json -orphan
 ```
+
+NOTE: We use `-orphan` so we can revoke the root token without revoking
+concourses token in the process.
 
 ## New teams
 
