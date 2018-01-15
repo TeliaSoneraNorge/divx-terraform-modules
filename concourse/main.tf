@@ -40,6 +40,16 @@ variable "authorized_cidr" {
   type        = "list"
 }
 
+variable "basic_auth_username" {
+  description = "Optional: Username to use for basic auth."
+  default     = ""
+}
+
+variable "basic_auth_password" {
+  description = "Optional: Password to use for basic auth."
+  default     = ""
+}
+
 variable "github_client_id" {
   description = "Client ID of the Github Oauth application."
 }

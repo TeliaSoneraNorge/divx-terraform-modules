@@ -55,6 +55,8 @@ data "template_file" "atc" {
     region                    = "${data.aws_region.current.name}"
     target_group              = "${module.internal_target.target_group_arn}"
     concourse_download_url    = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
+    basic_auth_username       = "${var.basic_auth_username}"
+    basic_auth_password       = "${var.basic_auth_password}"
     github_client_id          = "${var.github_client_id}"
     github_client_secret      = "${var.github_client_secret}"
     github_users              = "${join(",", "${var.github_users}")}"

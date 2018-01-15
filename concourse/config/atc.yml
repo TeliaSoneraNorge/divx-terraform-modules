@@ -55,6 +55,8 @@ write_files:
       TimeoutStopSec=1h
       PIDFile=/run/concourse.pid
 
+      Environment="CONCOURSE_BASIC_AUTH_USERNAME=${basic_auth_username}"
+      Environment="CONCOURSE_BASIC_AUTH_PASSWORD=${basic_auth_password}"
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id}"
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_SECRET=${github_client_secret}"
       Environment="CONCOURSE_GITHUB_AUTH_USER=${github_users}"
