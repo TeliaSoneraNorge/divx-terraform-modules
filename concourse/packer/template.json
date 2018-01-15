@@ -10,7 +10,12 @@
         "source_ami": "{{user `source_ami`}}",
         "instance_type": "m3.medium",
         "ssh_username": "ec2-user",
-        "ami_name": "concourse-{{user `concourse_version`}}-{{user `source_ami`}}-ref-{{user `template_version`}}"
+        "ami_name": "concourse-{{user `concourse_version`}}-{{timestamp}}",
+        "tags": {
+            "source_ami": "{{user `source_ami`}}",
+            "concourse_version": "{{user `concourse_version`}}",
+            "template_version": "{{user `template_version`}}"
+        }
     }],
     "provisioners": [{
         "type": "shell",

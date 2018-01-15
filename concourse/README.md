@@ -4,7 +4,7 @@ A Terraform module for deploying Concourse CI.
 
 ## Prerequisites
 
-You must generate the necessary keys for Concourse:
+1. You must generate the necessary keys for Concourse:
 
 ```bash
 # Create folder
@@ -17,6 +17,20 @@ ssh-keygen -t rsa -f ./keys/session_signing_key -N ''
 # Authorized workers
 cp ./keys/worker_key.pub ./keys/authorized_worker_keys
 ```
+
+2. Use Packer to make a concourse AMI:
+
+```bash
+packer validate template.json
+
+packer build \
+  -var="source_ami=<amazon-linux-2>" \
+  -var="concourse_version=v3.8.0" \
+  template.json
+```
+
+NOTE: You can use [bin/ami.sh](../bin/ami.sh) to figure out the latest version Amazon Linux 2. Later, the 
+baking can be automated by Concourse - see example in [concourse/packer/pipeline.yml](packer/pipeline.yml).
 
 ### Required for HTTPS
 

@@ -1,13 +1,24 @@
+---
+meta:
+  slack: &slack-config
+    username: 'concourse'
+    channel: '#concourse-notifications'
+    icon_url: 'http://cl.ly/image/3e1h0H3H2s0P/concourse-logo.png'
+
 resource_types:
   - name: ami
     type: docker-image
     source:
       repository: jdub/ami-resource
-
   - name: packer
     type: docker-image
     source:
       repository: jdub/packer-resource
+  - name: slack-notification
+    type: docker-image
+    source:
+      repository: cfcommunity/slack-notification-resource
+      tag: latest
 
 resources:
   - name: amazon-linux-2
@@ -23,14 +34,12 @@ resources:
         architecture: "x86_64"
         virtualization-type: "hvm"
         root-device-type: "ebs"
-
   - name: concourse-release
     type: github-release
     source:
       owner: concourse
       repository: concourse
       access_token: ((github-access-token))
-
   - name: packer-template
     type: git
     source:
@@ -39,14 +48,16 @@ resources:
       private_key: ((github-deploy-key))
       paths:
         - concourse/packer/template.json
-
   - name: ami
     type: packer
     source:
       aws_access_key_id: ((aws-access-key))
-      aws_secret_access_key: ((aws-secret-key)) 
+      aws_secret_access_key: ((aws-secret-key))
       region: eu-west-1
-
+  - name: notify
+    type: slack-notification
+    source:
+      url: ((slack-hook))
 
 jobs:
   - name: concourse-3.7.0-ami
@@ -65,6 +76,7 @@ jobs:
           type: docker-image
           source: { repository: alpine, tag: '3.5' }
         inputs:
+          - name: amazon-linux-2
           - name: packer-template
         outputs:
           - name: version
@@ -82,6 +94,35 @@ jobs:
         var_file:
           - amazon-linux-2/packer.json
           - version/template.json
+    - task: slack
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: { repository: alpine, tag: '3.5' }
+        inputs:
+          - name: amazon-linux-2
+          - name: packer-template
+          - name: ami
+        outputs:
+          - name: message
+        run:
+          path: /bin/sh
+          args:
+            - -xce
+            - |
+              source_ami=$(cat amazon-linux-2/id)
+              template_version=$(cat packer-template/.git/ref)
+              output_ami=$(cat ami/id | sed -e 's/"//g')
+              cat << EOF > message/slack.txt
+              *Baked new AMI for Concourse 3.7.0 -> ${output_ami}*
+              (Source AMI: ${source_ami}, Template ref: ${template_version:0:7})
+              EOF
+      on_success:
+        put: notify
+        params:
+          <<: *slack-config
+          text_file: message/slack.txt
 
   - name: concourse-latest-ami
     serial: true
@@ -122,3 +163,34 @@ jobs:
           - amazon-linux-2/packer.json
           - version/template.json
           - version/concourse.json
+    - task: slack
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source: { repository: alpine, tag: '3.5' }
+        inputs:
+          - name: amazon-linux-2
+          - name: packer-template
+          - name: concourse-release
+          - name: ami
+        outputs:
+          - name: message
+        run:
+          path: /bin/sh
+          args:
+            - -xce
+            - |
+              source_ami=$(cat amazon-linux-2/id)
+              template_version=$(cat packer-template/.git/ref)
+              concourse_version=$(cat concourse-release/version)
+              output_ami=$(cat ami/id | sed -e 's/"//g')
+              cat << EOF > message/slack.txt
+              *Baked new AMI for Concourse ${concourse_version} -> ${output_ami}*
+              (Source AMI: ${source_ami}, Template ref: ${template_version:0:7})
+              EOF
+      on_success:
+        put: notify
+        params:
+          <<: *slack-config
+          text_file: message/slack.txt

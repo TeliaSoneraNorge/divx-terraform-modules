@@ -62,7 +62,6 @@ variable "instance_type" {
 
 variable "instance_ami" {
   description = "Amazon AMI 2 (id) for Concourse instances."
-  default     = "ami-db51c2a2"
 }
 
 variable "instance_key" {
