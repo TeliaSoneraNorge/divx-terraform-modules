@@ -1,5 +1,4 @@
 #cloud-config
-package_update: true
 write_files:
   - path: "/concourse/keys/web/tsa_host_key"
     permissions: "0644"

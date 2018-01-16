@@ -1,8 +1,4 @@
 #cloud-config
-package_update: true
-packages:
-  - awslogs
-  - aws-cfn-bootstrap
 write_files:
   - path: "/concourse/keys/worker/tsa_host_key.pub"
     permissions: "0644"
