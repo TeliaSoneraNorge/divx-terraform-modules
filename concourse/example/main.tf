@@ -60,6 +60,7 @@ module "concourse_atc" {
   private_subnet_ids   = "${module.vpc.private_subnet_ids}"
   postgres_connection  = "${module.postgres.connection_string}"
   encryption_key       = "${var.encryption_key}"
+  instance_ami         = "${var.instance_ami}"
   instance_key         = "${var.instance_key}"
   basic_auth_username  = "${var.basic_auth_username}"
   basic_auth_password  = "${var.basic_auth_password}"
@@ -82,6 +83,7 @@ module "concourse_worker" {
   atc_sg             = "${module.concourse_atc.security_group_id}"
   tsa_host           = "${module.concourse_atc.tsa_host}"
   tsa_port           = "${module.concourse_atc.tsa_port}"
+  instance_ami       = "${var.instance_ami}"
   instance_key       = "${var.instance_key}"
 
   tags = "${var.tags}"

@@ -20,6 +20,7 @@ variable "github_teams" {
   type = "list"
 }
 
+variable "instance_ami" {}
 variable "instance_key" {}
 variable "pem_bucket" {}
 variable "pem_path" {}

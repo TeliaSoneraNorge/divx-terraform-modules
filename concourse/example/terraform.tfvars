@@ -7,6 +7,7 @@ web_protocol    = "HTTP"
 web_port        = "80"
 
 concourse_keys = "${path.root}/keys"
+instance_ami   = "ami-e5af339c"
 instance_key   = ""
 pem_bucket     = "your-key-bucket"
 pem_path       = "example-key.pem"

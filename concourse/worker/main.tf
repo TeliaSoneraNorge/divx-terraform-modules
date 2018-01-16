@@ -46,19 +46,17 @@ data "template_file" "worker" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
-    stack_name              = "${var.prefix}-worker-asg"
-    region                  = "${data.aws_region.current.name}"
-    lifecycled_download_url = "https://github.com/lox/lifecycled/releases/download/v2.0.0-rc2/lifecycled-linux-amd64"
-    lifecycle_topic         = "${aws_sns_topic.worker.arn}"
-    concourse_download_url  = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
-    tsa_host                = "${var.tsa_host}"
-    tsa_port                = "${var.tsa_port}"
-    log_group_name          = "${aws_cloudwatch_log_group.worker.name}"
-    log_level               = "${var.log_level}"
-    worker_team             = "${var.worker_team}"
-    worker_key              = "${file("${var.concourse_keys}/worker_key")}"
-    pub_worker_key          = "${file("${var.concourse_keys}/worker_key.pub")}"
-    pub_tsa_host_key        = "${file("${var.concourse_keys}/tsa_host_key.pub")}"
+    stack_name       = "${var.prefix}-worker-asg"
+    region           = "${data.aws_region.current.name}"
+    lifecycle_topic  = "${aws_sns_topic.worker.arn}"
+    tsa_host         = "${var.tsa_host}"
+    tsa_port         = "${var.tsa_port}"
+    log_group_name   = "${aws_cloudwatch_log_group.worker.name}"
+    log_level        = "${var.log_level}"
+    worker_team      = "${var.worker_team}"
+    worker_key       = "${file("${var.concourse_keys}/worker_key")}"
+    pub_worker_key   = "${file("${var.concourse_keys}/worker_key.pub")}"
+    pub_tsa_host_key = "${file("${var.concourse_keys}/tsa_host_key.pub")}"
   }
 }
 

@@ -62,7 +62,6 @@ data "template_file" "atc" {
     stack_name                = "${var.prefix}-atc-asg"
     region                    = "${data.aws_region.current.name}"
     target_group              = "${module.internal_target.target_group_arn}"
-    concourse_download_url    = "https://github.com/concourse/concourse/releases/download/v${var.concourse_version}/concourse_linux_amd64"
     atc_port                  = "${var.atc_port}"
     tsa_port                  = "${var.tsa_port}"
     basic_auth_username       = "${var.basic_auth_username}"
