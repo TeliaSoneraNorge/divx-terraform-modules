@@ -23,7 +23,6 @@
             "sleep 30",
             "sudo yum update -y",
             "sudo yum install -y awslogs aws-cfn-bootstrap",
-            "sudo systemctl stop amazon-ssm-agent.service",
             "curl -L https://github.com/concourse/concourse/releases/download/{{user `concourse_version`}}/concourse_linux_amd64 -o concourse",
             "sudo chmod +x concourse",
             "sudo chown root:root concourse",
