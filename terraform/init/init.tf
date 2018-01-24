@@ -62,6 +62,11 @@ resource "aws_kms_key" "encrypt" {
   }
 }
 
+resource "aws_kms_alias" "encrypt-alias" {
+  name          = "alias/terraform-state-encryption-key"
+  target_key_id = "${aws_kms_key.encrypt.key_id}"
+}
+
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
@@ -79,4 +84,8 @@ output "kms_key_arn" {
 
 output "kms_key_id" {
   value = "${aws_kms_key.encrypt.key_id}"
+}
+
+output "kms_key_alias_arn" {
+  value = "${aws_kms_alias.encrypt-alias.arn}"
 }
