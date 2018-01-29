@@ -1,13 +1,34 @@
 #cloud-config
 package_update: true
 packages:
+  - awslogs
   - aws-cfn-bootstrap
 write_files:
+  - path: "/etc/awslogs/awscli.template"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [plugins]
+      cwlogs = cwlogs
+      [default]
+      region = ${region}
+  - path: "/etc/awslogs/awslogs.template"
+    permissions: "0644"
+    owner: "root"
+    content: |
+      [general]
+      state_file = /var/lib/awslogs/agent-state
+
+      [/var/log/ecs-agent.log]
+      file = /var/log/ecs-agent.log
+      log_group_name = ${log_group_name}
+      log_stream_name = {instance_id}
   - path: "/etc/ecs/ecs.config"
     permissions: "0744"
     owner: "root"
     content: |
       ECS_CLUSTER=${ecs_cluster_name}
+      ECS_LOGFILE=/var/log/ecs-agent.log
       ECS_LOG_LEVEL=${ecs_log_level}
       ECS_ENABLE_CONTAINER_METADATA=true
       ECS_ENABLE_TASK_IAM_ROLE=true
@@ -33,7 +54,11 @@ write_files:
 
 runcmd:
   - |
+    cp /etc/awslogs/awscli.template /etc/awslogs/awscli.conf
+    cp /etc/awslogs/awslogs.template /etc/awslogs/awslogs.conf
+  - |
     start ecs
+    service awslogs start
   - |
     /usr/local/scripts/cloudformation-signal.sh
     /opt/aws/bin/cfn-signal -e $? --stack ${stack_name} --resource AutoScalingGroup --region ${region}
