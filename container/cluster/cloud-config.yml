@@ -12,7 +12,7 @@ write_files:
       ECS_ENABLE_CONTAINER_METADATA=true
       ECS_ENABLE_TASK_IAM_ROLE=true
       ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true
-      ECS_AVAILABLE_LOGGING_DRIVERS='["awslogs"]'
+      ECS_AVAILABLE_LOGGING_DRIVERS=["awslogs"]
 
   - path: "/usr/local/scripts/cloudformation-signal.sh"
     permissions: "0744"
