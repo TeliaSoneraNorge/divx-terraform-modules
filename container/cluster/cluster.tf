@@ -75,10 +75,11 @@ data "template_file" "main" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
-    region             = "${data.aws_region.current.name}"
-    stack_name         = "${var.prefix}-cluster-asg"
-    ecs_cluster_name   = "${aws_ecs_cluster.main.name}"
-    ecs_log_level      = "${var.ecs_log_level}"
+    region           = "${data.aws_region.current.name}"
+    stack_name       = "${var.prefix}-cluster-asg"
+    ecs_cluster_name = "${aws_ecs_cluster.main.name}"
+    ecs_log_level    = "${var.ecs_log_level}"
+
     # ecs_log_group_name = "${aws_cloudwatch_log_group.main.name}"
   }
 }
