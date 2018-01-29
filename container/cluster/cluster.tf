@@ -14,14 +14,9 @@ variable "subnet_ids" {
   type        = "list"
 }
 
-variable "image_version" {
-  description = "Docker image version."
-  default     = "latest"
-}
-
 variable "instance_ami" {
-  description = "ID of a CoreOS AMI for the instances."
-  default     = "ami-32d1474b"
+  description = "ID of a Amazon Linux ECS optimized AMI for the instances."
+  default     = "ami-1d46df64"
 }
 
 variable "instance_type" {
@@ -80,11 +75,11 @@ data "template_file" "main" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
-    aws_region         = "${data.aws_region.current.name}"
+    region             = "${data.aws_region.current.name}"
+    stack_name         = "${var.prefix}-cluster-asg"
     ecs_cluster_name   = "${aws_ecs_cluster.main.name}"
     ecs_log_level      = "${var.ecs_log_level}"
-    ecs_agent_version  = "${var.image_version}"
-    ecs_log_group_name = "${aws_cloudwatch_log_group.main.name}"
+    # ecs_log_group_name = "${aws_cloudwatch_log_group.main.name}"
   }
 }
 
