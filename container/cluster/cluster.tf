@@ -14,14 +14,9 @@ variable "subnet_ids" {
   type        = "list"
 }
 
-variable "image_version" {
-  description = "Docker image version."
-  default     = "latest"
-}
-
 variable "instance_ami" {
-  description = "ID of a CoreOS AMI for the instances."
-  default     = "ami-32d1474b"
+  description = "ID of a Amazon Linux ECS optimized AMI for the instances."
+  default     = "ami-1d46df64"
 }
 
 variable "instance_type" {
@@ -80,11 +75,11 @@ data "template_file" "main" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
-    aws_region         = "${data.aws_region.current.name}"
-    ecs_cluster_name   = "${aws_ecs_cluster.main.name}"
-    ecs_log_level      = "${var.ecs_log_level}"
-    ecs_agent_version  = "${var.image_version}"
-    ecs_log_group_name = "${aws_cloudwatch_log_group.main.name}"
+    region           = "${data.aws_region.current.name}"
+    stack_name       = "${var.prefix}-cluster-asg"
+    log_group_name   = "${aws_cloudwatch_log_group.main.name}"
+    ecs_cluster_name = "${aws_ecs_cluster.main.name}"
+    ecs_log_level    = "${var.ecs_log_level}"
   }
 }
 
@@ -122,23 +117,27 @@ data "aws_iam_policy_document" "permissions" {
 
     actions = [
       "logs:CreateLogStream",
+      "logs:CreateLogGroup",
       "logs:PutLogEvents",
     ]
   }
 }
 
 module "asg" {
-  source          = "../../ec2/asg"
-  prefix          = "${var.prefix}-cluster"
-  user_data       = "${data.template_file.main.rendered}"
-  vpc_id          = "${var.vpc_id}"
-  subnet_ids      = "${var.subnet_ids}"
-  instance_policy = "${data.aws_iam_policy_document.permissions.json}"
-  instance_count  = "${var.instance_count}"
-  instance_type   = "${var.instance_type}"
-  instance_ami    = "${var.instance_ami}"
-  instance_key    = "${var.instance_key}"
-  tags            = "${var.tags}"
+  source            = "../../ec2/asg"
+  prefix            = "${var.prefix}-cluster"
+  user_data         = "${data.template_file.main.rendered}"
+  vpc_id            = "${var.vpc_id}"
+  subnet_ids        = "${var.subnet_ids}"
+  await_signal      = "true"
+  pause_time        = "PT5M"
+  health_check_type = "EC2"
+  instance_policy   = "${data.aws_iam_policy_document.permissions.json}"
+  instance_count    = "${var.instance_count}"
+  instance_type     = "${var.instance_type}"
+  instance_ami      = "${var.instance_ami}"
+  instance_key      = "${var.instance_key}"
+  tags              = "${var.tags}"
 }
 
 resource "aws_security_group_rule" "ingress" {
