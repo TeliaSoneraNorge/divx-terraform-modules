@@ -19,8 +19,8 @@ write_files:
       [general]
       state_file = /var/lib/awslogs/agent-state
 
-      [/var/log/ecs-agent.log]
-      file = /var/log/ecs-agent.log
+      [/var/log/ecs/ecs-agent.log]
+      file = /var/log/ecs/ecs-agent.log*
       log_group_name = ${log_group_name}
       log_stream_name = {instance_id}
   - path: "/etc/ecs/ecs.config"
@@ -28,7 +28,6 @@ write_files:
     owner: "root"
     content: |
       ECS_CLUSTER=${ecs_cluster_name}
-      ECS_LOGFILE=/var/log/ecs-agent.log
       ECS_LOG_LEVEL=${ecs_log_level}
       ECS_ENABLE_CONTAINER_METADATA=true
       ECS_ENABLE_TASK_IAM_ROLE=true
