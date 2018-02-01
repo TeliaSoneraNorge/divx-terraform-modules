@@ -26,6 +26,11 @@ variable "container_count" {
   default     = "2"
 }
 
+variable "container_health_check_grace_period" {
+  description = "Number of seconds grace to give the service's health check before reporting unhealthy."
+  default     = "0"
+}
+
 variable "load_balancer" {
   description = "Configuration for the Service load balancer."
   type        = "map"
@@ -53,13 +58,14 @@ data "aws_region" "current" {
 }
 
 resource "aws_ecs_service" "lb" {
-  count           = "${var.load_balanced == "true" ? 1 : 0}"
-  depends_on      = ["aws_iam_role.service"]
-  name            = "${var.prefix}"
-  cluster         = "${var.cluster_id}"
-  task_definition = "${var.task_definition}"
-  desired_count   = "${var.container_count}"
-  iam_role        = "${aws_iam_role.service.arn}"
+  count                             = "${var.load_balanced == "true" ? 1 : 0}"
+  depends_on                        = ["aws_iam_role.service"]
+  name                              = "${var.prefix}"
+  cluster                           = "${var.cluster_id}"
+  task_definition                   = "${var.task_definition}"
+  desired_count                     = "${var.container_count}"
+  iam_role                          = "${aws_iam_role.service.arn}"
+  health_check_grace_period_seconds = "${var.container_health_check_grace_period}"
 
   deployment_minimum_healthy_percent = 50
   deployment_maximum_percent         = 200
