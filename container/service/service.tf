@@ -53,9 +53,7 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 data "aws_caller_identity" "current" {}
 
-data "aws_region" "current" {
-  current = true
-}
+data "aws_region" "current" {}
 
 resource "aws_ecs_service" "lb" {
   count                             = "${var.load_balanced == "true" ? 1 : 0}"

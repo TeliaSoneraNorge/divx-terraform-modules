@@ -19,11 +19,6 @@ variable "private_subnet_ids" {
   type        = "list"
 }
 
-variable "concourse_version" {
-  description = "Version of Concourse to download/run."
-  default     = "3.8.0"
-}
-
 variable "concourse_keys" {
   description = "Path to a directory containing the Concourse SSH keys. (See README.md)."
 }

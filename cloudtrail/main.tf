@@ -32,9 +32,7 @@ variable "tags" {
 
 data "aws_caller_identity" "current" {}
 
-data "aws_region" "current" {
-  current = "true"
-}
+data "aws_region" "current" {}
 
 resource "aws_s3_bucket" "main" {
   bucket        = "${var.prefix}-cloudtrail-logs"
