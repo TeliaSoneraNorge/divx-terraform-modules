@@ -51,9 +51,7 @@ variable "tags" {
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
-data "aws_region" "current" {
-  current = true
-}
+data "aws_region" "current" {}
 
 resource "aws_eip" "main" {}
 

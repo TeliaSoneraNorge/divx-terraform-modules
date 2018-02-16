@@ -1,9 +1,7 @@
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
-data "aws_region" "current" {
-  current = true
-}
+data "aws_region" "current" {}
 
 resource "aws_security_group_rule" "atc_ingress_baggageclaim" {
   security_group_id        = "${module.worker.security_group_id}"

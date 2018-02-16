@@ -24,11 +24,6 @@ variable "authorized_cidr" {
   type        = "list"
 }
 
-variable "concourse_version" {
-  description = "Version of Concourse to download/run."
-  default     = "3.8.0"
-}
-
 variable "concourse_keys" {
   description = "Path to a directory containing the Concourse SSH keys. (See README.md)."
 }
@@ -126,16 +121,6 @@ variable "tsa_port" {
 variable "log_level" {
   description = "Concourse log level (debug|info|error|fatal) for ATC, TSA and Baggageclaim."
   default     = "info"
-}
-
-variable "vault_url" {
-  description = "Optional: DNS name for the vault backend."
-  default     = ""
-}
-
-variable "vault_client_token" {
-  description = "Optional: Vault client token."
-  default     = ""
 }
 
 variable "encryption_key" {

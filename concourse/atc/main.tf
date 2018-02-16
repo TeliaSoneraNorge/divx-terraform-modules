@@ -1,9 +1,7 @@
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
-data "aws_region" "current" {
-  current = true
-}
+data "aws_region" "current" {}
 
 data "aws_vpc" "concourse" {
   id = "${var.vpc_id}"
@@ -70,15 +68,13 @@ data "template_file" "atc" {
     github_client_secret      = "${var.github_client_secret}"
     github_users              = "${length(var.github_users) > 0 ? "Environment=\"CONCOURSE_GITHUB_AUTH_USER=${join(",", var.github_users)}\"" : ""}"
     github_teams              = "${length(var.github_teams) > 0 ? "Environment=\"CONCOURSE_GITHUB_AUTH_TEAM=${join(",", var.github_teams)}\"" : ""}"
-    concourse_web_host        = "${lower(var.web_protocol)}://${module.external_lb.dns_name}:${var.web_port}"
+    concourse_web_host        = "${lower(var.web_protocol)}://${var.domain != "" ? var.domain : module.external_lb.dns_name}:${var.web_port}"
     concourse_postgres_source = "${var.postgres_connection}"
     log_group_name            = "${aws_cloudwatch_log_group.atc.name}"
     log_level                 = "${var.log_level}"
     tsa_host_key              = "${file("${var.concourse_keys}/tsa_host_key")}"
     session_signing_key       = "${file("${var.concourse_keys}/session_signing_key")}"
     authorized_worker_keys    = "${file("${var.concourse_keys}/authorized_worker_keys")}"
-    vault_url                 = "${var.vault_url}"
-    vault_client_token        = "${var.vault_client_token}"
     encryption_key            = "${var.encryption_key}"
     old_encryption_key        = "${var.old_encryption_key}"
   }

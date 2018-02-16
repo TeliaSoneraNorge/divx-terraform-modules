@@ -53,6 +53,7 @@ write_files:
 
       ${github_users}
       ${github_teams}
+      Environment="AWS_REGION=${region}"
       Environment="CONCOURSE_BASIC_AUTH_USERNAME=${basic_auth_username}"
       Environment="CONCOURSE_BASIC_AUTH_PASSWORD=${basic_auth_password}"
       Environment="CONCOURSE_GITHUB_AUTH_CLIENT_ID=${github_client_id}"
@@ -61,8 +62,6 @@ write_files:
       Environment="CONCOURSE_EXTERNAL_URL=${concourse_web_host}"
       Environment="CONCOURSE_LOG_LEVEL=${log_level}"
       Environment="CONCOURSE_TSA_LOG_LEVEL=${log_level}"
-      Environment="CONCOURSE_VAULT_URL=${vault_url}"
-      Environment="CONCOURSE_VAULT_CLIENT_TOKEN=${vault_client_token}"
       Environment="CONCOURSE_TSA_HOST_KEY=/concourse/keys/web/tsa_host_key"
       Environment="CONCOURSE_TSA_AUTHORIZED_KEYS=/concourse/keys/web/authorized_worker_keys"
       Environment="CONCOURSE_SESSION_SIGNING_KEY=/concourse/keys/web/session_signing_key"
