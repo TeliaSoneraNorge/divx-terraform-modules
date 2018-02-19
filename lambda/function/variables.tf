@@ -14,6 +14,16 @@ variable "runtime" {
   default     = "go1.x"
 }
 
+variable "memory_size" {
+  description = "Lambda memory limit. Defaults to 128"
+  default     = 128
+}
+
+variable "timeout" {
+  description = "Lambda timeout. Defaults to 300"
+  default     = 300
+}
+
 variable "variables" {
   description = "Map of environment variables."
   type        = "map"

@@ -8,8 +8,8 @@ resource "aws_lambda_function" "main" {
   filename         = "${var.zip_file}"
   source_code_hash = "${base64sha256(file(var.zip_file))}"
   runtime          = "${var.runtime}"
-  memory_size      = 128
-  timeout          = 300
+  memory_size      = "${var.memory_size}"
+  timeout          = "${var.timout}"
   role             = "${aws_iam_role.main.arn}"
 
   environment {
