@@ -10,8 +10,13 @@ variable "zip_file" {
 }
 
 variable "runtime" {
-  description = "Lambda runtime. Defaults to Node.js."
+  description = "Lambda runtime. Defaults to Go 1.x."
   default     = "go1.x"
+}
+
+variable "handler" {
+  description = "Handler for Lambda inside the zip_file."
+  default     = "main"
 }
 
 variable "memory_size" {

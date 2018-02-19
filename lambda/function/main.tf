@@ -4,7 +4,7 @@
 resource "aws_lambda_function" "main" {
   function_name    = "${var.prefix}-function"
   description      = "Lambda function."
-  handler          = "index.handler"
+  handler          = "${var.handler}"
   filename         = "${var.zip_file}"
   source_code_hash = "${base64sha256(file(var.zip_file))}"
   runtime          = "${var.runtime}"
