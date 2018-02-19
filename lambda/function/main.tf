@@ -9,7 +9,7 @@ resource "aws_lambda_function" "main" {
   source_code_hash = "${base64sha256(file(var.zip_file))}"
   runtime          = "${var.runtime}"
   memory_size      = "${var.memory_size}"
-  timeout          = "${var.timout}"
+  timeout          = "${var.timeout}"
   role             = "${aws_iam_role.main.arn}"
 
   environment {
