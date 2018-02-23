@@ -12,9 +12,9 @@ module "developer" {
   ]
 }
 
-resource "aws_iam_role_policy_attachment" "view_only_policy" {
+resource "aws_iam_role_policy_attachment" "power_user_policy" {
   role       = "${module.developer.name}"
-  policy_arn = "arn:aws:iam::aws:policy/job-function/ViewOnlyAccess"
+  policy_arn = "arn:aws:iam::aws:policy/job-function/PowerUserAccess"
 }
 
 output "url" {
