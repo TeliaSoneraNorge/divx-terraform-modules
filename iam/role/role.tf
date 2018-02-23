@@ -21,7 +21,7 @@ variable "users" {
 
 variable "role_description" {
   description = "A description to add to the role"
-  default = "Terraform created role"
+  default     = "Terraform created role"
 }
 
 # ------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ resource "aws_iam_role" "main" {
   name                  = "${var.prefix}-role"
   assume_role_policy    = "${data.aws_iam_policy_document.assume.json}"
   force_detach_policies = "true"
-  description = "${var.role_description}"
+  description           = "${var.role_description}"
 }
 
 data "aws_iam_policy_document" "assume" {
