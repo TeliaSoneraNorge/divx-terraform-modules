@@ -19,6 +19,11 @@ variable "users" {
   description = "List of users in the trusted account which will be allowed to assume this role."
 }
 
+variable "role_description" {
+  description = "A description to add to the role"
+  default     = "Terraform created role"
+}
+
 # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
@@ -28,6 +33,7 @@ resource "aws_iam_role" "main" {
   name                  = "${var.prefix}-role"
   assume_role_policy    = "${data.aws_iam_policy_document.assume.json}"
   force_detach_policies = "true"
+  description           = "${var.role_description}"
 }
 
 data "aws_iam_policy_document" "assume" {
