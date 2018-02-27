@@ -21,8 +21,9 @@ meta:
   - plan-params: &plan-params
       command: plan
       cache: true
-      access_key: ((teliasonera-no-lab-aws-access-key))
-      secret_key: ((teliasonera-no-lab-aws-secret-key))
+      access_key: ((teliasonera-no-lab-access-key))
+      secret_key: ((teliasonera-no-lab-secret-key))
+      session_token: ((teliasonera-no-lab-session-token))
 
 groups:
   - name: Master
@@ -752,7 +753,7 @@ resources:
       repo: TeliaSoneraNorge/divx-terraform-modules
       uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
       ignore_paths: [ .ci ]
-      access_token: ((divx-github-access-token))
+      access_token: ((github-access-token))
       private_key: ((divx-terraform-modules-deploy-key))
       every: true
 
