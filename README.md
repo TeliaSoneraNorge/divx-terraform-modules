@@ -1,5 +1,7 @@
 ## Terraform modules
 
+[![Build Status](https://concourse.common-services.telia.io/api/v1/teams/cloudops/pipelines/divx-terraform-modules/badge)](https://concourse.common-services.telia.io/api/v1/teams/cloudops/pipelines/divx-terraform-modules)
+
 Reusable terraform modules for AWS. Opinionated and minimalistic, as far as possible.
 
 ## Usage
