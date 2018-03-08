@@ -21,7 +21,15 @@ latest_ami() {
         | head -n1
 }
 
-amazon_linux_2=$(latest_ami amzn2-ami*ebs 137112412989)
+amazon_linux_1=$(latest_ami amzn-ami-hvm*gp2 137112412989)
+echo "Latest Amazon Linux 1:"
+echo ${amazon_linux_1}
+
+amazon_ecs_optimized=$(latest_ami amzn-ami*amazon-ecs-optimized 591542846629)
+echo "Latest ECS Optimized Amazon linux:"
+echo ${amazon_ecs_optimized}
+
+amazon_linux_2=$(latest_ami amzn2-ami-hvm*gp2 137112412989)
 echo "Latest Amazon Linux 2:"
 echo ${amazon_linux_2}
 
