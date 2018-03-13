@@ -53,6 +53,8 @@ write_files:
 
 runcmd:
   - |
+    yum install -y https://amazon-ssm-${region}.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm
+  - |
     cp /etc/awslogs/awscli.template /etc/awslogs/awscli.conf
     cp /etc/awslogs/awslogs.template /etc/awslogs/awslogs.conf
   - |
