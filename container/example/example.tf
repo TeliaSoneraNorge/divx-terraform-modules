@@ -6,9 +6,7 @@ provider "aws" {
   region = "eu-west-1"
 }
 
-data "aws_region" "current" {
-  current = "true"
-}
+data "aws_region" "current" {}
 
 variable "tags" {
   type = "map"
