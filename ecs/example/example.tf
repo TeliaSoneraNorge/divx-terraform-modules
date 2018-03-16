@@ -20,7 +20,7 @@ variable "tags" {
 
 # Create a VPC in which to place this example / test
 module "vpc" {
-  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
+  source          = "../../ec2/vpc"
   prefix          = "${var.prefix}"
   cidr_block      = "10.1.0.0/16"
   tags            = "${var.tags}"
@@ -29,7 +29,7 @@ module "vpc" {
 
 # Create the external ALB
 module "alb" {
-  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/lb"
+  source = "../../ec2/lb"
 
   prefix     = "${var.prefix}"
   type       = "application"
@@ -41,7 +41,7 @@ module "alb" {
 
 # Create cluster and open ingress from the LB on the dynamic port range.
 module "cluster" {
-  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/cluster"
+  source = "../cluster"
 
   prefix         = "${var.prefix}"
   vpc_id         = "${module.vpc.vpc_id}"
