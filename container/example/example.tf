@@ -39,27 +39,6 @@ module "alb" {
   tags       = "${var.tags}"
 }
 
-resource "aws_lb_listener" "main" {
-  load_balancer_arn = "${module.alb.arn}"
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    target_group_arn = "${module.four_o_four.target_group_arn}"
-    type             = "forward"
-  }
-}
-
-# SG rules for ingress to the LB is created manually.
-resource "aws_security_group_rule" "ingress_80" {
-  security_group_id = "${module.alb.security_group_id}"
-  type              = "ingress"
-  protocol          = "tcp"
-  from_port         = "80"
-  to_port           = "80"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
 # Create cluster and open ingress from the LB on the dynamic port range.
 module "cluster" {
   source = "github.com/TeliaSoneraNorge/divx-terraform-modules//container/cluster"
@@ -75,25 +54,7 @@ module "cluster" {
   tags = "${var.tags}"
 }
 
-module "application_gw" {
-  source = "../service"
-  prefix                      = "hello1"
-  vpc_id                      = "${module.vpc.vpc_id}"
-  cluster_id                  = "${module.cluster.id}"
-  cluster_role_id             = "${module.cluster.role_id}"
-
-  alb_arn                     = "${module.alb.arn}"
-  container_count             = "2"
-  container_port              = "8000"
-
-  task_definition_cpu         = "256"
-  task_definition_ram         = "512"
-  task_definition_image_id    = "crccheck/hello-world:latest"
-
-  tags = "${var.tags}"
-
-}
-
+# Default service and listener (404)
 module "four_o_four" {
   source = "../service"
   prefix                      = "hello2"
@@ -111,4 +72,58 @@ module "four_o_four" {
   task_definition_image_id    = "crccheck/hello-world:latest"
 
   tags = "${var.tags}"
+}
+
+resource "aws_lb_listener" "main" {
+  load_balancer_arn = "${module.alb.arn}"
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = "${module.four_o_four.target_group_arn}"
+    type             = "forward"
+  }
+}
+
+resource "aws_security_group_rule" "ingress_80" {
+  security_group_id = "${module.alb.security_group_id}"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = "80"
+  to_port           = "80"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+# Application service
+module "application" {
+  source = "../service"
+  prefix                      = "hello1"
+  vpc_id                      = "${module.vpc.vpc_id}"
+  cluster_id                  = "${module.cluster.id}"
+  cluster_role_id             = "${module.cluster.role_id}"
+
+  alb_arn                     = "${module.alb.arn}"
+  container_count             = "2"
+  container_port              = "8000"
+
+  task_definition_cpu         = "256"
+  task_definition_ram         = "512"
+  task_definition_image_id    = "crccheck/hello-world:latest"
+
+  tags = "${var.tags}"
+}
+
+resource "aws_lb_listener_rule" "application" {
+  listener_arn = "${aws_lb_listener.main.arn}"
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = "${module.application.target_group_arn}"
+  }
+
+  condition {
+    field  = "path-pattern"
+    values = ["/application/*"]
+  }
 }
