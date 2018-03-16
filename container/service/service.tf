@@ -31,11 +31,6 @@ variable "container_health_check_grace_period" {
   default     = "0"
 }
 
-variable "load_balanced" {
-  description = "HACK: This exists purely to calculate count in Terraform. Set to false if you don't want a load balancer."
-  default    = "true"
-}
-
 variable "load_balancer_arn" {
   description = "The ARN of the load balancer that will forward requests to this service "
 }
@@ -73,7 +68,6 @@ resource "null_resource" "alb_exists" {
     alb_name = "${var.alb_arn}"
   }
 }
-
 
 # Create a target group with listeners.
 module "targetgroup" {
@@ -124,10 +118,7 @@ EOF
 }
 
  resource "aws_ecs_service" "lb" {
-  depends_on = ["null_resource.alb_exists"]
-
-  count                             = "${var.load_balanced == "true" ? 1 : 0}"
-  depends_on                        = ["aws_iam_role.service"]
+  depends_on = ["null_resource.alb_exists", "aws_iam_role.service"]
   name                              = "${var.prefix}"
   cluster                           = "${var.cluster_id}"
   task_definition                   = "${aws_ecs_task_definition.main.arn}"
@@ -145,22 +136,6 @@ EOF
     container_name   = "${var.prefix}"
     container_port   = "${var.container_port}"
   }
-
-  placement_strategy {
-    type  = "spread"
-    field = "instanceId"
-  }
-}
-
-resource "aws_ecs_service" "no_lb" {
-  count           = "${var.load_balanced == "true" ? 0 : 1}"
-  name            = "${var.prefix}"
-  cluster         = "${var.cluster_id}"
-  task_definition =  "${aws_ecs_task_definition.main.arn}"
-  desired_count   = "${var.container_count}"
-
-  deployment_minimum_healthy_percent = 50
-  deployment_maximum_percent         = 200
 
   placement_strategy {
     type  = "spread"
