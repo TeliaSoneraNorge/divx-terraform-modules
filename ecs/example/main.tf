@@ -1,24 +1,8 @@
-variable "prefix" {
-  default = "ecs-test"
-}
-
-provider "aws" {
-  region = "eu-west-1"
-}
-
+# ------------------------------------------------------------------------------
+# Resources
+# ------------------------------------------------------------------------------
 data "aws_region" "current" {}
 
-variable "tags" {
-  type = "map"
-
-  default = {
-    terraform   = "true"
-    environment = "dev"
-    test        = "true"
-  }
-}
-
-# Create a VPC in which to place this example / test
 module "vpc" {
   source          = "../../ec2/vpc"
   prefix          = "${var.prefix}"
@@ -27,7 +11,6 @@ module "vpc" {
   private_subnets = "1"
 }
 
-# Create the external ALB
 module "alb" {
   source = "../../ec2/lb"
 
@@ -39,7 +22,9 @@ module "alb" {
   tags       = "${var.tags}"
 }
 
-# Create cluster and open ingress from the LB on the dynamic port range.
+# ------------------------------------------------------------------------------
+# ecs/cluster
+# ------------------------------------------------------------------------------
 module "cluster" {
   source = "../cluster"
 
@@ -55,11 +40,13 @@ module "cluster" {
   tags = "${var.tags}"
 }
 
-# Default service and listener (404)
+# ------------------------------------------------------------------------------
+# ecs/service: Create a service which responds with 404 as the default target
+# ------------------------------------------------------------------------------
 module "four_o_four" {
   source = "../service"
 
-  prefix                   = "hello2"
+  prefix                   = "${var.prefix}-bouncer"
   vpc_id                   = "${module.vpc.vpc_id}"
   cluster_id               = "${module.cluster.id}"
   cluster_role_id          = "${module.cluster.role_id}"
@@ -83,6 +70,9 @@ module "four_o_four" {
   tags = "${var.tags}"
 }
 
+# ------------------------------------------------------------------------------
+# Create a default listener and open ingress on port 80 (target group from above)
+# ------------------------------------------------------------------------------
 resource "aws_lb_listener" "main" {
   load_balancer_arn = "${module.alb.arn}"
   port              = "80"
@@ -103,54 +93,14 @@ resource "aws_security_group_rule" "ingress_80" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
-# Application service
+# ------------------------------------------------------------------------------
+# ecs/microservice: Creates a listener rule, target group and ECS service
+# (any request to example.com/app/* will be sent to this service)
+# ------------------------------------------------------------------------------
 module "application" {
-  source = "../service"
-
-  prefix                   = "hello1"
-  vpc_id                   = "${module.vpc.vpc_id}"
-  cluster_id               = "${module.cluster.id}"
-  cluster_role_id          = "${module.cluster.role_id}"
-  task_container_count     = "2"
-  task_definition_cpu      = "256"
-  task_definition_ram      = "512"
-  task_definition_image_id = "crccheck/hello-world:latest"
-
-  target {
-    protocol      = "HTTP"
-    port          = "8000"
-    load_balancer = "${module.alb.arn}"
-  }
-
-  health {
-    port    = "traffic-port"
-    path    = "/"
-    matcher = "200"
-  }
-
-  tags = "${var.tags}"
-}
-
-resource "aws_lb_listener_rule" "application" {
-  listener_arn = "${aws_lb_listener.main.arn}"
-  priority     = 100
-
-  action {
-    type             = "forward"
-    target_group_arn = "${module.application.target_group_arn}"
-  }
-
-  condition {
-    field  = "path-pattern"
-    values = ["/application/*"]
-  }
-}
-
-# Application service
-module "hello" {
   source = "../microservice"
 
-  prefix                   = "hello3"
+  prefix                   = "${var.prefix}-app"
   vpc_id                   = "${module.vpc.vpc_id}"
   cluster_id               = "${module.cluster.id}"
   cluster_role_id          = "${module.cluster.role_id}"
@@ -163,7 +113,7 @@ module "hello" {
     listener_arn = "${aws_lb_listener.main.arn}"
     priority     = 90
     pattern      = "path"
-    values       = "/hello/*"
+    values       = "/app/*"
   }
 
   target {
