@@ -78,16 +78,18 @@ module "cluster" {
 module "application_gw" {
   source = "../service"
   prefix                      = "hello1"
-  task_definition_cpu         = "256"
-  task_definition_ram         = "512"
+  vpc_id                      = "${module.vpc.vpc_id}"
+  cluster_id                  = "${module.cluster.id}"
+  cluster_role_id             = "${module.cluster.role_id}"
+
+  alb_arn                     = "${module.alb.arn}"
   container_count             = "2"
-  task_definition_image_id    = "crccheck/hello-world:latest"
   container_port              = "8000"
 
-  vpc_id                      = "${module.vpc.vpc_id}"
-  cluster_role_id             = "${module.cluster.role_id}"
-  alb_arn                     = "${module.alb.arn}"
-  cluster_id                  = "${module.cluster.id}"
+  task_definition_cpu         = "256"
+  task_definition_ram         = "512"
+  task_definition_image_id    = "crccheck/hello-world:latest"
+
   tags = "${var.tags}"
 
 }
@@ -95,15 +97,18 @@ module "application_gw" {
 module "four_o_four" {
   source = "../service"
   prefix                      = "hello2"
-  task_definition_cpu         = "256"
-  task_definition_ram         = "512"
-  container_count             = "1"
-  task_definition_image_id    = "crccheck/hello-world:latest"
-  container_port              = "8000"
 
   vpc_id                      = "${module.vpc.vpc_id}"
   cluster_id                  = "${module.cluster.id}"
   cluster_role_id             = "${module.cluster.role_id}"
+
   alb_arn                     = "${module.alb.arn}"
+  container_count             = "1"
+  container_port              = "8000"
+
+  task_definition_cpu         = "256"
+  task_definition_ram         = "512"
+  task_definition_image_id    = "crccheck/hello-world:latest"
+
   tags = "${var.tags}"
 }
