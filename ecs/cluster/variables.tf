@@ -39,13 +39,13 @@ variable "ecs_log_level" {
   default     = "info"
 }
 
-variable "ingress" {
-  description = "Map (port = source_security_group_id) which will be allowed to ingress the cluster."
-  type        = "map"
-  default     = {}
+variable "load_balancers" {
+  description = "List of load balancer security groups that can ingress on the dynamic port range."
+  type        = "list"
+  default     = []
 }
 
-variable "ingress_length" {
+variable "load_balancer_count" {
   description = "HACK: This exists purely to calculate count in Terraform. Should equal the length of your ingress map."
   default     = 0
 }

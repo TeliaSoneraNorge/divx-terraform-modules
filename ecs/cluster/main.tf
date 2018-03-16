@@ -81,11 +81,11 @@ module "asg" {
 }
 
 resource "aws_security_group_rule" "ingress" {
-  count                    = "${var.ingress_length}"
+  count                    = "${length(var.load_balancer_count)}"
   security_group_id        = "${module.asg.security_group_id}"
   type                     = "ingress"
   protocol                 = "tcp"
-  from_port                = "${element(keys(var.ingress), count.index) == "0" ? "32768" : element(keys(var.ingress), count.index)}"
-  to_port                  = "${element(keys(var.ingress), count.index) == "0" ? "65535" : element(keys(var.ingress), count.index)}"
-  source_security_group_id = "${element(values(var.ingress), count.index)}"
+  from_port                = "32768"
+  to_port                  = "65535"
+  source_security_group_id = "${element(var.load_balancers, count.index)}"
 }

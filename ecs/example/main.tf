@@ -28,14 +28,11 @@ module "alb" {
 module "cluster" {
   source = "../cluster"
 
-  prefix         = "${var.prefix}"
-  vpc_id         = "${module.vpc.vpc_id}"
-  subnet_ids     = ["${module.vpc.private_subnet_ids}"]
-  ingress_length = 1
-
-  ingress {
-    "0" = "${module.alb.security_group_id}"
-  }
+  prefix              = "${var.prefix}"
+  vpc_id              = "${module.vpc.vpc_id}"
+  subnet_ids          = ["${module.vpc.private_subnet_ids}"]
+  load_balancer_count = 1
+  load_balancers      = ["${module.alb.security_group_id}"]
 
   tags = "${var.tags}"
 }
