@@ -54,14 +54,14 @@ locals {
 
 # HACK: If we don't depend on this the target group is created and associated with the service before
 # the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
-resource "null_resource" "alb_exists" {
+resource "null_resource" "lb_exists" {
   triggers {
     alb_name = "${var.target["load_balancer"]}"
   }
 }
 
 resource "aws_lb_target_group" "HTTP" {
-  depends_on   = ["null_resource.alb_exists"]
+  depends_on   = ["null_resource.lb_exists"]
   count        = "${var.target["protocol"] != "TCP" ? "1" : "0"}"
   vpc_id       = "${var.vpc_id}"
   port         = "${var.target["port"]}"
@@ -79,7 +79,7 @@ resource "aws_lb_target_group" "HTTP" {
 }
 
 resource "aws_lb_target_group" "TCP" {
-  depends_on   = ["null_resource.alb_exists"]
+  depends_on   = ["null_resource.lb_exists"]
   count        = "${var.target["protocol"] == "TCP" ? "1" : "0"}"
   vpc_id       = "${var.vpc_id}"
   port         = "${var.target["port"]}"

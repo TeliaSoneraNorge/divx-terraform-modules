@@ -21,8 +21,16 @@ module "target" {
   tags = "${var.tags}"
 }
 
+# HACK: Since AWS Provider v1.9, the service also requires this workaround.
+# See: https://github.com/hashicorp/terraform/issues/12634.
+resource "null_resource" "lb_exists" {
+  triggers {
+    alb_name = "${var.target["load_balancer"]}"
+  }
+}
+
 resource "aws_ecs_service" "main" {
-  depends_on                        = ["aws_iam_role.service"]
+  depends_on                        = ["null_resource.lb_exists", "aws_iam_role.service"]
   name                              = "${var.prefix}"
   cluster                           = "${var.cluster_id}"
   task_definition                   = "${aws_ecs_task_definition.main.arn}"
