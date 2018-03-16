@@ -20,7 +20,7 @@ variable "tags" {
 
 # Create a VPC in which to place this example / test
 module "vpc" {
-  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules///ec2/vpc"
+  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
   prefix          = "${var.prefix}"
   cidr_block      = "10.1.0.0/16"
   tags            = "${var.tags}"

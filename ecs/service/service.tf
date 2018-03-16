@@ -58,7 +58,7 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 module "target" {
-  source = "../target"
+  source = "../../ec2/lb/target"
   prefix = "${var.prefix}"
   vpc_id = "${var.vpc_id}"
   health = "${var.health}"
