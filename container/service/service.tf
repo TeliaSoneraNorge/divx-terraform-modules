@@ -70,7 +70,7 @@ module "target" {
     load_balancer = "${var.target["load_balancer"]}"
   }
 
-  tags   = "${var.tags}"
+  tags = "${var.tags}"
 }
 
 resource "aws_ecs_service" "main" {

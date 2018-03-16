@@ -12,7 +12,7 @@ module "service" {
   task_definition_cpu      = "${var.task_definition_cpu}"
   task_definition_ram      = "${var.task_definition_ram}"
   task_definition_image_id = "${var.task_definition_image_id}"
-  health = "${var.health}"
+  health                   = "${var.health}"
 
   target {
     protocol      = "${var.target["protocol"]}"
