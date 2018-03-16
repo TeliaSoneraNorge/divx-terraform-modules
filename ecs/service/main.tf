@@ -1,56 +1,4 @@
 # ------------------------------------------------------------------------------
-# Variables
-# ------------------------------------------------------------------------------
-variable "prefix" {
-  description = "A prefix used for naming resources."
-}
-
-variable "vpc_id" {
-  description = "The ID of the VPC that this container will run in, needed for the Target Group"
-}
-
-variable "cluster_id" {
-  description = "ID of an ECS cluster which the service will be deployed to."
-}
-
-variable "cluster_role_id" {
-  description = "The ID of EC2 Instance profile IAM Role for cluster instances "
-}
-
-variable "target" {
-  description = "A target block containing the protocol and port exposed on the container."
-  type        = "map"
-}
-
-variable "health" {
-  description = "A health block containing health check settings for the target group. Overrides the defaults."
-  type        = "map"
-}
-
-variable "task_container_count" {
-  description = "Number of containers to run for the task."
-  default     = "2"
-}
-
-variable "task_definition_image_id" {
-  description = "The ID of Cluster IAM Role "
-}
-
-variable "task_definition_cpu" {
-  description = "The ID of Cluster IAM Role "
-}
-
-variable "task_definition_ram" {
-  description = "The ID of Cluster IAM Role "
-}
-
-variable "tags" {
-  description = "A map of tags (key-value pairs) passed to resources."
-  type        = "map"
-  default     = {}
-}
-
-# ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
 data "aws_caller_identity" "current" {}
@@ -143,23 +91,4 @@ resource "aws_iam_role_policy" "log_agent" {
   name   = "${var.prefix}-log-permissions"
   role   = "${var.cluster_role_id}"
   policy = "${data.aws_iam_policy_document.task_log.json}"
-}
-
-# ------------------------------------------------------------------------------
-# Output
-# ------------------------------------------------------------------------------
-output "arn" {
-  value = "${aws_ecs_service.main.id}"
-}
-
-output "role_arn" {
-  value = "${aws_iam_role.service.arn}"
-}
-
-output "role_id" {
-  value = "${aws_iam_role.service.id}"
-}
-
-output "target_group_arn" {
-  value = "${module.target.target_group_arn}"
 }

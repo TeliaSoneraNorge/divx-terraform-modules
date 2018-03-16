@@ -18,4 +18,3 @@ variable "tags" {
     test        = "true"
   }
 }
-
