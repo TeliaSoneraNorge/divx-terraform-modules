@@ -18,10 +18,6 @@ variable "target" {
   default     = {}
 }
 
-variable "listeners" {
-  description = "Configuration of listeners for the load balancer which are forwarded to the target group. (Protocol can be TCP, HTTP or HTTPS)."
-  default     = []
-}
 
 variable "tags" {
   description = "A map of tags (key-value pairs) passed to resources."
@@ -50,11 +46,13 @@ resource "null_resource" "alb_exists" {
 }
 
 resource "aws_lb_target_group" "HTTP" {
+  
   count      = "${var.target["protocol"] != "TCP" ? "1" : "0"}"
   depends_on = ["null_resource.alb_exists"]
   vpc_id     = "${var.vpc_id}"
   port       = "${var.target["port"]}"
   protocol   = "${var.target["protocol"]}"
+
 
   health_check {
     path                = "${local.health_path}"
@@ -102,19 +100,6 @@ resource "aws_lb_target_group" "TCP" {
   tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.target["port"]}"))}"
 }
 
-resource "aws_lb_listener" "main" {
-  count             = "${length(var.listeners)}"
-  load_balancer_arn = "${var.load_balancer_arn}"
-  port              = "${lookup(var.listeners[count.index], "port")}"
-  protocol          = "${lookup(var.listeners[count.index], "protocol")}"
-  ssl_policy        = "${lookup(var.listeners[count.index], "protocol") == "HTTPS" ? "ELBSecurityPolicy-2015-05" : ""}"
-  certificate_arn   = "${lookup(var.listeners[count.index], "certificate_arn", "")}"
-
-  default_action {
-    target_group_arn = "${element(concat(aws_lb_target_group.HTTP.*.arn, aws_lb_target_group.TCP.*.arn),0)}"
-    type             = "forward"
-  }
-}
 
 # ------------------------------------------------------------------------------
 # Output

@@ -9,17 +9,6 @@ variable "cluster_id" {
   description = "ID of an ECS cluster which the service will be deployed to."
 }
 
-variable "cluster_role" {
-  description = "ID of the clusters IAM role (used for the instance profiles)."
-}
-
-variable "task_definition" {
-  description = "ARN of a ECS task definition."
-}
-
-variable "task_log_group_arn" {
-  description = "ARN of the tasks log group."
-}
 
 variable "container_count" {
   description = "Number of containers to run for the task."
@@ -31,15 +20,9 @@ variable "container_health_check_grace_period" {
   default     = "0"
 }
 
-variable "load_balancer" {
-  description = "Configuration for the Service load balancer."
-  type        = "map"
-  default     = {}
-}
-
 variable "load_balanced" {
   description = "HACK: This exists purely to calculate count in Terraform. Set to false if you don't want a load balancer."
-  default     = "true"
+  default    = "true"
 }
 
 variable "tags" {
@@ -48,19 +31,107 @@ variable "tags" {
   default     = {}
 }
 
-# ------------------------------------------------------------------------------
+variable "alb_arn" {
+  description = "The ANR of the load balancer that will forward requests to this service "
+}
+
+variable "vpc_id" {
+  description = "The ID of the VPC that this container will run in, needed for the Target Group"
+}
+
+variable "container_port" {
+  description = "The ID of the VPC that this container will run in, needed for the Target Group"
+}
+
+ variable "cluster_role_id" {
+   description = "The ID of EC2 Instance profile IAM Role for cluster instances "
+ }
+
+ variable "task_definition_image_id" {
+   description = "The ID of Cluster IAM Role "
+ }
+
+ variable "task_definition_cpu" {
+   description = "The ID of Cluster IAM Role "
+ }
+
+ variable "task_definition_ram" {
+   description = "The ID of Cluster IAM Role "
+ }
+
+ # ------------------------------------------------------------------------------
 # Resources
 # ------------------------------------------------------------------------------
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-resource "aws_ecs_service" "lb" {
+
+# HACK: If we don't depend on this the target group is created and associated with the service before
+# the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
+resource "null_resource" "alb_exists" {
+  triggers {
+    alb_name = "${var.alb_arn}"
+  }
+}
+
+
+# Create a target group with listeners.
+module "targetgroup" {
+  source = "../target"
+
+  prefix            = "${var.prefix}"
+  vpc_id            = "${var.vpc_id}"
+  load_balancer_arn = "${var.alb_arn}"
+
+  target {
+    protocol = "HTTP"
+    port     = "${var.container_port}"
+    health   = "HTTP:traffic-port/"
+  }
+
+  tags = "${var.tags}"
+}
+
+# Create a task definition for the service.
+# NOTE: HostPort must be 0 to use dynamic port mapping.
+resource "aws_cloudwatch_log_group" "main" {
+  name = "${var.prefix}"
+}
+
+resource "aws_ecs_task_definition" "main" {
+  family = "${var.prefix}"
+  container_definitions = <<EOF
+[{
+    "name": "${var.prefix}",
+    "image": "${var.task_definition_image_id}",
+    "cpu": ${var.task_definition_cpu},
+    "memory": ${var.task_definition_ram},
+    "essential": true,
+    "portMappings": [{
+      "HostPort": 0,
+      "ContainerPort": ${var.container_port}
+    }],
+    "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "${aws_cloudwatch_log_group.main.name}",
+            "awslogs-region": "${data.aws_region.current.name}",
+            "awslogs-stream-prefix": "container"
+        }
+    }
+}]
+EOF
+}
+
+ resource "aws_ecs_service" "lb" {
+  depends_on = ["null_resource.alb_exists"]
+
   count                             = "${var.load_balanced == "true" ? 1 : 0}"
   depends_on                        = ["aws_iam_role.service"]
   name                              = "${var.prefix}"
   cluster                           = "${var.cluster_id}"
-  task_definition                   = "${var.task_definition}"
+  task_definition                   = "${aws_ecs_task_definition.main.arn}"
   desired_count                     = "${var.container_count}"
   iam_role                          = "${aws_iam_role.service.arn}"
   health_check_grace_period_seconds = "${var.container_health_check_grace_period}"
@@ -71,9 +142,9 @@ resource "aws_ecs_service" "lb" {
   # NOTE: load_balancer variable could not be passed directly to the service.
   # (Tried and got errors about container_name and port not being defined)
   load_balancer {
-    target_group_arn = "${var.load_balancer["target_group_arn"]}"
-    container_name   = "${var.load_balancer["container_name"]}"
-    container_port   = "${var.load_balancer["container_port"]}"
+    target_group_arn = "${module.targetgroup.target_group_arn}"
+    container_name   = "${var.prefix}"
+    container_port   = "${var.container_port}"
   }
 
   placement_strategy {
@@ -86,7 +157,7 @@ resource "aws_ecs_service" "no_lb" {
   count           = "${var.load_balanced == "true" ? 0 : 1}"
   name            = "${var.prefix}"
   cluster         = "${var.cluster_id}"
-  task_definition = "${var.task_definition}"
+  task_definition =  "${aws_ecs_task_definition.main.arn}"
   desired_count   = "${var.container_count}"
 
   deployment_minimum_healthy_percent = 50
@@ -113,7 +184,7 @@ resource "aws_iam_role_policy" "service_permissions" {
 
 resource "aws_iam_role_policy" "log_agent" {
   name   = "${var.prefix}-log-permissions"
-  role   = "${var.cluster_role}"
+  role   = "${var.cluster_role_id}"
   policy = "${data.aws_iam_policy_document.task_log.json}"
 }
 
@@ -131,3 +202,7 @@ output "role_arn" {
 output "role_id" {
   value = "${element(concat(aws_iam_role.service.*.id, list("")), 0)}"
 }
+
+ output "target_group_arn" {
+   value = "${module.targetgroup.target_group_arn}"
+ }

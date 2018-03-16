@@ -4,7 +4,7 @@ data "aws_iam_policy_document" "task_log" {
     effect = "Allow"
 
     resources = [
-      "${var.task_log_group_arn}",
+      "${aws_cloudwatch_log_group.main.arn}",
     ]
 
     actions = [
