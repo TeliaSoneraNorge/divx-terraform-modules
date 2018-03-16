@@ -51,25 +51,34 @@ module "cluster" {
   ingress {
     "0" = "${module.alb.security_group_id}"
   }
+
   tags = "${var.tags}"
 }
 
 # Default service and listener (404)
 module "four_o_four" {
   source = "../service"
-  prefix                      = "hello2"
 
-  vpc_id                      = "${module.vpc.vpc_id}"
-  cluster_id                  = "${module.cluster.id}"
-  cluster_role_id             = "${module.cluster.role_id}"
+  prefix                   = "hello2"
+  vpc_id                   = "${module.vpc.vpc_id}"
+  cluster_id               = "${module.cluster.id}"
+  cluster_role_id          = "${module.cluster.role_id}"
+  task_container_count     = "1"
+  task_definition_cpu      = "256"
+  task_definition_ram      = "512"
+  task_definition_image_id = "crccheck/hello-world:latest"
 
-  alb_arn                     = "${module.alb.arn}"
-  container_count             = "1"
-  container_port              = "8000"
+  target {
+    protocol      = "HTTP"
+    port          = "8000"
+    load_balancer = "${module.alb.arn}"
+  }
 
-  task_definition_cpu         = "256"
-  task_definition_ram         = "512"
-  task_definition_image_id    = "crccheck/hello-world:latest"
+  health {
+    port    = "traffic-port"
+    path    = "/"
+    matcher = "200"
+  }
 
   tags = "${var.tags}"
 }
@@ -97,18 +106,27 @@ resource "aws_security_group_rule" "ingress_80" {
 # Application service
 module "application" {
   source = "../service"
-  prefix                      = "hello1"
-  vpc_id                      = "${module.vpc.vpc_id}"
-  cluster_id                  = "${module.cluster.id}"
-  cluster_role_id             = "${module.cluster.role_id}"
 
-  alb_arn                     = "${module.alb.arn}"
-  container_count             = "2"
-  container_port              = "8000"
+  prefix                   = "hello1"
+  vpc_id                   = "${module.vpc.vpc_id}"
+  cluster_id               = "${module.cluster.id}"
+  cluster_role_id          = "${module.cluster.role_id}"
+  task_container_count     = "2"
+  task_definition_cpu      = "256"
+  task_definition_ram      = "512"
+  task_definition_image_id = "crccheck/hello-world:latest"
 
-  task_definition_cpu         = "256"
-  task_definition_ram         = "512"
-  task_definition_image_id    = "crccheck/hello-world:latest"
+  target {
+    protocol      = "HTTP"
+    port          = "8000"
+    load_balancer = "${module.alb.arn}"
+  }
+
+  health {
+    port    = "traffic-port"
+    path    = "/"
+    matcher = "200"
+  }
 
   tags = "${var.tags}"
 }

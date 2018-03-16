@@ -9,15 +9,15 @@ variable "vpc_id" {
   description = "ID of a VPC where the target group will be registered."
 }
 
-variable "load_balancer_arn" {
-  description = "AN of the load balancer (network or application)."
-}
-
 variable "target" {
-  description = "Configuration for the target group attached to the cluster (dynamic port mapping)."
-  default     = {}
+  description = "A target block containing the protocol and port exposed on the container."
+  type        = "map"
 }
 
+variable "health" {
+  description = "A health block containing health check settings for the target group. Overrides the defaults."
+  type        = "map"
+}
 
 variable "tags" {
   description = "A map of tags (key-value pairs) passed to resources."
@@ -29,41 +29,44 @@ variable "tags" {
 # Resources
 # ------------------------------------------------------------------------------
 locals {
-  default         = "${lookup(var.target, "health", "${var.target["protocol"]}:traffic-port/")}"
-  splits          = "${split(":", local.default)}"
-  second_split    = "${split("/", element(local.splits, 1))}"
-  health_protocol = "${element(local.splits, 0)}"
-  health_port     = "${element(local.second_split, 0)}"
-  health_path     = "/${join("/", slice(local.second_split, 1, length(local.second_split)))}"
-}
-
-# HACK: If we don't depend on this the target group is created and associated with the service before
-# the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
-resource "null_resource" "alb_exists" {
-  triggers {
-    alb_name = "${var.load_balancer_arn}"
+  tcp_default = {
+    protocol            = "TCP"
+    port                = "8080"
+    interval            = "30"
+    healthy_threshold   = "2"
+    unhealthy_threshold = "2"
   }
-}
 
-resource "aws_lb_target_group" "HTTP" {
-  
-  count      = "${var.target["protocol"] != "TCP" ? "1" : "0"}"
-  depends_on = ["null_resource.alb_exists"]
-  vpc_id     = "${var.vpc_id}"
-  port       = "${var.target["port"]}"
-  protocol   = "${var.target["protocol"]}"
+  tcp_health = "${merge(local.tcp_default, var.health)}"
 
-
-  health_check {
-    path                = "${local.health_path}"
-    port                = "${local.health_port}"
-    protocol            = "${local.health_protocol}"
+  http_default = {
+    protocol            = "HTTP"
+    port                = "8080"
     interval            = "30"
     timeout             = "5"
     healthy_threshold   = "2"
     unhealthy_threshold = "2"
     matcher             = "200"
   }
+
+  http_health = "${merge(local.http_default, var.health)}"
+}
+
+# HACK: If we don't depend on this the target group is created and associated with the service before
+# the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
+resource "null_resource" "alb_exists" {
+  triggers {
+    alb_name = "${var.target["load_balancer"]}"
+  }
+}
+
+resource "aws_lb_target_group" "HTTP" {
+  depends_on   = ["null_resource.alb_exists"]
+  count        = "${var.target["protocol"] != "TCP" ? "1" : "0"}"
+  vpc_id       = "${var.vpc_id}"
+  port         = "${var.target["port"]}"
+  protocol     = "${var.target["protocol"]}"
+  health_check = ["${local.http_health}"]
 
   # NOTE: TF is unable to destroy a target group while a listener is attached,
   # therefor we have to create a new one before destroying the old. This also means
@@ -76,19 +79,12 @@ resource "aws_lb_target_group" "HTTP" {
 }
 
 resource "aws_lb_target_group" "TCP" {
-  count      = "${var.target["protocol"] == "TCP" ? "1" : "0"}"
-  depends_on = ["null_resource.alb_exists"]
-  vpc_id     = "${var.vpc_id}"
-  port       = "${var.target["port"]}"
-  protocol   = "${var.target["protocol"]}"
-
-  health_check {
-    port                = "${local.health_port}"
-    protocol            = "TCP"
-    interval            = "30"
-    healthy_threshold   = "2"
-    unhealthy_threshold = "2"
-  }
+  depends_on   = ["null_resource.alb_exists"]
+  count        = "${var.target["protocol"] == "TCP" ? "1" : "0"}"
+  vpc_id       = "${var.vpc_id}"
+  port         = "${var.target["port"]}"
+  protocol     = "${var.target["protocol"]}"
+  health_check = ["${local.tcp_health}"]
 
   # NOTE: TF is unable to destroy a target group while a listener is attached,
   # therefor we have to create a new one before destroying the old. This also means
@@ -100,7 +96,6 @@ resource "aws_lb_target_group" "TCP" {
   tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.target["port"]}"))}"
 }
 
-
 # ------------------------------------------------------------------------------
 # Output
 # ------------------------------------------------------------------------------
@@ -108,6 +103,6 @@ output "target_group_arn" {
   value = "${element(concat(aws_lb_target_group.HTTP.*.arn, aws_lb_target_group.TCP.*.arn),0)}"
 }
 
-output "container_port" {
+output "target_port" {
   value = "${var.target["port"]}"
 }
