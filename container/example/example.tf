@@ -145,3 +145,38 @@ resource "aws_lb_listener_rule" "application" {
     values = ["/application/*"]
   }
 }
+
+# Application service
+module "hello" {
+  source = "../microservice"
+
+  prefix                   = "hello3"
+  vpc_id                   = "${module.vpc.vpc_id}"
+  cluster_id               = "${module.cluster.id}"
+  cluster_role_id          = "${module.cluster.role_id}"
+  task_container_count     = "2"
+  task_definition_cpu      = "256"
+  task_definition_ram      = "512"
+  task_definition_image_id = "crccheck/hello-world:latest"
+
+  listener_rule {
+    listener_arn = "${aws_lb_listener.main.arn}"
+    priority     = 90
+    pattern      = "path"
+    values       = "/hello/*"
+  }
+
+  target {
+    protocol      = "HTTP"
+    port          = "8000"
+    load_balancer = "${module.alb.arn}"
+  }
+
+  health {
+    port    = "traffic-port"
+    path    = "/"
+    matcher = "200"
+  }
+
+  tags = "${var.tags}"
+}
