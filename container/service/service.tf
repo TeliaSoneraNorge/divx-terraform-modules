@@ -5,14 +5,25 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
+variable "vpc_id" {
+  description = "The ID of the VPC that this container will run in, needed for the Target Group"
+}
+
+variable "cluster_role_id" {
+  description = "The ID of EC2 Instance profile IAM Role for cluster instances "
+}
+
 variable "cluster_id" {
   description = "ID of an ECS cluster which the service will be deployed to."
 }
 
-
 variable "container_count" {
   description = "Number of containers to run for the task."
   default     = "2"
+}
+
+variable "container_port" {
+  description = "The ID of the VPC that this container will run in, needed for the Target Group"
 }
 
 variable "container_health_check_grace_period" {
@@ -25,27 +36,9 @@ variable "load_balanced" {
   default    = "true"
 }
 
-variable "tags" {
-  description = "A map of tags (key-value pairs) passed to resources."
-  type        = "map"
-  default     = {}
+variable "load_balancer_arn" {
+  description = "The ARN of the load balancer that will forward requests to this service "
 }
-
-variable "alb_arn" {
-  description = "The ANR of the load balancer that will forward requests to this service "
-}
-
-variable "vpc_id" {
-  description = "The ID of the VPC that this container will run in, needed for the Target Group"
-}
-
-variable "container_port" {
-  description = "The ID of the VPC that this container will run in, needed for the Target Group"
-}
-
- variable "cluster_role_id" {
-   description = "The ID of EC2 Instance profile IAM Role for cluster instances "
- }
 
  variable "task_definition_image_id" {
    description = "The ID of Cluster IAM Role "
@@ -57,6 +50,12 @@ variable "container_port" {
 
  variable "task_definition_ram" {
    description = "The ID of Cluster IAM Role "
+ }
+
+ variable "tags" {
+   description = "A map of tags (key-value pairs) passed to resources."
+   type        = "map"
+   default     = {}
  }
 
  # ------------------------------------------------------------------------------
@@ -82,7 +81,7 @@ module "targetgroup" {
 
   prefix            = "${var.prefix}"
   vpc_id            = "${var.vpc_id}"
-  load_balancer_arn = "${var.alb_arn}"
+  load_balancer_arn = "${var.load_balancer_arn}"
 
   target {
     protocol = "HTTP"
@@ -94,11 +93,11 @@ module "targetgroup" {
 }
 
 # Create a task definition for the service.
-# NOTE: HostPort must be 0 to use dynamic port mapping.
 resource "aws_cloudwatch_log_group" "main" {
   name = "${var.prefix}"
 }
 
+# NOTE: HostPort must be 0 to use dynamic port mapping.
 resource "aws_ecs_task_definition" "main" {
   family = "${var.prefix}"
   container_definitions = <<EOF
