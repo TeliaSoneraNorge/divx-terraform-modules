@@ -40,9 +40,9 @@ groups:
     - concourse-test
     - concourse-example-test
     - concourse-example-run
-    - container-test
-    - container-example-test
-    - container-example-run
+    - ecs-test
+    - ecs-example-test
+    - ecs-example-run
     - ec2-test
     - ec2-example-test
     - ec2-example-run
@@ -110,14 +110,14 @@ jobs:
             concourse/atc
             concourse/worker
 
-      - task: container
+      - task: ecs
         <<: *test-module-config
         params:
           <<: *test-module-params
           directories: |
-            container/cluster
-            container/service
-            container/target
+            ecs/cluster
+            ecs/service
+            ecs/microservice
 
       - task: ec2
         <<: *test-module-config
@@ -354,52 +354,52 @@ jobs:
         directories: |
           concourse/example
 
-  - name: container-test
+  - name: ecs-test
     plan:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
       - get: git
-        resource: container-module
+        resource: ecs-module
         trigger: true
     - task: terraform-tests
       <<: *general-config
       params:
         <<: *test-module-params
         directories: |
-          container/cluster
-          container/target
-          container/service
-  - name: container-example-test
+          ecs/cluster
+          ecs/service
+          ecs/microservice
+  - name: ecs-example-test
     plan:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
       - get: git
-        resource: container-module
-        passed: [ container-test ]
+        resource: ecs-module
+        passed: [ ecs-test ]
         trigger: true
     - task: terraform-tests
       <<: *general-config
       params:
         <<: *test-params
         directories: |
-          container/example
-  - name: container-example-run
+          ecs/example
+  - name: ecs-example-run
     plan:
     - aggregate:
       - get: common-tasks
         params: { submodules: [ terraform ] }
       - get: git
-        resource: container-module
-        passed: [ container-example-test ]
+        resource: ecs-module
+        passed: [ ecs-example-test ]
         trigger: true
     - task: terraform-tests
       <<: *general-config
       params:
         <<: *plan-params
         directories: |
-          container/example
+          ecs/example
 
   - name: ec2-test
     plan:
@@ -793,14 +793,14 @@ resources:
       paths:
         - concourse/*
 
-  - name: container-module
+  - name: ecs-module
     type: git
     source:
       uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
       branch: master
       private_key: ((divx-terraform-modules-deploy-key))
       paths:
-        - container/*
+        - ecs/*
 
   - name: ec2-module
     type: git
