@@ -132,3 +132,23 @@ module "application" {
 
   tags = "${var.tags}"
 }
+
+resource "aws_iam_role_policy" "task" {
+  name   = "${var.prefix}-example-task-privileges"
+  role   = "${module.application.task_role_name}"
+  policy = "${data.aws_iam_policy_document.privileges.json}"
+}
+
+data "aws_iam_policy_document" "privileges" {
+  statement {
+    effect = "Deny"
+
+    not_actions = [
+      "*",
+    ]
+
+    not_resources = [
+      "*",
+    ]
+  }
+}

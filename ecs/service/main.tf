@@ -66,7 +66,8 @@ data "null_data_source" "task_environment" {
 
 # NOTE: HostPort must be 0 to use dynamic port mapping.
 resource "aws_ecs_task_definition" "main" {
-  family = "${var.prefix}"
+  family        = "${var.prefix}"
+  task_role_arn = "${aws_iam_role.task.arn}"
 
   container_definitions = <<EOF
 [{
@@ -93,6 +94,7 @@ resource "aws_ecs_task_definition" "main" {
 EOF
 }
 
+# Logging group for the ECS agent
 resource "aws_cloudwatch_log_group" "main" {
   name = "${var.prefix}"
 }
@@ -106,6 +108,11 @@ resource "aws_iam_role_policy" "service_permissions" {
   name   = "${var.prefix}-service-permissions"
   role   = "${aws_iam_role.service.id}"
   policy = "${data.aws_iam_policy_document.service_permissions.json}"
+}
+
+resource "aws_iam_role" "task" {
+  name               = "${var.prefix}-task-role"
+  assume_role_policy = "${data.aws_iam_policy_document.task_assume.json}"
 }
 
 resource "aws_iam_role_policy" "log_agent" {
