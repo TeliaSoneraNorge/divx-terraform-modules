@@ -60,7 +60,7 @@ data "null_data_source" "task_environment" {
 
   inputs = {
     name  = "${element(keys(var.task_definition_environment), count.index)}"
-    value = "${element(keys(var.task_definition_environment), count.index)}"
+    value = "${element(values(var.task_definition_environment), count.index)}"
   }
 }
 
