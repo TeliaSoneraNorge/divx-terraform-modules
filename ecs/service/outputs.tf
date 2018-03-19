@@ -14,5 +14,5 @@ output "role_id" {
 }
 
 output "target_group_arn" {
-  value = "${module.target.target_group_arn}"
+  value = "${aws_lb_target_group.main.arn}"
 }

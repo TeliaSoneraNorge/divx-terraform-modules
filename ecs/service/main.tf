@@ -5,28 +5,29 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-module "target" {
-  source = "../../ec2/lb/target"
-  prefix = "${var.prefix}"
-  vpc_id = "${var.vpc_id}"
-  health = "${var.health}"
-
-  # NOTE: Terraform failed to calculate count when passing the map directly.
-  target {
-    protocol      = "${var.target["protocol"]}"
-    port          = "${var.target["port"]}"
-    load_balancer = "${var.target["load_balancer"]}"
-  }
-
-  tags = "${var.tags}"
-}
-
-# HACK: Since AWS Provider v1.9, the service also requires this workaround.
-# See: https://github.com/hashicorp/terraform/issues/12634.
+# HACK: If we don't depend on this the target group is created and associated with the service before
+# the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
 resource "null_resource" "lb_exists" {
   triggers {
     alb_name = "${var.target["load_balancer"]}"
   }
+}
+
+resource "aws_lb_target_group" "main" {
+  depends_on   = ["null_resource.lb_exists"]
+  vpc_id       = "${var.vpc_id}"
+  protocol     = "${var.target["protocol"]}"
+  port         = "${var.target["port"]}"
+  health_check = ["${var.health}"]
+
+  # NOTE: TF is unable to destroy a target group while a listener is attached,
+  # therefor we have to create a new one before destroying the old. This also means
+  # we have to let it have a random name, and then tag it with the desired name.
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.target["port"]}"))}"
 }
 
 resource "aws_ecs_service" "main" {
@@ -42,7 +43,7 @@ resource "aws_ecs_service" "main" {
   deployment_maximum_percent         = 200
 
   load_balancer {
-    target_group_arn = "${module.target.target_group_arn}"
+    target_group_arn = "${aws_lb_target_group.main.arn}"
     container_name   = "${var.prefix}"
     container_port   = "${var.target["port"]}"
   }
