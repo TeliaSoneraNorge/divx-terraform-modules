@@ -54,6 +54,16 @@ resource "aws_ecs_service" "main" {
   }
 }
 
+# NOTE: Takes a map of KEY = value and turns it into a list of: { name: KEY, value: value }.
+data "null_data_source" "task_environment" {
+  count = "${length(var.task_definition_environment)}"
+
+  inputs = {
+    name  = "${element(keys(var.task_definition_environment), count.index)}"
+    value = "${element(values(var.task_definition_environment), count.index)}"
+  }
+}
+
 # NOTE: HostPort must be 0 to use dynamic port mapping.
 resource "aws_ecs_task_definition" "main" {
   family = "${var.prefix}"
@@ -61,7 +71,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = <<EOF
 [{
     "name": "${var.prefix}",
-    "image": "${var.task_definition_image_id}",
+    "image": "${var.task_definition_image}",
     "cpu": ${var.task_definition_cpu},
     "memory": ${var.task_definition_ram},
     "essential": true,
@@ -76,7 +86,9 @@ resource "aws_ecs_task_definition" "main" {
             "awslogs-region": "${data.aws_region.current.name}",
             "awslogs-stream-prefix": "container"
         }
-    }
+    },
+    "command": ${jsonencode(var.task_definition_command)},
+    "environment": ${jsonencode(data.null_data_source.task_environment.*.outputs)}
 }]
 EOF
 }

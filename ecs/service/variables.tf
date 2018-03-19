@@ -32,16 +32,28 @@ variable "task_container_count" {
   default     = "2"
 }
 
-variable "task_definition_image_id" {
-  description = "The ID of Cluster IAM Role "
+variable "task_definition_image" {
+  description = "Image for the task definition (repo:tag or repo@digest)."
 }
 
 variable "task_definition_cpu" {
-  description = "The ID of Cluster IAM Role "
+  description = "Optional: Amount of CPU to reserve for the task."
+  default     = "256"
 }
 
 variable "task_definition_ram" {
-  description = "The ID of Cluster IAM Role "
+  description = "Optional: Amount of RAM to reserve for the task."
+  default     = "512"
+}
+
+variable "task_definition_command" {
+  description = "Optional: List of command arguments that are passed when invoking the command."
+  default     = []
+}
+
+variable "task_definition_environment" {
+  description = "Optional: Map of key = value pairs for the environment."
+  default     = {}
 }
 
 variable "tags" {
