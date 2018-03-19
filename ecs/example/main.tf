@@ -43,14 +43,14 @@ module "cluster" {
 module "four_o_four" {
   source = "../service"
 
-  prefix                   = "${var.prefix}-bouncer"
-  vpc_id                   = "${module.vpc.vpc_id}"
-  cluster_id               = "${module.cluster.id}"
-  cluster_role_id          = "${module.cluster.role_id}"
-  task_container_count     = "1"
-  task_definition_cpu      = "256"
-  task_definition_ram      = "512"
-  task_definition_image_id = "crccheck/hello-world:latest"
+  prefix                = "${var.prefix}-bouncer"
+  vpc_id                = "${module.vpc.vpc_id}"
+  cluster_id            = "${module.cluster.id}"
+  cluster_role_id       = "${module.cluster.role_id}"
+  task_container_count  = "1"
+  task_definition_cpu   = "256"
+  task_definition_ram   = "512"
+  task_definition_image = "crccheck/hello-world:latest"
 
   target {
     protocol      = "HTTP"
@@ -97,14 +97,19 @@ resource "aws_security_group_rule" "ingress_80" {
 module "application" {
   source = "../microservice"
 
-  prefix                   = "${var.prefix}-app"
-  vpc_id                   = "${module.vpc.vpc_id}"
-  cluster_id               = "${module.cluster.id}"
-  cluster_role_id          = "${module.cluster.role_id}"
-  task_container_count     = "1"
-  task_definition_cpu      = "256"
-  task_definition_ram      = "512"
-  task_definition_image_id = "crccheck/hello-world:latest"
+  prefix                  = "${var.prefix}-app"
+  vpc_id                  = "${module.vpc.vpc_id}"
+  cluster_id              = "${module.cluster.id}"
+  cluster_role_id         = "${module.cluster.role_id}"
+  task_container_count    = "1"
+  task_definition_image   = "crccheck/hello-world:latest"
+  task_definition_cpu     = "256"
+  task_definition_ram     = "512"
+  task_definition_command = []
+
+  task_definition_environment = {
+    "TEST" = "VALUE"
+  }
 
   listener_rule {
     listener_arn = "${aws_lb_listener.main.arn}"
