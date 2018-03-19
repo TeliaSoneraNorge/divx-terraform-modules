@@ -1,20 +1,4 @@
-// ECS agent is allowed to log to the task log group
-data "aws_iam_policy_document" "task_log" {
-  statement {
-    effect = "Allow"
-
-    resources = [
-      "${aws_cloudwatch_log_group.main.arn}",
-    ]
-
-    actions = [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-  }
-}
-
-// ECS service is allowed to assume
+# ECS service assume policy
 data "aws_iam_policy_document" "service_assume" {
   statement {
     effect  = "Allow"
@@ -27,7 +11,7 @@ data "aws_iam_policy_document" "service_assume" {
   }
 }
 
-// ECS service permissions
+# ECS service permissions
 data "aws_iam_policy_document" "service_permissions" {
   statement {
     effect = "Allow"
@@ -40,8 +24,7 @@ data "aws_iam_policy_document" "service_permissions" {
     resources = ["*"]
   }
 
-  // NOTE: ALB does not support resource level permissions :/
-  // TODO: Check whether this is still valid/also applies to network load balancers.
+  # NOTE: ALB does not support resource level permissions :/
   statement {
     effect = "Allow"
 
@@ -54,6 +37,35 @@ data "aws_iam_policy_document" "service_permissions" {
 
     resources = [
       "*",
+    ]
+  }
+}
+
+# Task role assume policy
+data "aws_iam_policy_document" "task_assume" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+# Task logging privileges (attached to cluster instance profile)
+data "aws_iam_policy_document" "task_log" {
+  statement {
+    effect = "Allow"
+
+    resources = [
+      "${aws_cloudwatch_log_group.main.arn}",
+    ]
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
     ]
   }
 }
