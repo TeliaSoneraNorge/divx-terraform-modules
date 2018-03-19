@@ -27,12 +27,12 @@ resource "aws_security_group_rule" "lb_ingress_atc" {
 
 resource "aws_autoscaling_attachment" "external_lb" {
   autoscaling_group_name = "${module.atc.id}"
-  alb_target_group_arn   = "${module.external_target.target_group_arn}"
+  alb_target_group_arn   = "${aws_lb_target_group.external.arn}"
 }
 
 resource "aws_autoscaling_attachment" "internal_lb" {
   autoscaling_group_name = "${module.atc.id}"
-  alb_target_group_arn   = "${module.internal_target.target_group_arn}"
+  alb_target_group_arn   = "${aws_lb_target_group.internal.arn}"
 }
 
 module "atc" {
@@ -59,7 +59,7 @@ data "template_file" "atc" {
   vars {
     stack_name                = "${var.prefix}-atc-asg"
     region                    = "${data.aws_region.current.name}"
-    target_group              = "${module.internal_target.target_group_arn}"
+    target_group              = "${aws_lb_target_group.internal.arn}"
     atc_port                  = "${var.atc_port}"
     tsa_port                  = "${var.tsa_port}"
     basic_auth_username       = "${var.basic_auth_username}"
@@ -147,6 +147,45 @@ module "external_lb" {
   tags       = "${var.tags}"
 }
 
+resource "aws_lb_listener" "external" {
+  load_balancer_arn = "${module.external_lb.arn}"
+  port              = "${var.web_port}"
+  protocol          = "${upper(var.web_protocol)}"
+  certificate_arn   = "${var.web_certificate_arn}"
+  ssl_policy        = "${var.web_certificate_arn == "" ? "" : "ELBSecurityPolicy-2015-05"}"
+
+  default_action {
+    target_group_arn = "${aws_lb_target_group.external.arn}"
+    type             = "forward"
+  }
+}
+
+resource "aws_lb_target_group" "external" {
+  vpc_id   = "${var.vpc_id}"
+  port     = "${var.atc_port}"
+  protocol = "HTTP"
+
+  health_check {
+    protocol            = "HTTP"
+    port                = "traffic-port"
+    path                = "/"
+    interval            = "30"
+    timeout             = "5"
+    healthy_threshold   = "2"
+    unhealthy_threshold = "2"
+    matcher             = "200"
+  }
+
+  # NOTE: TF is unable to destroy a target group while a listener is attached,
+  # therefor we have to create a new one before destroying the old. This also means
+  # we have to let it have a random name, and then tag it with the desired name.
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.atc_port}"))}"
+}
+
 module "internal_lb" {
   source = "../../ec2/lb"
 
@@ -158,47 +197,36 @@ module "internal_lb" {
   tags       = "${var.tags}"
 }
 
-module "external_target" {
-  source            = "../../container/target"
-  prefix            = "${var.prefix}"
-  vpc_id            = "${var.vpc_id}"
-  load_balancer_arn = "${module.external_lb.arn}"
-  tags              = "${var.tags}"
+resource "aws_lb_listener" "internal" {
+  load_balancer_arn = "${module.internal_lb.arn}"
+  port              = "${var.tsa_port}"
+  protocol          = "TCP"
 
-  target {
-    protocol = "HTTP"
-    port     = "${var.atc_port}"
-    health   = "HTTP:traffic-port/"
+  default_action {
+    target_group_arn = "${aws_lb_target_group.internal.arn}"
+    type             = "forward"
   }
-
-  listeners = [{
-    protocol        = "${upper(var.web_protocol)}"
-    port            = "${var.web_port}"
-    certificate_arn = "${var.web_certificate_arn}"
-  }]
 }
 
-module "internal_target" {
-  source            = "../../container/target"
-  prefix            = "${var.prefix}"
-  vpc_id            = "${var.vpc_id}"
-  load_balancer_arn = "${module.internal_lb.arn}"
-  tags              = "${var.tags}"
+resource "aws_lb_target_group" "internal" {
+  vpc_id   = "${var.vpc_id}"
+  port     = "${var.tsa_port}"
+  protocol = "TCP"
 
-  target {
-    protocol = "TCP"
-    port     = "${var.tsa_port}"
-    health   = "TCP:${var.tsa_port}"
+  health_check {
+    protocol            = "TCP"
+    port                = "${var.tsa_port}"
+    interval            = "30"
+    healthy_threshold   = "2"
+    unhealthy_threshold = "2"
   }
 
-  listeners = [
-    {
-      protocol = "TCP"
-      port     = "${var.tsa_port}"
-    },
-    {
-      protocol = "TCP"
-      port     = "80"
-    },
-  ]
+  # NOTE: TF is unable to destroy a target group while a listener is attached,
+  # therefor we have to create a new one before destroying the old. This also means
+  # we have to let it have a random name, and then tag it with the desired name.
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = "${merge(var.tags, map("Name", "${var.prefix}-target-${var.tsa_port}"))}"
 }
