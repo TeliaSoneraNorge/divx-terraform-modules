@@ -1,17 +1,28 @@
 #cloud-config
 repo_upgrade: security
+package_update: true
+packages:
+  - aws-cfn-bootstrap
 users:
   - name: forward
     lock_passwd: true
-    ssh-authorized-keys: ${authorized_keys}
 write_files:
+  - content: |
+      ${ca_public_key}
+    path: /etc/ssh/cas.pub
+    permissions: '0600'
+    owner: root:root
   - content: |
       #!/bin/bash
       ssh $1 -i /home/forward/.ssh/${pem_path}
     path: /usr/local/bin/tunnel
     permissions: '0755'
     owner: forward:forward
+bootcmd:
+  - cloud-init-per once ssh-users-ca echo "TrustedUserCAKeys /etc/ssh/cas.pub" >> /etc/ssh/sshd_config
 runcmd:
+  - |
+    systemctl stop amazon-ssm-agent.service
   - |
     aws ec2 associate-address \
       --instance-id $(curl http://169.254.169.254/latest/meta-data/instance-id) \
@@ -20,11 +31,12 @@ runcmd:
       --public-ip ${elastic_ip}
   - |
     aws s3 cp \
-    s3://${pem_bucket}/${pem_path} \
-    /home/forward/.ssh/${pem_path} \
-    --region ${aws_region}
+      s3://${pem_bucket}/${pem_path} \
+      /home/forward/.ssh/${pem_path} \
+      --region ${aws_region}
   - |
     chown forward:forward /home/forward/.ssh/${pem_path}
-  - |
     chmod 400 /home/forward/.ssh/${pem_path}
 
+  - |
+    /opt/aws/bin/cfn-signal -e $? --stack ${stack_name} --resource AutoScalingGroup --region ${aws_region}

@@ -5,9 +5,8 @@ variable "prefix" {
   description = "A prefix used for naming resources."
 }
 
-variable "authorized_keys" {
-  description = "List of public keys which are added to bastion."
-  type        = "list"
+variable "ca_public_key" {
+  description = "The public key of the certificate authority."
 }
 
 variable "authorized_cidr" {
@@ -59,11 +58,12 @@ data "template_file" "main" {
   template = "${file("${path.module}/cloud-config.yml")}"
 
   vars {
-    authorized_keys = "${jsonencode(var.authorized_keys)}"
-    aws_region      = "${data.aws_region.current.name}"
-    elastic_ip      = "${aws_eip.main.public_ip}"
-    pem_bucket      = "${var.pem_bucket}"
-    pem_path        = "${var.pem_path}"
+    stack_name    = "${var.prefix}-bastion-asg"
+    aws_region    = "${data.aws_region.current.name}"
+    ca_public_key = "${var.ca_public_key}"
+    elastic_ip    = "${aws_eip.main.public_ip}"
+    pem_bucket    = "${var.pem_bucket}"
+    pem_path      = "${var.pem_path}"
   }
 }
 
@@ -90,17 +90,20 @@ data "aws_iam_policy_document" "permissions" {
 }
 
 module "asg" {
-  source          = "../ec2/asg"
-  prefix          = "${var.prefix}-bastion"
-  user_data       = "${data.template_file.main.rendered}"
-  vpc_id          = "${var.vpc_id}"
-  subnet_ids      = "${var.subnet_ids}"
-  instance_policy = "${data.aws_iam_policy_document.permissions.json}"
-  instance_count  = "1"
-  instance_type   = "${var.instance_type}"
-  instance_ami    = "${var.instance_ami}"
-  instance_key    = ""
-  tags            = "${var.tags}"
+  source            = "../ec2/asg"
+  prefix            = "${var.prefix}-bastion"
+  user_data         = "${data.template_file.main.rendered}"
+  vpc_id            = "${var.vpc_id}"
+  subnet_ids        = "${var.subnet_ids}"
+  await_signal      = "true"
+  pause_time        = "PT5M"
+  health_check_type = "EC2"
+  instance_policy   = "${data.aws_iam_policy_document.permissions.json}"
+  instance_count    = "1"
+  instance_type     = "${var.instance_type}"
+  instance_ami      = "${var.instance_ami}"
+  instance_key      = ""
+  tags              = "${var.tags}"
 }
 
 resource "aws_security_group_rule" "ingress" {
