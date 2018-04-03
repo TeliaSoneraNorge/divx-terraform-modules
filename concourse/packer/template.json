@@ -2,7 +2,8 @@
     "variables": {
         "source_ami": "",
         "concourse_version": "",
-        "template_version": ""
+        "template_version": "",
+        "ami_users": ""
     },
     "builders": [{
         "type": "amazon-ebs",
@@ -11,6 +12,7 @@
         "instance_type": "m3.medium",
         "ssh_username": "ec2-user",
         "ami_name": "concourse-{{user `concourse_version`}}-{{timestamp}}",
+        "ami_users": "{{user `ami_users`}}",
         "tags": {
             "source_ami": "{{user `source_ami`}}",
             "concourse_version": "{{user `concourse_version`}}",
