@@ -74,7 +74,7 @@ resource "aws_dynamodb_table" "main" {
 }
 
 module "lambda" {
-  source = "../lambda/function"
+  source = "github.com/teliasoneranorge/divx-terraform-modules//lambda/function?ref=0.2.7"
 
   prefix      = "${var.prefix}-cloudtrail"
   policy      = "${data.aws_iam_policy_document.lambda.json}"
