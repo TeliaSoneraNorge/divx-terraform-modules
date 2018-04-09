@@ -37,7 +37,7 @@ resource "aws_ecs_service" "main" {
   task_definition                   = "${aws_ecs_task_definition.main.arn}"
   desired_count                     = "${var.task_container_count}"
   iam_role                          = "${aws_iam_role.service.arn}"
-  health_check_grace_period_seconds = "0"
+  health_check_grace_period_seconds = "${var.task_definition_health_check_grace_period}"
 
   deployment_minimum_healthy_percent = 50
   deployment_maximum_percent         = 200
