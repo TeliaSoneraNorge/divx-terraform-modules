@@ -12,7 +12,7 @@ variable "source_accounts" {
 
 variable "role_name" {
   description = "Role name that will have read only access to the cloudtrail bucket."
-  default     = "ReadOnly"
+  default     = "ReadOnlyCloudtrailRole"
 }
 
 variable "read_capacity" {
