@@ -36,6 +36,29 @@ data "aws_iam_policy_document" "bucket" {
       values   = ["bucket-owner-full-control"]
     }
   }
+
+  statement {
+    effect = "Allow"
+
+    principals {
+      type = "AWS"
+
+      identifiers = [
+        "${formatlist("arn:aws:iam::%s:role/%s", var.source_accounts, var.role_name)}",
+      ]
+    }
+
+    actions = [
+      "s3:GetObjectAcl",
+      "s3:ListBucket",
+      "s3:GetBucketLocation",
+      "s3:GetObject",
+    ]
+
+    resources = [
+      "${formatlist("arn:aws:s3:::${var.prefix}-cloudtrail-logs/AWSLogs/%s/*", var.source_accounts)}",
+    ]
+  }
 }
 
 data "aws_iam_policy_document" "lambda" {
