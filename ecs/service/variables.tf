@@ -56,6 +56,11 @@ variable "task_definition_environment" {
   default     = {}
 }
 
+variable "task_definition_environment_count" {
+  description = "Required if task_definition_environment is used : Number of environment variables in task_definition_environment."
+  default     = "0"
+}
+
 variable "tags" {
   description = "A map of tags (key-value pairs) passed to resources."
   type        = "map"
