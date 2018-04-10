@@ -10,11 +10,6 @@ variable "source_accounts" {
   type        = "list"
 }
 
-variable "role_name" {
-  description = "Role name that will have read only access to the cloudtrail bucket."
-  default     = "ReadOnlyCloudtrailRole"
-}
-
 variable "read_capacity" {
   description = "Read capacity for the DynamoDB table."
   default     = 30
