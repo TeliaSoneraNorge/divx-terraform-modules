@@ -10,6 +10,11 @@ variable "source_accounts" {
   type        = "list"
 }
 
+variable "role_name" {
+  description = "Role name that will have read only access to the cloudtrail bucket."
+  default     = "ReadOnlyCloudtrailRole"
+}
+
 variable "read_capacity" {
   description = "Read capacity for the DynamoDB table."
   default     = 30
@@ -69,7 +74,7 @@ resource "aws_dynamodb_table" "main" {
 }
 
 module "lambda" {
-  source = "../lambda/function"
+  source = "github.com/teliasoneranorge/divx-terraform-modules//lambda/function?ref=0.2.7"
 
   prefix      = "${var.prefix}-cloudtrail"
   policy      = "${data.aws_iam_policy_document.lambda.json}"
