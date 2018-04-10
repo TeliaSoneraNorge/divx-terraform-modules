@@ -63,7 +63,7 @@ variable "task_definition_environment_count" {
 
 variable "task_definition_health_check_grace_period" {
   description = "Optional: Grace period health checks on initial start-up - to stop slow tasks from being killed too early"
-  default = "0"
+  default     = "0"
 }
 
 variable "tags" {
