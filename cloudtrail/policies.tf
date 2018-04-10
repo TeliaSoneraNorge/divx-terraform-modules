@@ -57,7 +57,7 @@ data "aws_iam_policy_document" "bucket" {
     ]
 
     resources = [
-      "arn:aws:s3:::${var.prefix}-cloudtrail-logs/",
+      "arn:aws:s3:::${var.prefix}-cloudtrail-logs",
       "arn:aws:s3:::${var.prefix}-cloudtrail-logs/*",
     ]
   }
