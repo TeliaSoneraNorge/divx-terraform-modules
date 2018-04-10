@@ -43,8 +43,9 @@ data "aws_iam_policy_document" "bucket" {
     principals {
       type = "AWS"
 
+      # TODO we might want to lock this down further?
       identifiers = [
-        "${formatlist("arn:aws:iam::%s:role/%s", var.source_accounts, var.role_name)}",
+        "${formatlist("arn:aws:iam::%s:root", var.source_accounts)}",
       ]
     }
 
@@ -56,7 +57,8 @@ data "aws_iam_policy_document" "bucket" {
     ]
 
     resources = [
-      "${formatlist("arn:aws:s3:::${var.prefix}-cloudtrail-logs/AWSLogs/%s/*", var.source_accounts)}",
+      "arn:aws:s3:::${var.prefix}-cloudtrail-logs",
+      "arn:aws:s3:::${var.prefix}-cloudtrail-logs/*",
     ]
   }
 }
