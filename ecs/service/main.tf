@@ -5,16 +5,15 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-# HACK: If we don't depend on this the target group is created and associated with the service before
-# the LB is ready and listeners are attached. Which fails, see https://github.com/hashicorp/terraform/issues/12634.
-resource "null_resource" "lb_exists" {
-  triggers {
-    alb_name = "${var.target["load_balancer"]}"
-  }
+# HACK:  This is the latest hack to work around the problem
+# "The target group with targetGroupArn arn:aws:elasticloadbalancing:... does not have an associated load balancer."
+# see https://github.com/hashicorp/terraform/issues/12634.
+# Create a target group that references the real one and then depend on it in the aws_ecs_service definintion
+data "aws_lb_target_group" "default" {
+  arn = "${aws_lb_target_group.main.arn}"
 }
 
 resource "aws_lb_target_group" "main" {
-  depends_on   = ["null_resource.lb_exists"]
   vpc_id       = "${var.vpc_id}"
   protocol     = "${var.target["protocol"]}"
   port         = "${var.target["port"]}"
@@ -31,13 +30,13 @@ resource "aws_lb_target_group" "main" {
 }
 
 resource "aws_ecs_service" "main" {
-  depends_on                        = ["null_resource.lb_exists", "aws_iam_role.service"]
+  depends_on                        = ["data.aws_lb_target_group.default", "aws_iam_role.service"]
   name                              = "${var.prefix}"
   cluster                           = "${var.cluster_id}"
   task_definition                   = "${aws_ecs_task_definition.main.arn}"
   desired_count                     = "${var.task_container_count}"
   iam_role                          = "${aws_iam_role.service.arn}"
-  health_check_grace_period_seconds = "0"
+  health_check_grace_period_seconds = "${var.task_definition_health_check_grace_period}"
 
   deployment_minimum_healthy_percent = 50
   deployment_maximum_percent         = 200
@@ -56,7 +55,7 @@ resource "aws_ecs_service" "main" {
 
 # NOTE: Takes a map of KEY = value and turns it into a list of: { name: KEY, value: value }.
 data "null_data_source" "task_environment" {
-  count = "${length(var.task_definition_environment)}"
+  count = "${var.task_definition_environment_count}"
 
   inputs = {
     name  = "${element(keys(var.task_definition_environment), count.index)}"
