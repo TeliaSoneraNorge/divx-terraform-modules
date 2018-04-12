@@ -72,7 +72,7 @@ variable "db_name" {
 # Resources
 # -------------------------------------------------------------------------------
 resource "aws_db_instance" "main" {
-  depends_on = ["aws_db_subnet_group.main"]
+  depends_on             = ["aws_db_subnet_group.main"]
   identifier             = "${var.prefix}-db"
   name                   = "${var.db_name}"
   username               = "${var.username}"
@@ -92,7 +92,6 @@ resource "aws_db_instance" "main" {
 
   tags = "${merge(var.tags, map("Name", "${var.prefix}-db"))}"
 }
-
 
 resource "aws_db_subnet_group" "main" {
   name        = "${var.prefix}-subnet-group"
