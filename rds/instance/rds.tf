@@ -63,12 +63,17 @@ variable "tags" {
   default     = {}
 }
 
+variable "db_name" {
+  description = "Optional: The name of the database to create when the DB instance is created."
+  default     = "main"
+}
+
 # -------------------------------------------------------------------------------
 # Resources
 # -------------------------------------------------------------------------------
 resource "aws_db_instance" "main" {
   identifier             = "${var.prefix}-db"
-  name                   = "main"
+  name                   = "${var.db_name}"
   username               = "${var.username}"
   password               = "${var.password}"
   port                   = "${var.port}"
