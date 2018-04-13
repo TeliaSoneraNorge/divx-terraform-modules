@@ -3,11 +3,11 @@ meta:
   concourse:
   - general-config: &general-config
       timeout: 10m
-      file: common-tasks/terraform/0.11.1.yml
+      file: common-tasks/terraform/0.11.7.yml
       input_mapping: { source: git }
   - test-module-config: &test-module-config
       timeout: 10m
-      file: common-tasks/terraform/0.11.1.yml
+      file: common-tasks/terraform/0.11.7.yml
       input_mapping: { source: pull-request }
       on_failure:
         put: pull-request
@@ -28,6 +28,9 @@ meta:
 groups:
   - name: Master
     jobs:
+    - acm-test
+    - acm-example-test
+    - acm-example-run
     - apigateway-test
     - apigateway-example-test
     - apigateway-example-run
@@ -80,6 +83,13 @@ jobs:
     - put: pull-request
       params: {path: pull-request-write, status: pending}
     - aggregate:
+      - task: acm
+        <<: *test-module-config
+        params:
+          <<: *test-module-params
+          directories: |
+            acm/certificate
+
       - task: apigateway
         <<: *test-module-config
         params:
@@ -172,6 +182,51 @@ jobs:
             vault
     - put: pull-request
       params: {path: pull-request-write, status: success}
+
+  - name: acm-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: git
+        resource: acm-module
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          acm/certificate
+  - name: acm-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: git
+        resource: acm-module
+        passed: [ acm-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          acm/certificate/example
+  - name: acm-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: git
+        resource: acm-module
+        passed: [ acm-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          acm/certificate/example
 
   - name: apigateway-test
     plan:
@@ -756,6 +811,15 @@ resources:
       access_token: ((github-access-token))
       private_key: ((divx-terraform-modules-deploy-key))
       every: true
+
+  - name: acm-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - acm/*
 
   - name: apigateway-module
     type: git
