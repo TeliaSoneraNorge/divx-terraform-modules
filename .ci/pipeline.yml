@@ -519,8 +519,6 @@ jobs:
         directories: |
           iam/admin
           iam/developer
-          iam/machine
-          iam/policies
           iam/role
           iam/user
   - name: iam-example-test
@@ -539,8 +537,6 @@ jobs:
         directories: |
           iam/admin/example
           iam/developer/example
-          iam/machine/example
-          iam/policies/example
           iam/role/example
           iam/user/example
   - name: iam-example-run
