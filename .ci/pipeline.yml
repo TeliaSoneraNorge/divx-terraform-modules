@@ -61,9 +61,6 @@ groups:
     - terraform-test
     - terraform-example-test
     - terraform-example-run
-    - vault-test
-    - vault-example-test
-    - vault-example-run
   - name: PR
     jobs:
     - test-it
@@ -96,7 +93,6 @@ jobs:
           <<: *test-module-params
           directories: |
             apigateway/lambda
-            apigateway/policy
 
       - task: bastion
         <<: *test-module-config
@@ -146,8 +142,6 @@ jobs:
           directories: |
             iam/admin
             iam/developer
-            iam/machine
-            iam/policies
             iam/role
             iam/user
 
@@ -172,14 +166,6 @@ jobs:
           <<: *test-module-params
           directories: |
             terraform/init
-            terraform/policy
-
-      - task: vault
-        <<: *test-module-config
-        params:
-          <<: *test-module-params
-          directories: |
-            vault
     - put: pull-request
       params: {path: pull-request-write, status: success}
 
@@ -579,18 +565,6 @@ jobs:
           <<: *plan-params
           directories: |
             iam/developer/example
-      - task: machine
-        <<: *general-config
-        params:
-          <<: *plan-params
-          directories: |
-            iam/machine/example
-      - task: policies
-        <<: *general-config
-        params:
-          <<: *plan-params
-          directories: |
-            iam/policies/example
       - task: role
         <<: *general-config
         params:
@@ -742,51 +716,6 @@ jobs:
         directories: |
           terraform/init/example
 
-  - name: vault-test
-    plan:
-    - aggregate:
-      - get: common-tasks
-        params: { submodules: [ terraform ] }
-      - get: git
-        resource: vault-module
-        trigger: true
-    - task: terraform-tests
-      <<: *general-config
-      params:
-        <<: *test-module-params
-        directories: |
-          vault
-  - name: vault-example-test
-    plan:
-    - aggregate:
-      - get: common-tasks
-        params: { submodules: [ terraform ] }
-      - get: git
-        resource: vault-module
-        passed: [ vault-test ]
-        trigger: true
-    - task: terraform-tests
-      <<: *general-config
-      params:
-        <<: *test-params
-        directories: |
-          vault/example
-  - name: vault-example-run
-    plan:
-    - aggregate:
-      - get: common-tasks
-        params: { submodules: [ terraform ] }
-      - get: git
-        resource: vault-module
-        passed: [ vault-example-test ]
-        trigger: true
-    - task: terraform-tests
-      <<: *general-config
-      params:
-        <<: *plan-params
-        directories: |
-          vault/example
-
 resource_types:
   - name: pull-request
     type: docker-image
@@ -910,12 +839,3 @@ resources:
       private_key: ((divx-terraform-modules-deploy-key))
       paths:
         - terraform/*
-
-  - name: vault-module
-    type: git
-    source:
-      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
-      branch: master
-      private_key: ((divx-terraform-modules-deploy-key))
-      paths:
-        - vault/*
