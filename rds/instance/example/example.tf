@@ -3,44 +3,35 @@ provider "aws" {
 }
 
 module "vpc" {
-  source          = "github.com/TeliaSoneraNorge/divx-terraform-modules//ec2/vpc"
+  source          = "../../../ec2/vpc"
   prefix          = "your-project"
   cidr_block      = "10.8.0.0/16"
   private_subnets = "2"
   dns_hostnames   = "true"
 
   tags {
-    environment = "prod"
+    environment = "example"
     terraform   = "True"
   }
 }
 
 module "rds" {
-  source = "github.com/TeliaSoneraNorge/divx-terraform-modules//rds/instance"
-
+  source        = "../../../rds/instance"
+  multi_az      = "false"
   prefix        = "your-project"
   username      = "someuser"
-  password      = "<kms-encrypted-password>"
+  password      = "somepassword"
   port          = "5000"
   engine        = "postgres"
-  instance_type = "db.m3.medium"
-  storage_size  = "50"
+  instance_type = "db.t2.small"
+  storage_size  = "5"
   vpc_id        = "${module.vpc.vpc_id}"
   subnet_ids    = "${module.vpc.private_subnet_ids}"
 
   tags {
-    environment = "prod"
+    environment = "example"
     terraform   = "True"
   }
-}
-
-resource "aws_security_group_rule" "bastion_ingress" {
-  security_group_id        = "${module.rds.security_group_id}"
-  type                     = "ingress"
-  protocol                 = "tcp"
-  from_port                = "${module.rds.port}"
-  to_port                  = "${module.rds.port}"
-  source_security_group_id = "<bastion-sg-id>"
 }
 
 output "security_group_id" {
