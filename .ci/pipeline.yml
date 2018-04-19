@@ -52,6 +52,9 @@ groups:
     - iam-test
     - iam-example-test
     - iam-example-run
+    - kms-test
+    - kms-example-test
+    - kms-example-run
     - lambda-test
     - lambda-example-test
     - lambda-example-run
@@ -144,6 +147,13 @@ jobs:
             iam/developer
             iam/role
             iam/user
+
+      - task: kms
+        <<: *test-module-config
+        params:
+          <<: *test-module-params
+          directories: |
+            kms
 
       - task: lambda
         <<: *test-module-config
@@ -574,6 +584,51 @@ jobs:
           directories: |
             iam/user/example
 
+  - name: kms-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: git
+        resource: kms-module
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-module-params
+        directories: |
+          kms
+  - name: kms-example-test
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: git
+        resource: kms-module
+        passed: [ kms-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *test-params
+        directories: |
+          kms/example
+  - name: kms-example-run
+    plan:
+    - aggregate:
+      - get: common-tasks
+        params: { submodules: [ terraform ] }
+      - get: git
+        resource: kms-module
+        passed: [ kms-example-test ]
+        trigger: true
+    - task: terraform-tests
+      <<: *general-config
+      params:
+        <<: *plan-params
+        directories: |
+          kms/example
+
   - name: lambda-test
     plan:
     - aggregate:
@@ -808,6 +863,15 @@ resources:
       private_key: ((divx-terraform-modules-deploy-key))
       paths:
         - iam/*
+
+  - name: kms-module
+    type: git
+    source:
+      uri: git@github.com:TeliaSoneraNorge/divx-terraform-modules.git
+      branch: master
+      private_key: ((divx-terraform-modules-deploy-key))
+      paths:
+        - kms/*
 
   - name: lambda-module
     type: git
