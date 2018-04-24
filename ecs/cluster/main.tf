@@ -81,7 +81,7 @@ module "asg" {
 }
 
 resource "aws_security_group_rule" "ingress" {
-  count                    = "${length(var.load_balancer_count)}"
+  count                    = "${var.load_balancer_count}"
   security_group_id        = "${module.asg.security_group_id}"
   type                     = "ingress"
   protocol                 = "tcp"
