@@ -1,6 +1,8 @@
-## Terraform modules
+## DEPRECATED
 
-[![Build Status](https://concourse.common-services.telia.io/api/v1/teams/cloudops/pipelines/divx-terraform-modules/badge)](https://concourse.common-services.telia.io/api/v1/teams/cloudops/pipelines/divx-terraform-modules)
+Please use https://github.com/TeliaSoneraNorge/telia-terraform-modules instead.
+
+## Terraform modules
 
 Reusable terraform modules for AWS. Opinionated and minimalistic, as far as possible.
 
